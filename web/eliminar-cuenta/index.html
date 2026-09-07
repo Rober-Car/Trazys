@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Eliminar cuenta · Trazys</title>
+<link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="brand" href="/">Trazys</a>
+    <nav>
+      <a href="/">Inicio</a>
+      <a href="/privacidad">Privacidad</a>
+      <a href="/eliminar-cuenta">Eliminar cuenta</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1>Eliminación de cuenta en Trazys</h1>
+
+  <div class="aviso">
+    <p><strong>Importante:</strong> la eliminación es <strong>permanente</strong> y no se puede deshacer. Si solo quieres dejar de usar la app o darte de baja del gimnasio, primero contacta con tu centro.</p>
+  </div>
+
+  <h2>Eliminar la cuenta dentro de la aplicación</h2>
+  <p>Trazys permite eliminar tu cuenta desde las propias aplicaciones:</p>
+  <ul>
+    <li><strong>Cliente:</strong> Menú &gt; Configuración &gt; <em>Eliminar mi cuenta</em>.</li>
+    <li><strong>Administrador:</strong> Menú &gt; Configuración &gt; <em>Eliminar cuenta y negocio</em>.</li>
+  </ul>
+  <p>Se pedirá confirmación y, en su caso, reautenticación con tu contraseña antes de ejecutar la eliminación.</p>
+
+  <h2>Qué se elimina y qué se conserva</h2>
+
+  <h3>Cuenta de CLIENTE</h3>
+  <p><span class="pill pill-rojo">Se elimina</span></p>
+  <ul>
+    <li>La cuenta de acceso (Firebase Authentication) y el perfil de usuario.</li>
+    <li>Datos de contacto y personales: teléfono, correo, fecha de nacimiento, foto y vinculación a la cuenta.</li>
+    <li>Dispositivos/tokens de notificaciones, buzón personal, reservas y solicitudes.</li>
+  </ul>
+  <p><span class="pill pill-verde">Se conserva en el gimnasio</span></p>
+  <ul>
+    <li>El histórico económico del negocio (movimientos), que pertenece al gimnasio y no se puede eliminar con la cuenta.</li>
+    <li>Una ficha histórica mínima con nombre, apellidos, DNI e identificador, para que el centro conserve su registro.</li>
+  </ul>
+
+  <h3>Cuenta de ADMINISTRADOR</h3>
+  <p><span class="pill pill-rojo">Se elimina</span></p>
+  <ul>
+    <li>La cuenta de acceso y, de forma completa, el negocio y todos sus datos asociados: clientes, servicios, sesiones, reservas, economía, notificaciones, configuración, código maestro y logo.</li>
+  </ul>
+  <p class="nota">La eliminación de una cuenta de administrador supone eliminar todo el negocio. Esta acción es irreversible.</p>
+
+  <h2>Cómo solicitar la eliminación si ya no tienes la aplicación</h2>
+  <p>Si ya no tienes instalada la aplicación, puedes solicitar la eliminación por correo. Completa el mensaje y envíalo; en él indica:</p>
+  <ul>
+    <li>Rol de la cuenta (<strong>CLIENTE</strong> o <strong>ADMINISTRADOR</strong>).</li>
+    <li>Correo electrónico de la cuenta.</li>
+    <li>Si eres cliente vinculado a un gimnasio: nombre del gimnasio y tu DNI (para localizar la ficha).</li>
+  </ul>
+
+  <form>
+    <label for="solicitud"><strong>Mensaje de solicitud de eliminación</strong></label>
+    <p>Este formulario abre tu aplicación de correo con el mensaje preparado dirigido al contacto de privacidad.</p>
+    <textarea id="solicitud" required>Asunto: Solicitud de eliminación de cuenta en Trazys
+
+Rol (CLIENTE o ADMINISTRADOR):
+Correo electrónico de la cuenta:
+Nombre del gimnasio (si aplica):
+DNI (solo clientes vinculados):
+
+Confirmo que solicito la eliminación permanente de mi cuenta y de mis datos personales en Trazys.</textarea>
+    <p>
+      <button class="boton boton-form" type="button" onclick="enviarSolicitud()">Enviar solicitud</button>
+    </p>
+  </form>
+  <div id="resultado" class="aviso aviso-azul" hidden>
+    Si tu app de correo no se abrió, envía el mensaje anterior manualmente a <a href="mailto:Pollinox@hotmail.com">Pollinox@hotmail.com</a>.
+  </div>
+</main>
+
+<footer>
+  <div>Trazys</div>
+  <div><span id="anio"></span> · <a href="/privacidad">Privacidad</a> · <a href="/eliminar-cuenta">Eliminar cuenta</a></div>
+</footer>
+
+<script>
+  function enviarSolicitud() {
+    const cuerpo = document.getElementById("solicitud").value;
+    const destino = "Pollinox@hotmail.com";
+    const asunto = encodeURIComponent("Solicitud de eliminación de cuenta en Trazys");
+    const texto = encodeURIComponent(cuerpo);
+    window.location.href = "mailto:" + destino + "?subject=" + asunto + "&body=" + texto;
+    document.getElementById("resultado").hidden = false;
+  }
+  document.getElementById("anio").textContent = "© " + new Date().getFullYear();
+</script>
+</body>
+</html>

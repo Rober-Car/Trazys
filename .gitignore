@@ -19,3 +19,6 @@ firestore-debug.log
 firestore-tests/node_modules/
 firestore-tests/firestore.rules.generated
 firestore-tests/auditoria_backfill_indices.cjs
+
+.firebase/
+functions/node_modules/
