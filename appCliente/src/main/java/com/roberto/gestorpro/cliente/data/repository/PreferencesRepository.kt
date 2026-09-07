@@ -83,6 +83,18 @@ class PreferencesRepository @Inject constructor(
         }
     }
 
+    /**
+     * borrarNegocioId
+     * ---------------
+     * Limpia el negocioId local. Se usa al cerrar sesión y al reconciliar el
+     * estado local para que un usuario no herede el negocio de otra cuenta.
+     */
+    suspend fun borrarNegocioId() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(NEGOCIO_ID_KEY)
+        }
+    }
+
     val dniPendiente: Flow<String?> = context.dataStore.data.map { preferences ->
         preferences[DNI_PENDIENTE_KEY]
     }

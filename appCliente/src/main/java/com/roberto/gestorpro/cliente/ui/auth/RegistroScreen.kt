@@ -1,12 +1,15 @@
 package com.roberto.gestorpro.cliente.ui.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -15,6 +18,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +63,14 @@ fun RegistroScreen(
 
     var contrasenaVisible by rememberSaveable { mutableStateOf(false) }
     var contrasenaRepetidaVisible by rememberSaveable { mutableStateOf(false) }
+
+    /**
+     * aceptaTerminos
+     * --------------
+     * Checkbox obligatorio: el registro queda bloqueado hasta aceptar los
+     * Términos de uso (versión vigente). Nunca se marca automáticamente.
+     */
+    var aceptaTerminos by rememberSaveable { mutableStateOf(false) }
 
     val azul = Color(0xFF1E88E5)
     val formularioValido = email.isNotBlank() &&
@@ -215,17 +227,65 @@ fun RegistroScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = aceptaTerminos,
+                        onCheckedChange = { aceptaTerminos = it },
+                        enabled = !autenticando
+                    )
+                    Spacer(modifier = Modifier.size(4.dp))
+                    // Toda la zona de texto comparte la misma columna de inicio:
+                    // el texto de aceptación y los dos enlaces empiezan igualados.
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "He leído y acepto los Términos de uso",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Ver Términos de uso",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .clickable { navController.navigate(Routes.TERMINOS_CONDICIONES) }
+                        )
+                        Text(
+                            text = "Ver Política de privacidad",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .clickable { navController.navigate(Routes.POLITICA_PRIVACIDAD) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 AppPrimaryButton(
                     text = "Crear cuenta",
                     onClick = {
                         mensajeError = ""
                         scope.launch {
+                            if (!aceptaTerminos) {
+                                mensajeError =
+                                    "Debes aceptar los Términos de uso para crear la cuenta"
+                                return@launch
+                            }
                             val error = mainViewModel.registrarse(
                                 email.trim(), contrasena, contrasenaRepetida
                             )
                             if (error != null) {
                                 mensajeError = error
                             } else {
+                                // Registra la aceptación con el uid y la versión vigente.
+                                mainViewModel.aceptarTerminos()
                                 val destino = mainViewModel.destinoTrasAutenticar()
                                 navController.navigate(destino) {
                                     popUpTo(Routes.REGISTRO) { inclusive = true }
@@ -233,7 +293,7 @@ fun RegistroScreen(
                             }
                         }
                     },
-                    enabled = !autenticando && formularioValido
+                    enabled = !autenticando && formularioValido && aceptaTerminos
                 )
 
                 if (autenticando) {
@@ -250,11 +310,6 @@ fun RegistroScreen(
                             popUpTo(Routes.REGISTRO) { inclusive = true }
                         }
                     }
-                )
-
-                AppTextLinkButton(
-                    text = "Política de privacidad",
-                    onClick = { navController.navigate(Routes.POLITICA_PRIVACIDAD) }
                 )
             }
         }

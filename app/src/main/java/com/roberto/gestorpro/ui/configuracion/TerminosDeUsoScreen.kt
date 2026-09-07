@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +40,19 @@ fun TerminosDeUsoScreen(
     navController: NavHostController,
     mainViewModel: MainViewModel = hiltViewModel()
 ) {
-    var aceptado by remember { mutableStateOf(false) }
+    /**
+     * aceptado
+     * --------
+     * null = comprobando; true = el usuario ya aceptó la versión VIGENTE;
+     * false = debe aceptar (no aceptó o aceptó una versión anterior).
+     * Se lee de la persistencia al entrar, para no volver a pedir la aceptación
+     * cuando ya está registrada.
+     */
+    var aceptado by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(Unit) {
+        aceptado = mainViewModel.terminosAceptados()
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
@@ -67,22 +80,45 @@ fun TerminosDeUsoScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            AppPrimaryButton(
-                text = if (aceptado) "Términos aceptados (v${TerminosDeUso.VERSION})" else "Aceptar los términos de uso",
-                enabled = !aceptado,
-                onClick = {
-                    mainViewModel.aceptarTerminos()
-                    aceptado = true
-                },
-                fullWidth = true
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Al aceptar registras tu aceptación de la versión ${TerminosDeUso.VERSION} " +
-                    "de estos términos para tu cuenta de Trazys.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            when (aceptado) {
+                // Mientras se comprueba el estado no se muestra acción.
+                null -> Unit
+
+                // Ya aceptó la versión vigente: no se vuelve a pedir.
+                true -> {
+                    Text(
+                        text = "Términos aceptados — versión ${TerminosDeUso.VERSION}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Ya has aceptado la versión vigente de los Términos de uso.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // No aceptó la versión vigente (o aceptó una anterior): se ofrece aceptar.
+                false -> {
+                    AppPrimaryButton(
+                        text = "Aceptar los términos de uso",
+                        onClick = {
+                            mainViewModel.aceptarTerminos()
+                            aceptado = true
+                        },
+                        fullWidth = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Al aceptar registras tu aceptación de la versión " +
+                            "${TerminosDeUso.VERSION} de estos términos para tu cuenta de Trazys.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

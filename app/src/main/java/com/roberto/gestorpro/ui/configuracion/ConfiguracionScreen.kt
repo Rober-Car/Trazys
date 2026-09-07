@@ -22,12 +22,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -202,44 +204,20 @@ fun ConfiguracionScreen(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
             )
 
-            Card(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    .padding(horizontal = 20.dp)
             ) {
-                AjusteAdminItem(
-                    titulo = "Política de privacidad",
-                    descripcion = "Cómo tratamos tus datos",
-                    icono = Icons.Default.Info,
-                    colorAcento = Color(0xFF00838F),
+                AjusteInformacionOption(
+                    icon = Icons.Default.Info,
+                    label = "Política de privacidad",
                     onClick = { navController.navigate(Routes.POLITICA_PRIVACIDAD) }
                 )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                AjusteAdminItem(
-                    titulo = "Términos y condiciones",
-                    descripcion = "Condiciones de uso de la aplicación",
-                    icono = Icons.Default.Info,
-                    colorAcento = Color(0xFF546E7A),
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                AjusteInformacionOption(
+                    icon = Icons.Default.Description,
+                    label = "Términos y condiciones",
                     onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) }
                 )
             }
@@ -317,6 +295,48 @@ private fun AjusteAdminItem(
             )
         }
 
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp)
+        )
+    }
+}
+
+/**
+ * AjusteInformacionOption
+ * -----------------------
+ * Entrada de lista (sin card) para la sección INFORMACIÓN, con icono, texto y
+ * chevron, mismo estilo que la app Cliente. Se usa para Política de privacidad
+ * y Términos y condiciones.
+ */
+@Composable
+private fun AjusteInformacionOption(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.weight(1f))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,

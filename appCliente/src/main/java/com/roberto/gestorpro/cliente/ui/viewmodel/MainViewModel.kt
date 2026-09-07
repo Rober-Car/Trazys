@@ -99,6 +99,15 @@ class MainViewModel @Inject constructor(
     private val _perfilPendiente = MutableStateFlow<PerfilPendiente?>(null)
     val perfilPendiente: StateFlow<PerfilPendiente?> = _perfilPendiente.asStateFlow()
 
+    /**
+     * uidPerfilPendiente
+     * ------------------
+     * UID del usuario al que pertenece el perfil pendiente cacheado en
+     * `_perfilPendiente`. Garantiza que nunca se muestre a otro usuario un
+     * perfil cargado para una cuenta distinta (aislamiento por uid).
+     */
+    private var uidPerfilPendiente: String? = null
+
     private val _solicitudesBaja = MutableStateFlow<List<SolicitudBaja>>(emptyList())
     val solicitudesBaja: StateFlow<List<SolicitudBaja>> = _solicitudesBaja.asStateFlow()
 
@@ -250,6 +259,15 @@ class MainViewModel @Inject constructor(
     fun cerrarSesion() {
         viewModelScope.launch {
             autenticacionRepository.cerrarSesion()
+            // Limpia el estado de sesión local para que otra cuenta en el mismo
+            // dispositivo no herede idCliente/dniPendiente/negocioId de esta.
+            preferencesRepository.borrarIdCliente()
+            preferencesRepository.borrarDniPendiente()
+            preferencesRepository.borrarNegocioId()
+            _cliente.value = null
+            _perfilPendiente.value = null
+            uidPerfilPendiente = null
+            _estadoHome.value = EstadoHomeCliente()
         }
     }
 
@@ -328,6 +346,11 @@ class MainViewModel @Inject constructor(
     private suspend fun cargarEstadoLocal() {
         try {
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+            // Limpia cualquier perfil pendiente cacheado de otra cuenta antes de
+            // recomponer el estado para el usuario autenticado actual.
+            _perfilPendiente.value = null
+            uidPerfilPendiente = null
+
             val usuarioDoc = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 .collection("usuarios")
                 .document(uid)
@@ -338,7 +361,15 @@ class MainViewModel @Inject constructor(
             val negocio = usuarioDoc.getString("negocioId")
 
             if (clienteId != null) {
+                // Usuario vinculado: conserva su ficha y su negocio, y limpia
+                // cualquier perfil pendiente heredado de otra cuenta.
                 preferencesRepository.setIdCliente(clienteId)
+                preferencesRepository.borrarDniPendiente()
+                if (negocio != null) {
+                    preferencesRepository.setNegocioId(negocio)
+                } else {
+                    preferencesRepository.borrarNegocioId()
+                }
                 val ficha = clienteRepository.leerFicha(clienteId)
                 _cliente.value = ficha
                 if (ficha != null) {
@@ -346,17 +377,37 @@ class MainViewModel @Inject constructor(
                 }
                 // Registra el token FCM si hay cliente vinculado (arranque).
                 dispositivoRepository.registrarTokenActual()
+                if (negocio != null) {
+                    val datos = negocioRepository.obtenerDatosPublicosNegocio(negocio)
+                    if (datos != null) {
+                        preferencesRepository.setNombreNegocio(datos.nombre)
+                        preferencesRepository.setLogoNegocio(datos.logo)
+                    }
+                }
             } else {
+                // Sin cliente: NUNCA heredar el estado de una cuenta anterior.
+                // Primero se limpia todo el estado residual y después se
+                // recomponen los valores SOLO si la cuenta actual los tiene.
                 preferencesRepository.borrarIdCliente()
+                preferencesRepository.borrarDniPendiente()
+                preferencesRepository.borrarNegocioId()
                 _cliente.value = null
                 _estadoHome.value = EstadoHomeCliente()
-            }
-            if (negocio != null) {
-                preferencesRepository.setNegocioId(negocio)
-                val datos = negocioRepository.obtenerDatosPublicosNegocio(negocio)
-                if (datos != null) {
-                    preferencesRepository.setNombreNegocio(datos.nombre)
-                    preferencesRepository.setLogoNegocio(datos.logo)
+
+                // dniPendiente SOLO si la cuenta actual tiene perfil pendiente
+                // real en Firestore (no se conserva un dni de otra cuenta).
+                val perfilDoc = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("perfiles_pendientes")
+                    .document(uid)
+                    .get()
+                    .esperar()
+                val dniPendienteReal = if (perfilDoc.exists()) {
+                    perfilDoc.getString("dni")
+                } else {
+                    null
+                }
+                if (!dniPendienteReal.isNullOrBlank()) {
+                    preferencesRepository.setDniPendiente(dniPendienteReal)
                 }
             }
         } catch (_: Exception) {
@@ -397,6 +448,7 @@ class MainViewModel @Inject constructor(
             val resultado = perfilPendienteRepository.guardar(uid, perfil)
             if (!resultado.exito) return resultado.mensaje
             preferencesRepository.setDniPendiente(perfil.dni)
+            uidPerfilPendiente = uid
             _perfilPendiente.value = perfil
             return null
         } finally {
@@ -456,6 +508,7 @@ class MainViewModel @Inject constructor(
             }
             preferencesRepository.borrarDniPendiente()
             _perfilPendiente.value = null
+            uidPerfilPendiente = null
             _cliente.value = resultado.clienteId?.let { clienteRepository.leerFicha(it) }
             // Tras vincularse, registra el token FCM del dispositivo.
             dispositivoRepository.registrarTokenActual()
@@ -473,6 +526,12 @@ class MainViewModel @Inject constructor(
      */
     suspend fun cargarPerfilPendiente() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        if (uidPerfilPendiente != uid) {
+            // Si el perfil cacheado pertenece a otro usuario, se descarta antes
+            // de cargar el del usuario actual (evita mostrar datos ajenos).
+            _perfilPendiente.value = null
+            uidPerfilPendiente = uid
+        }
         _perfilPendiente.value = perfilPendienteRepository.leer(uid)
     }
 
@@ -524,6 +583,10 @@ class MainViewModel @Inject constructor(
             }
         } else {
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+            if (uidPerfilPendiente != uid) {
+                _perfilPendiente.value = null
+                uidPerfilPendiente = uid
+            }
             _perfilPendiente.value = perfilPendienteRepository.leer(uid)
         }
     }

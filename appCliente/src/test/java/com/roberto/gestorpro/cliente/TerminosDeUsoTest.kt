@@ -20,5 +20,11 @@ class TerminosDeUsoTest {
     fun `version anterior obliga a nueva aceptacion`() {
         assertTrue(TerminosDeUso.aceptado("c1", "1.0", "c1"))
         assertFalse(TerminosDeUso.aceptado("c1", "1.0", "c1") && TerminosDeUso.VERSION == "1.1")
+        assertFalse(TerminosDeUso.aceptado("c1", "0.9", "c1"))
+    }
+
+    @Test
+    fun `sin uid actual ninguna aceptacion guardada vale`() {
+        assertFalse(TerminosDeUso.aceptado("c1", TerminosDeUso.VERSION, null))
     }
 }

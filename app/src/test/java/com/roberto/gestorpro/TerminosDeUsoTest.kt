@@ -32,4 +32,14 @@ class TerminosDeUsoTest {
         // el test lo modela comparando contra una versión futura distinta.
         assertFalse(TerminosDeUso.aceptado("u1", "1.0", "u1") && TerminosDeUso.VERSION == "1.1")
     }
+
+    @Test
+    fun `una version anterior distinta a la vigente no es valida`() {
+        assertFalse(TerminosDeUso.aceptado("u1", "0.9", "u1"))
+    }
+
+    @Test
+    fun `sin uid actual ninguna aceptacion guardada vale`() {
+        assertFalse(TerminosDeUso.aceptado("u1", TerminosDeUso.VERSION, null))
+    }
 }
