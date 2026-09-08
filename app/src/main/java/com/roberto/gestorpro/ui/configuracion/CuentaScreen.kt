@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,13 +49,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.data.firebase.validarCambioContrasena
 import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.AppDialogConfirmButton
 import com.roberto.gestorpro.ui.components.AppDialogTextButton
 import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun CuentaScreen(
@@ -71,6 +76,9 @@ fun CuentaScreen(
 
     var mostrarDialogoContrasena by remember { mutableStateOf(false) }
     var mostrarDialogoCerrarSesion by remember { mutableStateOf(false) }
+    var contrasenaCambiadaExito by remember { mutableStateOf(false) }
+
+    val cambiandoContrasena by mainViewModel.cambiandoContrasena.collectAsStateWithLifecycle()
 
     Scaffold { innerPadding ->
         Column(
@@ -106,7 +114,10 @@ fun CuentaScreen(
                 titulo = "Cambiar contraseña",
                 descripcion = "Actualizar contraseña de acceso",
                 icono = Icons.Default.Lock,
-                onClick = { mostrarDialogoContrasena = true }
+                onClick = {
+                    mostrarDialogoContrasena = true
+                    contrasenaCambiadaExito = false
+                }
             )
 
             CuentaItem(
@@ -115,12 +126,30 @@ fun CuentaScreen(
                 icono = Icons.Default.ExitToApp,
                 onClick = { mostrarDialogoCerrarSesion = true }
             )
+
+            if (contrasenaCambiadaExito) {
+                Text(
+                    text = "Contraseña actualizada correctamente.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2E7D32),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
         }
     }
 
     if (mostrarDialogoContrasena) {
         DialogoCambiarContrasena(
-            onDismiss = { mostrarDialogoContrasena = false }
+            cambiando = cambiandoContrasena,
+            onDismiss = { mostrarDialogoContrasena = false },
+            onConfirmar = { actual, nueva, repetida ->
+                mainViewModel.cambiarContrasena(actual, nueva, repetida)
+            },
+            onExito = {
+                mostrarDialogoContrasena = false
+                contrasenaCambiadaExito = true
+            }
         )
     }
 
@@ -163,18 +192,30 @@ fun CuentaScreen(
 
 @Composable
 private fun DialogoCambiarContrasena(
-    onDismiss: () -> Unit
+    cambiando: Boolean,
+    onDismiss: () -> Unit,
+    onConfirmar: suspend (actual: String, nueva: String, repetida: String) -> String?,
+    onExito: () -> Unit
 ) {
     var contrasenaActual by remember { mutableStateOf("") }
     var nuevaContrasena by remember { mutableStateOf("") }
     var repetirContrasena by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
 
     var contrasenaActualVisible by rememberSaveable { mutableStateOf(false) }
     var nuevaContrasenaVisible by rememberSaveable { mutableStateOf(false) }
     var repetirContrasenaVisible by rememberSaveable { mutableStateOf(false) }
 
+    val coroutineScope = rememberCoroutineScope()
+
+    val camposValidos = contrasenaActual.isNotBlank() &&
+        nuevaContrasena.isNotBlank() &&
+        nuevaContrasena == repetirContrasena
+
     Dialog(
-        onDismissRequest = onDismiss
+        onDismissRequest = {
+            if (!cambiando) onDismiss()
+        }
     ) {
         Surface(
             modifier = Modifier
@@ -197,9 +238,33 @@ private fun DialogoCambiarContrasena(
                     textAlign = TextAlign.Center
                 )
 
+                if (cambiando) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(0xFF1E88E5),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Cambiando la contraseña...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
                 OutlinedTextField(
                     value = contrasenaActual,
-                    onValueChange = { contrasenaActual = it },
+                    onValueChange = {
+                        contrasenaActual = it
+                        error = null
+                    },
+                    enabled = !cambiando,
                     label = { Text("Contraseña actual") },
                     trailingIcon = {
                         IconButton(
@@ -231,7 +296,11 @@ private fun DialogoCambiarContrasena(
 
                 OutlinedTextField(
                     value = nuevaContrasena,
-                    onValueChange = { nuevaContrasena = it },
+                    onValueChange = {
+                        nuevaContrasena = it
+                        error = null
+                    },
+                    enabled = !cambiando,
                     label = { Text("Nueva contraseña") },
                     trailingIcon = {
                         IconButton(
@@ -263,7 +332,11 @@ private fun DialogoCambiarContrasena(
 
                 OutlinedTextField(
                     value = repetirContrasena,
-                    onValueChange = { repetirContrasena = it },
+                    onValueChange = {
+                        repetirContrasena = it
+                        error = null
+                    },
+                    enabled = !cambiando,
                     label = { Text("Repetir contraseña") },
                     trailingIcon = {
                         IconButton(
@@ -293,21 +366,49 @@ private fun DialogoCambiarContrasena(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                error?.let { mensajeError ->
+                    Text(
+                        text = mensajeError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
                     AppDialogTextButton(
                         text = "Cancelar",
+                        enabled = !cambiando,
                         onClick = onDismiss
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     AppPrimaryButton(
                         text = "Guardar",
-                        onClick = onDismiss,
-                        enabled = contrasenaActual.isNotBlank() &&
-                                nuevaContrasena.isNotBlank() &&
-                                nuevaContrasena == repetirContrasena,
+                        onClick = {
+                            error = validarCambioContrasena(
+                                contrasenaActual,
+                                nuevaContrasena,
+                                repetirContrasena
+                            )
+                            if (error == null) {
+                                coroutineScope.launch {
+                                    val resultado = onConfirmar(
+                                        contrasenaActual,
+                                        nuevaContrasena,
+                                        repetirContrasena
+                                    )
+                                    if (resultado == null) {
+                                        onExito()
+                                    } else {
+                                        error = resultado
+                                    }
+                                }
+                            }
+                        },
+                        enabled = camposValidos && !cambiando,
                         fullWidth = false
                     )
                 }

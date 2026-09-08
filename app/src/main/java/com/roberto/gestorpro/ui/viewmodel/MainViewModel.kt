@@ -7,6 +7,7 @@ import com.roberto.gestorpro.data.firebase.AutenticacionRepository
 import com.roberto.gestorpro.data.firebase.EstadoNegocioDeCuenta
 import com.roberto.gestorpro.data.firebase.NegocioRepository
 import com.roberto.gestorpro.data.firebase.esperar
+import com.roberto.gestorpro.data.firebase.validarCambioContrasena
 import com.google.firebase.functions.FirebaseFunctions
 import com.roberto.gestorpro.data.local.PreparadorLocalCuenta
 import com.roberto.gestorpro.data.repository.DesactivacionServicioSincronizador
@@ -395,6 +396,37 @@ class MainViewModel @Inject constructor(
      */
     private val _eliminandoCuenta = MutableStateFlow(false)
     val eliminandoCuenta: StateFlow<Boolean> = _eliminandoCuenta.asStateFlow()
+
+    /**
+     * cambiandoContrasena
+     * -------------------
+     * true mientras se está cambiando la contraseña en Firebase. Sirve para
+     * mostrar carga en el diálogo y evitar una doble pulsación de "Guardar".
+     */
+    private val _cambiandoContrasena = MutableStateFlow(false)
+    val cambiandoContrasena: StateFlow<Boolean> = _cambiandoContrasena.asStateFlow()
+
+    /**
+     * cambiarContrasena
+     * -----------------
+     * Cambia la contraseña REAL del ADMIN en Firebase Authentication
+     * (reautenticación con la actual + updatePassword en el repositorio).
+     * Devuelve null si terminó bien o el mensaje de error real si falló.
+     */
+    suspend fun cambiarContrasena(actual: String, nueva: String, repetida: String): String? {
+        if (_cambiandoContrasena.value) {
+            return "Ya hay un cambio de contraseña en curso"
+        }
+        val errorValidacion = validarCambioContrasena(actual, nueva, repetida)
+        if (errorValidacion != null) return errorValidacion
+        _cambiandoContrasena.value = true
+        return try {
+            val resultado = autenticacionRepository.cambiarContrasena(actual, nueva)
+            if (resultado.exito) null else resultado.mensaje
+        } finally {
+            _cambiandoContrasena.value = false
+        }
+    }
 
     /**
      * eliminarCuentaYNegocio

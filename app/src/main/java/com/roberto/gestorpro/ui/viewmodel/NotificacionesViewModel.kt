@@ -2,11 +2,15 @@ package com.roberto.gestorpro.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roberto.gestorpro.data.firebase.AutenticacionRepository
 import com.roberto.gestorpro.data.firebase.NotificacionRemotoRepository
+import com.roberto.gestorpro.data.repository.PreferencesRepository
 import com.roberto.gestorpro.model.ConfiguracionNotificaciones
 import com.roberto.gestorpro.model.DestinatarioResuelto
 import com.roberto.gestorpro.model.NotificacionAdmin
 import com.roberto.gestorpro.model.ResolucionDestinatarios
+import com.roberto.gestorpro.util.GateUgcNotificaciones
+import com.roberto.gestorpro.util.ResultadoGateUgc
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -26,10 +30,17 @@ import kotlinx.coroutines.launch
  * Sigue el patrón de error/sincronización de la app: si una creación falla,
  * el error no se oculta, queda una operación pendiente y se ofrece el
  * reintento manual.
+ *
+ * GATE DE TÉRMINOS (UGC): la publicación MANUAL (inmediata o programada) exige
+ * la versión vigente de los Términos aceptada ANTES de tocar Firestore. Las
+ * notificaciones automáticas/preconfiguradas no pasan por este ViewModel, por
+ * lo que nunca se bloquean aquí.
  */
 @HiltViewModel
 class NotificacionesViewModel @Inject constructor(
-    private val notificacionRemotoRepository: NotificacionRemotoRepository
+    private val notificacionRemotoRepository: NotificacionRemotoRepository,
+    private val autenticacionRepository: AutenticacionRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     /**
@@ -74,6 +85,17 @@ class NotificacionesViewModel @Inject constructor(
     val creacionPendiente = _creacionPendiente.asStateFlow()
 
     private var pendienteCreacion: PendienteCreacion? = null
+
+    /**
+     * requiereAceptarTerminos
+     * -----------------------
+     * true cuando el ADMIN intentó publicar manualmente una notificación sin
+     * tener aceptada la versión VIGENTE de los Términos de uso. La pantalla
+     * muestra entonces el aviso con acceso a los Términos SIN cerrar el
+     * formulario ni perder lo escrito. No se crea nada en Firestore.
+     */
+    private val _requiereAceptarTerminos = MutableStateFlow(false)
+    val requiereAceptarTerminos = _requiereAceptarTerminos.asStateFlow()
 
     private val _mensajeExito = MutableStateFlow<String?>(null)
     val mensajeExito = _mensajeExito.asStateFlow()
@@ -141,6 +163,30 @@ class NotificacionesViewModel @Inject constructor(
     fun fijarSeleccionIndividual(idCliente: Int?) {
         _seleccionIndividual.value = idCliente
     }
+
+    /**
+     * terminosVigentes
+     * ----------------
+     * ¿El ADMIN autenticado aceptó la versión vigente de los Términos de uso?
+     * Reutiliza el sistema existente (DataStore + TerminosDeUso.aceptado).
+     */
+    private suspend fun terminosVigentes(): Boolean {
+        val uid = autenticacionRepository.uidActual() ?: return false
+        return preferencesRepository.terminosAceptados(uid)
+    }
+
+    /**
+     * publicacionManualBloqueadaPorTerminos
+     * -------------------------------------
+     * Aplica el gate de Términos de uso a una publicación MANUAL (inmediata o
+     * programada). true = bloqueada (no se crea nada en Firestore). Las
+     * automáticas/preconfiguradas nunca llegan aquí (no usan este ViewModel).
+     */
+    private suspend fun publicacionManualBloqueadaPorTerminos(): Boolean =
+        GateUgcNotificaciones.decidir(
+            origen = GateUgcNotificaciones.ORIGEN_MANUAL,
+            terminosVigentes = terminosVigentes()
+        ) == ResultadoGateUgc.BLOQUEADO
 
     /**
      * cargarNotificaciones
@@ -221,6 +267,18 @@ class NotificacionesViewModel @Inject constructor(
                     _error.value = "No hay ninguna sesión activa"
                     return@launch
                 }
+
+            // GATE TÉRMINOS (UGC): la publicación MANUAL requiere la versión
+            // vigente aceptada. Si falta, NO se crea notificaciones/{id}, NO se
+            // crean buzones y NO se publica nada: solo se muestra el aviso con
+            // acceso a los Términos (el formulario se conserva en la pantalla).
+            _requiereAceptarTerminos.value = false
+            if (publicacionManualBloqueadaPorTerminos()) {
+                _error.value = null
+                _requiereAceptarTerminos.value = true
+                return@launch
+            }
+
             if (titulo.isBlank()) {
                 _error.value = "El título es obligatorio"
                 return@launch
@@ -273,6 +331,12 @@ class NotificacionesViewModel @Inject constructor(
         val pendiente = pendienteCreacion ?: return
         val negocioId = notificacionRemotoRepository.negocioIdActual() ?: return
         viewModelScope.launch {
+            // El reintento también es una publicación MANUAL: respeta el mismo gate.
+            _requiereAceptarTerminos.value = false
+            if (publicacionManualBloqueadaPorTerminos()) {
+                _requiereAceptarTerminos.value = true
+                return@launch
+            }
             ejecutarCreacion(negocioId, pendiente, onExito)
         }
     }
@@ -394,6 +458,7 @@ class NotificacionesViewModel @Inject constructor(
         _errorSincronizacion.value = null
         _creacionPendiente.value = false
         pendienteCreacion = null
+        _requiereAceptarTerminos.value = false
         _mensajeExito.value = null
         _configuracion.value = null
         _cargandoConfiguracion.value = false

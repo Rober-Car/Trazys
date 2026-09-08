@@ -31,6 +31,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -101,6 +102,7 @@ fun CrearNotificacionScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorSincronizacion by viewModel.errorSincronizacion.collectAsStateWithLifecycle()
     val creacionPendiente by viewModel.creacionPendiente.collectAsStateWithLifecycle()
+    val requiereAceptarTerminos by viewModel.requiereAceptarTerminos.collectAsStateWithLifecycle()
 
     var titulo by rememberSaveable { mutableStateOf("") }
     var mensaje by rememberSaveable { mutableStateOf("") }
@@ -473,6 +475,43 @@ fun CrearNotificacionScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+
+            if (requiereAceptarTerminos) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Debes aceptar los Términos de uso antes de publicar " +
+                                "notificaciones.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Al enviar notificaciones aportas contenido visible para tus " +
+                                "clientes. Puedes aceptarlos sin perder lo que ya has escrito.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        OutlinedButton(
+                            onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Ver y aceptar los Términos de uso")
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
@@ -99,6 +100,72 @@ class AutenticacionRepository @Inject constructor(
             true
         } catch (e: Exception) {
             false
+        }
+    }
+
+    /**
+     * cambiarContrasena
+     * -----------------
+     * Cambia la contraseña del usuario autenticado en Firebase Authentication.
+     *
+     * Flujo seguro:
+     *  1. Obtiene el usuario actual y su email (si no hay sesión, falla).
+     *  2. Reautentica con la contraseña ACTUAL (EmailAuthProvider): valida la
+     *     identidad y renueva la sesión para que `updatePassword` no falle por
+     *     sesión demasiado antigua.
+     *  3. SOLO si la reautenticación fue correcta llama a
+     *     `FirebaseUser.updatePassword(nueva)`.
+     *
+     * La contraseña solo vive en memoria durante la operación: no se guarda en
+     * Room, DataStore ni Firestore, y nunca se registra en logs. Ante cualquier
+     * fallo de Firebase devuelve un resultado con exito = false (nunca se
+     * presenta como éxito una operación que no llegó a completarse).
+     */
+    suspend fun cambiarContrasena(
+        actual: String,
+        nueva: String
+    ): ResultadoAutenticacion {
+        val usuario = auth.currentUser
+            ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
+        val email = usuario.email
+            ?: return ResultadoAutenticacion(
+                false,
+                "Esta cuenta no tiene un email asociado para reautenticar"
+            )
+
+        return try {
+            // 1) Reautenticación con la contraseña actual.
+            usuario.reauthenticate(EmailAuthProvider.getCredential(email, actual))
+                .esperar()
+
+            // 2) Solo tras una reautenticación correcta se cambia la contraseña.
+            usuario.updatePassword(nueva).esperar()
+
+            ResultadoAutenticacion(true, "Contraseña actualizada correctamente")
+        } catch (e: FirebaseAuthInvalidCredentialsException) {
+            ResultadoAutenticacion(false, "La contraseña actual no es correcta")
+        } catch (e: FirebaseAuthInvalidUserException) {
+            ResultadoAutenticacion(
+                false,
+                "El usuario ya no existe o su cuenta ya no está disponible"
+            )
+        } catch (e: FirebaseAuthWeakPasswordException) {
+            ResultadoAutenticacion(
+                false,
+                "La nueva contraseña debe tener al menos 6 caracteres"
+            )
+        } catch (e: FirebaseAuthRecentLoginRequiredException) {
+            ResultadoAutenticacion(
+                false,
+                "Tu sesión es demasiado antigua. Vuelve a iniciar sesión e inténtalo de nuevo"
+            )
+        } catch (e: FirebaseNetworkException) {
+            ResultadoAutenticacion(
+                false,
+                "No hay conexión con Firebase. Comprueba tu conexión a Internet"
+            )
+        } catch (e: Exception) {
+            ResultadoAutenticacion(false, "No se pudo cambiar la contraseña. Inténtalo de nuevo")
         }
     }
 
@@ -304,3 +371,17 @@ internal suspend fun <T> Task<T>.esperar(): T =
             continuacion.resumeWithException(error)
         }
     }
+
+/**
+ * validarCambioContrasena
+ * -----------------------
+ * Validación pura (sin Firebase) de los datos del formulario de cambio de
+ * contraseña. Devuelve el error en español o null si los datos son válidos.
+ * Se usa en el ViewModel y en el diálogo, y se testea sin Firebase real.
+ */
+fun validarCambioContrasena(actual: String, nueva: String, repetida: String): String? = when {
+    actual.isBlank() -> "Introduce tu contraseña actual"
+    nueva.length < 6 -> "La nueva contraseña debe tener al menos 6 caracteres"
+    nueva != repetida -> "Las contraseñas nuevas no coinciden"
+    else -> null
+}
