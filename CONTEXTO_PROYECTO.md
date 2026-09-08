@@ -1,5 +1,33 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🔴 ACTUALIZACIÓN 2026-09-08 (2) — FASE 2C-3 + FOTOS SELECTOR + DIAGNÓSTICO LEÍDA (estado vigente):**
+> verificado contra el árbol real. **HEAD del desarrollador: `77e3641 "seguridad de google play"`**.
+> El working tree conserva cambios SIN commit de esta tanda (ver `git status`; NO revertir):
+> FASE 2C-3 (retirada de notificaciones), la corrección de fotos del selector de clientes y el borrado
+> de basura `.idea/shelf/…` + log del emulador. Detalle en el CHECKPOINT 2026-09-08 (2) de AGENTS.md y
+> en el último bloque de CONVERSACION_EXPORTADA.md. Resumen:
+> - **FASE 2C-3 — Retirar notificaciones MANUALES publicadas (moderación UGC):** regla pura
+>   `util/RetiradaNotificacionReglas.kt` (retirable = `origen MANUAL` con estado `PENDIENTE`/`ENVIADA`);
+>   `NotificacionRemotoRepository.retirarNotificacionManual(id)` (idempotente; borra `notificaciones/{id}`
+>   + buzones deterministas `{clienteId}_{notificacionId}` de `idsClientes` en lotes ≤500; helper
+>   companion `idDeBuzon` reutilizado en `crearBuzones`); `NotificacionesViewModel.retirarNotificacion`
+>   con guard anti doble pulsación; UI "Retirar" (roja) en `GestionNotificacionesScreen` con spinner y
+>   diálogo de confirmación permanente. Automáticas/preconfiguradas y programadas sin publicar NUNCA se
+>   retiran (programadas → cancelación existente). Denuncias no se borran al retirar. **Rules NO
+>   modificadas** (ya permiten `delete` ADMIN). Tests `RetiradaNotificacionReglasTest` (14).
+> - **Fotos vacías en el selector de clientes (corregido):** `SeleccionarClientesScreen` llamaba a
+>   `ClienteItem` SIN `idCliente`/`obtenerFotoCacheada` (a diferencia de `ClientesScreen`); con foto
+>   remota (URL de Storage) se usaba la URL cruda. Corregido pasando `idCliente = cliente.idCliente` y
+>   `obtenerFotoCacheada = clienteViewModel::cargarFotoLocal`. Sin tocar Storage/FotoCliente* /Rules/
+>   modelo.
+> - **Diagnóstico "marcar como leída" (SIN cambios):** el flujo existe y funciona (evidencia real en
+>   Firestore: buzón `1716402750_n_1788893959120_6989` → `leida=true` + `fechaLeida` 19:00:01; buzón
+>   `1100806408_n_…8107` → sigue `leida=false` con `updateTime` intacto). Rules desplegadas (ruleset
+>   `b4559665`) permiten el `update` CLIENTE (`leida`/`fechaLeida`, `firebaseUid == uid`). Causa raíz no
+>   cerrada; corrección recomendada (optimista + recarga) NO implementada.
+> - Verificación de la tanda: `:app:testDebugUnitTest` y `:app:assembleDebug` OK; Rules 182/182;
+>   `git diff --check` limpio salvo avisos CRLF/whitespace preexistentes. Sin commit/push/deploy.
+
 > **🔴 ACTUALIZACIÓN 2026-09-08 — CONTRASEÑA REAL + GATE 2B-1 + LOGIN CLIENTE + WEB /TERMINOS +
 > DENUNCIAS 2C-2 (estado vigente):** verificado contra el árbol real. **HEAD del desarrollador:
 > `63d74f2` "correcion contraseñas"** (ahead 1 de `origin/master`, sin push). El working tree tiene

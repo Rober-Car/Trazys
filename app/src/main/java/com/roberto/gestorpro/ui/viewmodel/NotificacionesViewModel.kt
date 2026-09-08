@@ -100,6 +100,16 @@ class NotificacionesViewModel @Inject constructor(
     private val _mensajeExito = MutableStateFlow<String?>(null)
     val mensajeExito = _mensajeExito.asStateFlow()
 
+    /**
+     * retirandoNotificacion
+     * ---------------------
+     * Id de la notificación manual que se está retirando (o null si no hay
+     * ninguna operación de retirada en curso). Permite evitar la doble
+     * pulsación y mostrar el estado de carga en la tarjeta correspondiente.
+     */
+    private val _retirandoNotificacion = MutableStateFlow<String?>(null)
+    val retirandoNotificacion = _retirandoNotificacion.asStateFlow()
+
     private val _configuracion = MutableStateFlow<ConfiguracionNotificaciones?>(null)
     val configuracion = _configuracion.asStateFlow()
 
@@ -359,6 +369,39 @@ class NotificacionesViewModel @Inject constructor(
     }
 
     /**
+     * retirarNotificacion
+     * -------------------
+     * Retira una notificación MANUAL ya publicada (moderación UGC): elimina el
+     * registro y sus buzones. El resultado positivo se publica en
+     * `mensajeExito` (provoca la snackbar y la recarga de la lista); el fallo
+     * se publica en `errorSincronizacion`. Evita la doble pulsación: si ya hay
+     * una retirada en curso, ignora la llamada.
+     */
+    fun retirarNotificacion(notificacionId: String) {
+        if (_retirandoNotificacion.value != null) return
+        viewModelScope.launch {
+            _retirandoNotificacion.value = notificacionId
+            _errorSincronizacion.value = null
+            try {
+                val resultado =
+                    notificacionRemotoRepository.retirarNotificacionManual(notificacionId)
+                if (resultado.exito) {
+                    _mensajeExito.value = resultado.mensaje
+                } else {
+                    _errorSincronizacion.value = resultado.mensaje
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _errorSincronizacion.value =
+                    e.message ?: "No se pudo retirar la notificación"
+            } finally {
+                _retirandoNotificacion.value = null
+            }
+        }
+    }
+
+    /**
      * cargarConfiguracion
      * -------------------
      * Carga la configuración de preconfiguradas del negocio.
@@ -460,6 +503,7 @@ class NotificacionesViewModel @Inject constructor(
         pendienteCreacion = null
         _requiereAceptarTerminos.value = false
         _mensajeExito.value = null
+        _retirandoNotificacion.value = null
         _configuracion.value = null
         _cargandoConfiguracion.value = false
         _guardandoConfiguracion.value = false

@@ -9,6 +9,7 @@ import com.roberto.gestorpro.model.ConfiguracionNotificaciones
 import com.roberto.gestorpro.model.DestinatarioResuelto
 import com.roberto.gestorpro.model.NotificacionAdmin
 import com.roberto.gestorpro.model.ResolucionDestinatarios
+import com.roberto.gestorpro.util.RetiradaNotificacionReglas
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -72,6 +73,17 @@ class NotificacionRemotoRepository @Inject constructor(
          * activa; solo un false explícito guardado por el ADMIN la desactiva.
          */
         fun bajaConfirmadaActivaPorDefecto(valor: Boolean?): Boolean = valor != false
+
+        /**
+         * idDeBuzon
+         * ---------
+         * DocumentId determinista de un buzón de la colección
+         * `notificaciones_por_destinatario`: `{clienteId}_{notificacionId}`.
+         * Lo exigen las Rules y coincide con el helper de Cloud Functions
+         * (`functions/lib/ids.js:idBuzon`).
+         */
+        fun idDeBuzon(clienteId: Int, notificacionId: String): String =
+            "${clienteId}_$notificacionId"
     }
 
     /**
@@ -377,6 +389,88 @@ class NotificacionRemotoRepository @Inject constructor(
     }
 
     /**
+     * retirarNotificacionManual
+     * -------------------------
+     * Moderación UGC (FASE 2C-3): retira una notificación MANUAL ya publicada
+     * (o en entrega). Elimina el registro `notificaciones/{id}` y los buzones
+     * derivados `notificaciones_por_destinatario/{clienteId}_{notificacionId}`
+     * que se crearon para los clientes de `idsClientes`.
+     *
+     * Solo actúa sobre notificaciones manuales ya publicadas (origen MANUAL y
+     * estado PENDIENTE/ENVIADA, ver [RetiradaNotificacionReglas]). Las
+     * automáticas/preconfiguradas nunca se retiran con esta acción y las
+     * programadas aún no enviadas siguen gestionándose con la cancelación
+     * existente. Es idempotente: si el registro ya no existe devuelve éxito y
+     * si algún buzón ya no existe su borrado es un no-op.
+     *
+     * No borra las denuncias asociadas: una denuncia puede seguir existiendo
+     * aunque la notificación denunciada haya sido retirada (el ADMIN la
+     * revisa y la marca como revisada).
+     */
+    suspend fun retirarNotificacionManual(notificacionId: String): ResultadoAutenticacion {
+        return try {
+            val documento = db.collection(COLECCION_NOTIFICACIONES)
+                .document(notificacionId)
+                .get()
+                .esperar()
+            if (!documento.exists()) {
+                // Idempotente: el registro ya no existe, no hay nada que retirar.
+                return ResultadoAutenticacion(true, "La notificación ya no existe")
+            }
+            val origen = documento.getString("origen")
+            val estado = documento.getString("estado")
+            if (!RetiradaNotificacionReglas.esRetirable(origen, estado)) {
+                return ResultadoAutenticacion(
+                    false,
+                    "Solo se pueden retirar notificaciones manuales ya enviadas"
+                )
+            }
+            val idsClientes = (documento.get("idsClientes") as? List<*>)
+                ?.mapNotNull { enteroDe(it) }
+                ?.distinct()
+                ?: emptyList()
+
+            // Elimina el registro principal junto con el primer lote de
+            // buzones (<= 499) y el resto en lotes siguientes, respetando el
+            // límite de 500 escrituras por WriteBatch. Borrar buzones
+            // inexistentes es un no-op (idempotente).
+            val lotes = idsClientes.chunked(MAX_ESCRITURAS_POR_BATCH - 1)
+            if (lotes.isEmpty()) {
+                db.collection(COLECCION_NOTIFICACIONES)
+                    .document(notificacionId)
+                    .delete()
+                    .esperar()
+            } else {
+                lotes.forEachIndexed { indice, lote ->
+                    val batch = db.batch()
+                    if (indice == 0) {
+                        batch.delete(
+                            db.collection(COLECCION_NOTIFICACIONES)
+                                .document(notificacionId)
+                        )
+                    }
+                    lote.forEach { clienteId ->
+                        batch.delete(
+                            db.collection(COLECCION_BUZON)
+                                .document(idDeBuzon(clienteId, notificacionId))
+                        )
+                    }
+                    batch.commit().esperar()
+                }
+            }
+
+            Log.i(TAG, "Notificación manual retirada: $notificacionId")
+            ResultadoAutenticacion(true, "Notificación retirada")
+        } catch (e: FirebaseFirestoreException) {
+            Log.e(TAG, "Error retirando notificación $notificacionId código=${e.code}", e)
+            ResultadoAutenticacion(false, mensajeDe(e))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error retirando notificación $notificacionId", e)
+            ResultadoAutenticacion(false, mensajeDe(e))
+        }
+    }
+
+    /**
      * obtenerConfiguracion
      * --------------------
      * Lee configuracion_notificaciones/{negocioId}. Si el documento no existe
@@ -468,7 +562,7 @@ class NotificacionRemotoRepository @Inject constructor(
             lote.forEach { destino ->
                 batch.set(
                     db.collection(COLECCION_BUZON)
-                        .document("${destino.idCliente}_$notificacionId"),
+                        .document(idDeBuzon(destino.idCliente, notificacionId)),
                     mapOf(
                         "negocioId" to negocioId,
                         "notificacionId" to notificacionId,

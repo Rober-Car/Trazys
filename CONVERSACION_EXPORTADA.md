@@ -1,12 +1,14 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
-> **🔴 ÚLTIMA ACTUALIZACIÓN (2026-09-07, resumen para continuar):** ver detalle en el CHECKPOINT
-> 2026-09-07 de AGENTS.md y en la ACTUALIZACIÓN 2026-09-07 de CONTEXTO_PROYECTO.md. Resumen:
-> marca **Trazys** (solo visible), deploy doc-first de Rules, Function `eliminarMiCuenta` (CLIENTE
-> conserva movimientos/índice/ficha mínima; ADMIN borra el negocio), web `https://trazys.web.app`
-> (`/privacidad`, `/eliminar-cuenta`), y Fase 1 de Términos parcial (persistencia versión 1.0 +
-> pantallas en ambas apps; **pendiente checkbox de Registro** y gates UGC). El resto de este
-> documento es histórico y puede contener afirmaciones ya superadas por AGENTS.md.
+> **🔴 ÚLTIMA ACTUALIZACIÓN (2026-09-08, resumen para continuar):** ver detalle en el CHECKPOINT
+> 2026-09-08 (2) de AGENTS.md y en la ACTUALIZACIÓN 2026-09-08 (2) de CONTEXTO_PROYECTO.md. Resumen:
+> **FASE 2C-3** (retirar notificaciones MANUALES publicadas: regla pura `RetiradaNotificacionReglas`,
+> `retirarNotificacionManual` en el repositorio, acción "Retirar" en `GestionNotificacionesScreen`, sin
+> tocar Rules ni automáticas), **fotos del selector de clientes corregidas** (`SeleccionarClientesScreen`
+> ya pasa `idCliente` + `obtenerFotoCacheada = clienteViewModel::cargarFotoLocal`) y **diagnóstico
+> "marcar como leída"** (el flujo existe y funciona; evidencia real de un buzón marcado `leida=true` y
+> otro sin actualizar; corrección NO implementada). Working tree SIN commit (NO revertir). El resto de
+> este documento es histórico y puede contener afirmaciones ya superadas por AGENTS.md.
 
 ## Fecha: 2026-09-01
 ## Estado: ⭐ RESUELTO Y AVANZADO — Ver las últimas actualizaciones al final: apertura global de reservas, bug idSesion=0 corregido, logging diagnóstico. Tests 99/99. Pendiente: verificar réplica en producción, reservas del CLIENTE, bucket de Storage, backfill de índices y commits.
@@ -2977,3 +2979,72 @@ Sin commit, sin push, sin deploy.
    "retirar notificación entregada" (Rules ya lo permiten).
 3. Pendientes previos no cerrados: logs de diagnóstico, `fallbackToDestructiveMigration`, Storage/
    bucket + Blaze/Functions, VÍA 2/fecha de nacimiento opcional, renombrar repo/`origin` a Trazys.
+
+# ACTUALIZACIÓN 2026-09-08 (2) — FASE 2C-3 RETIRADA DE NOTIF. MANUALES + FOTOS EN EL SELECTOR + DIAGNÓSTICO "MARCAR COMO LEÍDA"
+
+> Estado de CONTINUACIÓN. HEAD del desarrollador: `77e3641 "seguridad de google play"` (las fases
+> previas del bloque 2026-09-08 quedaron commiteadas por el desarrollador en `0f5d332`/`84d23ef`/
+> `77e3641`). Working tree con cambios SIN commit de esta tanda (NO revertir; ver `git status`).
+> Resumen operativo en AGENTS.md (CHECKPOINT 2026-09-08 (2)) y CONTEXTO_PROYECTO.md.
+
+## 1) FASE 2C-3 — Retirar notificaciones MANUALES publicadas (moderación UGC)
+- **Regla pura** `app/.../util/RetiradaNotificacionReglas.kt`: `esRetirable(origen, estado)` =
+  `origen == "MANUAL"` (o ausente) y estado `PENDIENTE`/`ENVIADA`. Protege BAJA_CONFIRMADA,
+  SOLICITUD_BAJA, VINCULACION (origen AUTOMATICA/PRECONFIGURADA) y las programadas aún no publicadas
+  (estado PROGRAMADA → se usa la cancelación existente). CANCELADA/ERROR nunca retirables.
+- **Repositorio** `NotificacionRemotoRepository.retirarNotificacionManual(notificacionId)`:
+  idempotente (doc inexistente → éxito "La notificación ya no existe"); valida la regla sobre el doc
+  ("Solo se pueden retirar notificaciones manuales ya enviadas"); borra `notificaciones/{id}` + buzones
+  `{clienteId}_{notificacionId}` para cada id de `idsClientes` en lotes ≤500 (el primer lote incluye el
+  registro principal). Helper companion `idDeBuzon` (reutilizado también en `crearBuzones`). No borra
+  denuncias.
+- **ViewModel** `NotificacionesViewModel.retirarNotificacion` + estado `retirandoNotificacion`
+  (anti doble pulsación; éxito → `mensajeExito` → snackbar + recarga; fallo → `errorSincronizacion`).
+  Reset en `resetTrasCambioCuenta`.
+- **UI** `GestionNotificacionesScreen`: botón "Retirar" (rojo, `AppSemanticButton`) en las cards
+  manuales publicadas (con spinner mientras retira), diálogo de confirmación ("dejará de estar
+  disponible… acción permanente"). "Cancelar" de programadas y el resto de la pantalla intactos.
+- **Rules NO modificadas**: `delete` ADMIN ya permitido en `notificaciones` (resource.negocioId ==
+  negocioId) y `notificaciones_por_destinatario`. Denuncias no se borran al retirar.
+- Tests `RetiradaNotificacionReglasTest` (14) en `:app`.
+
+## 2) Corrección — Fotos vacías en el selector de clientes
+- Diagnóstico previo confirmado: `SeleccionarClientesScreen` usaba `ClienteItem` SIN `idCliente` ni
+  `obtenerFotoCacheada`, mientras `ClientesScreen` SÍ los pasa (`viewModel::cargarFotoLocal`). Con foto
+  remota (URL de Storage del flujo nuevo), `ClienteItem` (sin cargador) pasaba la URL cruda a Coil y la
+  caja quedaba vacía (y rutas locales de otros dispositivos tampoco se muestran).
+- **Corregido** (`SeleccionarClientesScreen.kt`): añadidos `idCliente = cliente.idCliente` y
+  `obtenerFotoCacheada = clienteViewModel::cargarFotoLocal`. Sin tocar FotoClienteStorage/FotoClienteCache/
+  Storage/Rules/modelo. Verificado `:app:testDebugUnitTest` + `:app:assembleDebug` OK.
+
+## 3) Diagnóstico "marcar como leída" (SIN cambios)
+- Flujo: `ListaNotificacionesScreen` (Card onClick) → `NotificacionesClienteViewModel.marcarLeida(id)`
+  → `NotificacionRepository.marcarComoLeida(docId)` → `update {leida:true, fechaLeida: now}` sobre el
+  buzón (docId = `{clienteId}_{notificacionId}`).
+- Evidencia REAL (Firestore, lectura autorizada 2026-09-08 ~19:00):
+  - `1716402750_n_1788893959120_6989` → `leida=true` + `fechaLeida=2026-09-08T19:00:01.587Z`
+    (updateTime 19:00:01) → el CLIENTE SÍ lo marcó.
+  - `1100806408_n_1788883813058_8107` → `leida=false`, sin `fechaLeida`, `updateTime` = creación
+    (16:10:13) → el update nunca llegó.
+- Rules DESPLEGADAS (ruleset `b4559665`, release `cloud.firestore` updateTime 2026-09-06T18:58:37Z)
+  permiten el `update` CLIENTE de su buzón (`firebaseUid == request.auth.uid`, `leida == true`,
+  `hasOnly(["leida","fechaLeida"])`): NO bloquean (lo confirma el buzón marcado).
+- Causa raíz NO cerrada: en el buzón sin actualizar el update no llegó a Firestore (probables: APK del
+  CLIENTE antiguo sin el flujo, identidad distinta a `firebaseUid`, o error silencioso que el repositorio
+  solo loguea con TAG `NotificacionRepository`). En el código no se identifica divergencia UI↔Firestore
+  tras un éxito remoto. Corrección mínima recomendada (marcado optimista + recarga/refresco) **NO
+  implementada**. Verificar Logcat en el dispositivo.
+
+## Verificación (working tree)
+- `:app:testDebugUnitTest` OK, `:app:assembleDebug` OK. Rules Firestore/Storage **182/182** (sin
+  cambios). `git diff --check` limpio salvo avisos CRLF/whitespace preexistentes (`firestore-debug.log`,
+  `.idea/misc.xml`). Sin commit, sin push, sin deploy.
+
+## Para reanudar
+1. Decidir el commit agrupado del working tree (FASE 2C-3: 5 archivos + test; fotos selector: 1 archivo)
+   y limpieza (`firestore-debug.log`, `.idea/shelf/…` ya borrados en el árbol).
+2. Cerrar el diagnóstico "marcar como leída" (Logcat `NotificacionRepository` en el dispositivo; decidir
+   si se aplica la corrección optimista + recarga).
+3. Pendientes previos no cerrados: denuncias 2C-2 sin deploy (Rules con `denuncias` pendiente de
+   autorización), logs de diagnóstico, `fallbackToDestructiveMigration`, Storage/bucket + Blaze/Functions,
+   VÍA 2/fecha de nacimiento opcional, renombrar repo/`origin` a Trazys.

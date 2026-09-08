@@ -54,6 +54,7 @@ import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppSecondaryButton
 import com.roberto.gestorpro.ui.components.AppSemanticButton
 import com.roberto.gestorpro.ui.viewmodel.NotificacionesViewModel
+import com.roberto.gestorpro.util.RetiradaNotificacionReglas
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -76,10 +77,12 @@ fun GestionNotificacionesScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorSincronizacion by viewModel.errorSincronizacion.collectAsStateWithLifecycle()
     val mensajeExito by viewModel.mensajeExito.collectAsStateWithLifecycle()
+    val retirandoNotificacion by viewModel.retirandoNotificacion.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
     var notificacionACancelar by remember { mutableStateOf<NotificacionAdmin?>(null) }
+    var notificacionARetirar by remember { mutableStateOf<NotificacionAdmin?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarNotificaciones()
@@ -218,8 +221,12 @@ fun GestionNotificacionesScreen(
                         items(notificaciones, key = { it.id }) { notificacion ->
                             NotificacionAdminCard(
                                 notificacion = notificacion,
+                                retirando = retirandoNotificacion == notificacion.id,
                                 onCancelar = {
                                     notificacionACancelar = notificacion
+                                },
+                                onRetirar = {
+                                    notificacionARetirar = notificacion
                                 }
                             )
                         }
@@ -256,18 +263,55 @@ fun GestionNotificacionesScreen(
             }
         )
     }
+
+    notificacionARetirar?.let { notificacion ->
+        AlertDialog(
+            onDismissRequest = { notificacionARetirar = null },
+            title = { Text("Retirar notificación") },
+            text = {
+                Text(
+                    "¿Retirar esta notificación?\n\n" +
+                        "Dejará de estar disponible para los destinatarios y " +
+                        "la acción es permanente."
+                )
+            },
+            confirmButton = {
+                AppDialogDangerConfirmButton(
+                    text = "Retirar",
+                    onClick = {
+                        viewModel.retirarNotificacion(notificacion.id)
+                        notificacionARetirar = null
+                    }
+                )
+            },
+            dismissButton = {
+                AppDialogTextButton(
+                    text = "Atrás",
+                    onClick = { notificacionARetirar = null }
+                )
+            }
+        )
+    }
 }
 
 /**
  * NotificacionAdminCard
  * ---------------------
  * Tarjeta de una notificación del ADMIN: título, mensaje (resumen), tipo,
- * destino, fecha y estado. Solo las PROGRAMADA activas ofrecen "Cancelar".
+ * destino, fecha y estado.
+ *
+ * Acciones:
+ *  - "Cancelar": solo PROGRAMADA activas (aún no enviadas).
+ *  - "Retirar": solo notificaciones MANUALES ya publicadas/en entrega
+ *    (moderación UGC). Nunca automáticas/preconfiguradas ni programadas
+ *    aún no enviadas.
  */
 @Composable
 private fun NotificacionAdminCard(
     notificacion: NotificacionAdmin,
-    onCancelar: () -> Unit
+    retirando: Boolean,
+    onCancelar: () -> Unit,
+    onRetirar: () -> Unit
 ) {
     val colorEstado = colorDeEstado(notificacion.estado)
     Card(
@@ -343,6 +387,30 @@ private fun NotificacionAdminCard(
                         text = "Cancelar",
                         color = Color.Red,
                         onClick = onCancelar
+                    )
+                }
+            } else if (RetiradaNotificacionReglas.esRetirable(
+                    notificacion.origen,
+                    notificacion.estado
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (retirando) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.Red
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    AppSemanticButton(
+                        text = "Retirar",
+                        color = Color.Red,
+                        onClick = onRetirar
                     )
                 }
             }

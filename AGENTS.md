@@ -2,6 +2,58 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-08 (2) — FASE 2C-3 RETIRADA DE NOTIF. MANUALES + FOTOS EN EL SELECTOR DE CLIENTES + DIAGNÓSTICO "MARCAR COMO LEÍDA" (REANUDAR AQUÍ)
+>
+> Estado real al cierre de la tanda. **HEAD del desarrollador: `77e3641 "seguridad de google play"`**
+> (el bloque anterior con HEAD `63d74f2` queda SUPERADO: el desarrollador commiteó su contenido y las
+> fases posteriores —Login Cliente, web `/terminos`, denuncias 2C-2— en `0f5d332`/`84d23ef`/`77e3641`).
+> El **working tree conserva SIN commit** lo de esta tanda (NO revertir): FASE 2C-3 (retirada),
+> la corrección de fotos del selector, el borrado de la basura `.idea/shelf/…` y el log del emulador.
+> Sin commit, sin push, sin deploy.
+>
+> ### 1. FASE 2C-3 — Retirar notificaciones MANUALES publicadas (moderación UGC)
+> - Regla pura `util/RetiradaNotificacionReglas.kt`: **retirable** = `origen == "MANUAL"` y estado
+>   `PENDIENTE`/`ENVIADA`. Automáticas/preconfiguradas (BAJA_CONFIRMADA/SOLICITUD_BAJA/VINCULACION) y
+>   programadas aún no publicadas NUNCA se retiran con esta acción (estas últimas usan la cancelación
+>   existente).
+> - `NotificacionRemotoRepository.retirarNotificacionManual(notificacionId)`: idempotente (doc inexistente
+>   → éxito); valida la regla; borra `notificaciones/{id}` + los buzones deterministas
+>   `{clienteId}_{notificacionId}` de `idsClientes` en lotes ≤500 (helper companion `idDeBuzon`,
+>   reutilizado también en `crearBuzones`). NO borra denuncias.
+> - `NotificacionesViewModel.retirarNotificacion` + `retirandoNotificacion` (guarda anti doble pulsación;
+>   éxito → snackbar + recarga; fallo → `errorSincronizacion`).
+> - `GestionNotificacionesScreen`: acción **"Retirar"** (roja) solo en cards manuales publicadas, spinner
+>   mientras retira y diálogo de confirmación ("dejará de estar disponible… acción permanente"). La
+>   cancelación de programadas y el resto de la pantalla quedan intactos.
+> - **Rules NO modificadas** (ya permiten `delete` ADMIN en `notificaciones` y buzones). Denuncias no se
+>   borran al retirar (el ADMIN las marca revisadas). Tests `RetiradaNotificacionReglasTest` (14).
+>
+> ### 2. Corrección confirmada — Fotos vacías en el selector de clientes
+> - Causa: `SeleccionarClientesScreen` llamaba a `ClienteItem` SIN `idCliente` ni `obtenerFotoCacheada`
+>   (a diferencia de `ClientesScreen`), por lo que las fotos remotas (URL de Storage, flujo nuevo) se
+>   intentaban con la URL cruda y quedaban vacías.
+> - **Corregido** (`SeleccionarClientesScreen.kt`): se pasa `idCliente = cliente.idCliente` y
+>   `obtenerFotoCacheada = clienteViewModel::cargarFotoLocal` (misma carga autenticada que `ClientesScreen`).
+>   Sin tocar `FotoClienteStorage`/`FotoClienteCache`/Rules/Storage/modelo.
+>
+> ### 3. DIAGNÓSTICO "marcar como leída" (SIN cambios de código)
+> - Flujo existe y funciona: `ListaNotificacionesScreen` (Card onClick) →
+>   `NotificacionesClienteViewModel.marcarLeida` → `NotificacionRepository.marcarComoLeida(docId)` que
+>   hace `update leida=true + fechaLeida` sobre el buzón.
+> - Evidencia real (Firestore, lectura autorizada): buzón `1716402750_n_1788893959120_6989` →
+>   `leida=true` + `fechaLeida=2026-09-08T19:00:01Z` (el CLIENTE SÍ lo marcó); buzón
+>   `1100806408_n_1788883813058_8107` → sigue `leida=false` y `updateTime` intacto (el update nunca llegó).
+> - Rules desplegadas (ruleset `b4559665`, release `cloud.firestore` updateTime 2026-09-06) permiten el
+>   `update` CLIENTE de su buzón (leida/fechaLeida, firebaseUid == uid): NO bloquean.
+> - Causa raíz NO cerrada: en el buzón no actualizado el update no llegó a Firestore (APK antiguo sin el
+>   flujo, identidad distinta o error silencioso logueado en `NotificacionRepository`); no se identifica
+>   divergencia UI↔Firestore en el código actual. **Corrección mínima recomendada (optimista + recarga)
+>   NO implementada.** Verificar Logcat `NotificacionRepository` en el dispositivo.
+>
+> ### Verificación (working tree)
+> `:app:testDebugUnitTest` OK, `:app:assembleDebug` OK, Rules **182/182** (sin cambios). `git diff
+> --check` limpio salvo avisos CRLF/whitespace preexistentes (log del emulador y `.idea/misc.xml`).
+
 > ## ⚠️ CHECKPOINT 2026-09-08 — CAMBIO DE CONTRASEÑA REAL + GATE NOTIF. MANUALES (FASE 2B-1) + LOGIN CLIENTE + WEB /TERMINOS (2C-1) + DENUNCIAS UGC (2C-2) (REANUDAR AQUÍ)
 >
 > Estado real al cierre de la tanda. **HEAD del desarrollador: `63d74f2` "correcion contraseñas"**
