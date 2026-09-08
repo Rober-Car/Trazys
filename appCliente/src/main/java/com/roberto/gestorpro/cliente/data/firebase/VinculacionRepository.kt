@@ -58,6 +58,7 @@ class VinculacionRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val db: FirebaseFirestore,
     private val perfilPendienteRepository: PerfilPendienteRepository,
+    private val preferencesRepository: com.roberto.gestorpro.cliente.data.repository.PreferencesRepository,
     private val storage: FirebaseStorage
 ) {
 
@@ -488,6 +489,10 @@ class VinculacionRepository @Inject constructor(
             val perfil = leerPerfilPendiente(uid) ?: return
             val fotoLocal = perfil.foto
             if (fotoLocal.isBlank()) return
+            // GATE TÉRMINOS (VÍA 2): sin aceptación vigente NO se publica la foto.
+            // No se borra el fichero local ni se rompe la vinculación: queda
+            // pendiente para cuando los Términos estén aceptados.
+            if (!preferencesRepository.terminosAceptados(uid)) return
             val url = FotoClienteStorage.subirFotoCliente(storage, clienteId, fotoLocal)
                 ?: return
             db.collection(COLECCION_CLIENTES)

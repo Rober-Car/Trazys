@@ -709,6 +709,13 @@ class MainViewModel @Inject constructor(
             return "La fecha de nacimiento no puede ser futura"
         }
 
+        // GATE TÉRMINOS (UGC): solo se bloquea la publicación de una foto NUEVA
+        // (ruta local, aún no subida). El resto de datos personales no se toca.
+        val publicaFotoNueva = foto.isNotBlank() && !FotoClienteStorage.esUrlFoto(foto)
+        if (publicaFotoNueva && !terminosAceptados()) {
+            return "Debes aceptar los Términos de uso para cambiar tu foto"
+        }
+
         _operandoRemoto.value = true
         try {
             // Foto: si se quita y la ficha tenía foto remota se borra el objeto;

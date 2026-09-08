@@ -195,13 +195,10 @@ fun HomeScreen(
             if (vinculado && estadoVisual != null) {
                 HomeClientEstadoIndicator(
                     estado = estadoVisual,
-                    fecha = estadoHome.fechaRelevante?.let(::formatearFecha) ?: when {
-                        estadoVisual == EstadoVisualCliente.ACTIVO ||
-                            estadoVisual == EstadoVisualCliente.PAGO_VENCIDO ||
-                            estadoVisual == EstadoVisualCliente.BAJA ->
-                            "Fecha no disponible"
-                        else -> null
-                    },
+                    // Solo se muestra "Hasta/Venció/Desde" cuando existe una fecha
+                    // real. Si no hay período (fechaFinActual nula) no se inventa
+                    // texto "Fecha no disponible": se muestra únicamente el estado.
+                    fecha = estadoHome.fechaRelevante?.let(::formatearFecha),
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))

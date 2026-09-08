@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -40,7 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -48,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.roberto.gestorpro.cliente.data.firebase.PerfilPendiente
+import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.cliente.data.firebase.FotoClienteStorage
@@ -319,11 +326,39 @@ fun EditarPerfilScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (mensajeError.isNotBlank()) {
-                Text(
-                    text = mensajeError,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                if (mensajeError.startsWith("Debes aceptar los Términos")) {
+                    val anotado = buildAnnotatedString {
+                        append(mensajeError)
+                        append(" ")
+                        pushStringAnnotation("terminos", "terminos")
+                        withStyle(
+                            SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        ) {
+                            append("Pulsa aquí para aceptarlos.")
+                        }
+                        pop()
+                    }
+                    ClickableText(
+                        text = anotado,
+                        style = MaterialTheme.typography.bodySmall
+                            .copy(color = MaterialTheme.colorScheme.error),
+                        onClick = { offset ->
+                            anotado.getStringAnnotations("terminos", offset, offset)
+                                .firstOrNull()?.let {
+                                    navController.navigate(Routes.TERMINOS_CONDICIONES)
+                                }
+                        }
+                    )
+                } else {
+                    Text(
+                        text = mensajeError,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 

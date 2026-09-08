@@ -102,7 +102,11 @@ class PreparadorLocalCuenta @Inject constructor(
             return if (hayDatos) {
                 ResultadoResolver.Indeterminado(reportarPendientes())
             } else {
-                // Instalación nueva / Room vacía: no hay nada que aislar.
+                // Instalación nueva / Room vacía: no hay nada que aislar, pero
+                // la identidad visual de DataStore (nombre/logo) podría ser de
+                // una cuenta anterior sin propietario registrado. Se limpia
+                // antes de adoptar para no heredar branding ajeno.
+                preferences.limpiarIdentidadNegocio()
                 preferences.setUidPropietario(uid)
                 ResultadoResolver.AdoptadoSilencioso
             }

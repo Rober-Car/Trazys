@@ -281,7 +281,7 @@ fun RegistroScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
                     Checkbox(
                         checked = aceptaTerminos,

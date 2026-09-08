@@ -12,6 +12,28 @@
 > Detalle completo y pendientes en el CHECKPOINT 2026-09-07 de AGENTS.md. El working tree tiene
 > cambios SIN commit (NO revertir).
 
+> **⚠️ ACTUALIZACIÓN (post-recuperación `0b1d370`, tandas UGC/Términos/identidad) — complementa el
+> bloque anterior y al CHECKPOINT "REANUDAR AQUÍ" de AGENTS.md:**
+> - **Registro con Términos (hecho en el working tree):** checkbox obligatorio + enlaces a Términos y
+>   Política en :app y :appCliente, con alineación en la misma columna (checkbox en la primera línea).
+> - **Pantalla de Términos** refleja la aceptación persistida (si ya aceptó la vigente no repite botón
+>   y muestra "Términos aceptados — versión 1.0").
+> - **Configuración Admin:** Política y Términos como entradas de lista (sin cards), estilo Cliente.
+> - **Gates de UGC (fotos y logo) activos (sin deploy):** foto CLIENTE (`MainViewModel.
+>   actualizarMisDatosPersonales`), foto pendiente en VÍA 2 (`VinculacionRepository.
+>   transferirFotoPendienteSiProcede`), fotos ADMIN (`ClienteViewModel`: alta/edición/reintento, sin
+>   escribir rutas locales como foto remota) y **logo ADMIN** (`MainViewModel.sincronizarLogoNegocio`
+>   antes de `guardarLogoRemoto`). Avisos con enlace a Términos.
+> - **Aislamiento de identidad Admin por propietario:** `refrescarIdentidadLocal()` solo usa la caché
+>   si `uid == uid_propietario_datos_locales`; la adopción silenciosa limpia la identidad de DataStore.
+> - **UI Home Cliente:** sin "Fecha no disponible"/"Hasta el Fecha no disponible" cuando no hay fecha
+>   real (muestra solo el estado).
+> - **Pendiente de decisión/análisis:** no se aplicó "sin movimientos → REGISTRADO en VÍA 1"
+>   (conflicto con Rules/activación manual). Diagnóstico del email de Registro (carácter invisible /
+>   mapeo de error) sin corrección.
+> - Verificación: unit + assemble de :app y :appCliente BUILD SUCCESSFUL; `git diff --check` limpio.
+>   Sin commit/push/deploy.
+
 
 > **🟡 ACTUALIZACIÓN 2026-09-06 (continuación; cambios SIN commit en el árbol):** HEAD sigue en
 > `cb44d1e`. El working tree contiene cambios SIN commit (NO revertir) de una tanda final de UX:

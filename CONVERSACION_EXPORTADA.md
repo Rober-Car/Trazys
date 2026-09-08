@@ -2886,3 +2886,38 @@ precio final editable que no cambia históricos; Functions: automatizaciones fut
 1. Revisar/prueba visual de los cambios SIN commit y decidir commit agrupado.
 2. Continuar pendientes previos del CHECKPOINT 2026-09-05 (logs de diagnóstico,
    `fallbackToDestructiveMigration`, Storage/bucket + Blaze/Functions, VÍA 2/fecha nacimiento, etc.).
+
+---
+
+# ACTUALIZACIÓN (post-recuperación `0b1d370`) — TANDA UGC / TÉRMINOS / IDENTIDAD (checkpoint de cierre)
+
+> Estado de CONTINUACIÓN. HEAD del desarrollador: `0b1d370 "Correcion lineas de termninos y seguridad,"`
+> (sobre `0e98921 "Preparación de Trazys para Google Play"`). Working tree con cambios SIN commit
+> (lista en AGENTS.md, checkpoint REANUDAR AQUÍ). Sin deploy.
+
+## Qué se hizo en esta tanda (working tree)
+1. Registro con Términos (:app y :appCliente): checkbox obligatorio + enlaces a Términos y Política,
+   alineados en columna (checkbox con la primera línea); pantalla de Términos que lee la aceptación
+   persistida y no repite el botón si ya está aceptada la versión vigente; Configuración Admin con
+   Política y Términos como entradas de lista (sin cards).
+2. Gates de Términos para fotos: CLIENTE (edición de foto), VÍA 2 (foto pendiente sin romper la
+   vinculación) y ADMIN (alta/edición/reintento, sin escribir rutas locales como foto remota en
+   Firestore). Gate del LOGO en `MainViewModel.sincronizarLogoNegocio` ANTES de `guardarLogoRemoto`,
+   con aviso + botón "Ver y aceptar los Términos de uso" en Mi negocio.
+3. Aislamiento de identidad Admin: `refrescarIdentidadLocal()` expone caché solo si
+   `uid == uid_propietario_datos_locales`; adopción silenciosa limpia la identidad de DataStore.
+4. UI Home Cliente: sin "Fecha no disponible" cuando no existe fecha real.
+5. Análisis sin implementar: regla "sin movimientos → REGISTRADO en VÍA 1" (conflicto con Rules/
+   activación manual) y diagnóstico del email de Registro (carácter invisible / mapeo de
+   `FirebaseAuthInvalidCredentialsException` a "formato no válido").
+
+## Verificación
+`:app` y `:appCliente`: unit tests y assembleDebug → BUILD SUCCESSFUL. `git diff --check` limpio.
+Sin commit, sin push, sin deploy.
+
+## Para reanudar
+1. Decidir pendientes de negocio: estado VÍA 1 sin movimientos (activación automática vs manual) y
+   validación/normalización de email en Registro (usar `Patterns.EMAIL_ADDRESS` + quitar NBSP).
+2. Revisar/prueba visual de los cambios SIN commit y decidir commit agrupado.
+3. Continuar pendientes previos (logs de diagnóstico, Storage/bucket, Functions/Blaze, VÍA 2/fecha,
+   tests instrumentados de gates e identidad).

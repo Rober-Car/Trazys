@@ -567,9 +567,21 @@ class MainViewModel @Inject constructor(
      * para que la UI no llegue a mostrar el valor de la cuenta anterior.
      */
     private suspend fun refrescarIdentidadLocal() {
-        _nombreNegocio.value = preferencesRepository.nombreNegocio.first()
-        _logoNegocio.value = preferencesRepository.logoNegocio.first()
-        _idClienteSesion.value = preferencesRepository.obtenerIdClienteSesion()
+        val uid = autenticacionRepository.uidActual()
+        val propietario = preferencesRepository.obtenerUidPropietario()
+        if (uid != null && propietario == uid) {
+            // Misma cuenta: se puede usar la caché del negocio actual (offline OK).
+            _nombreNegocio.value = preferencesRepository.nombreNegocio.first()
+            _logoNegocio.value = preferencesRepository.logoNegocio.first()
+            _idClienteSesion.value = preferencesRepository.obtenerIdClienteSesion()
+        } else {
+            // UID distinto, nulo o propietario aún sin fijar: nunca se expone la
+            // identidad visual de otra cuenta. Queda vacía/placeholder hasta que
+            // la fuente remota confirme el negocio actual.
+            _nombreNegocio.value = ""
+            _logoNegocio.value = ""
+            _idClienteSesion.value = null
+        }
     }
 
     /**
@@ -653,6 +665,13 @@ class MainViewModel @Inject constructor(
      */
     suspend fun sincronizarLogoNegocio(rutaLocal: String): String? {
         if (rutaLocal.isBlank()) return "No hay logo para subir"
+
+        // GATE TÉRMINOS (UGC): sin la versión vigente aceptada NO se publica el
+        // logo. Se devuelve el error ANTES de llamar a guardarLogoRemoto (no hay
+        // putFile ni actualización de negocios/negocios_publicos).
+        if (!terminosAceptados()) {
+            return "Debes aceptar los Términos de uso para cambiar el logo"
+        }
 
         _operandoRemoto.value = true
         try {

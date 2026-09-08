@@ -2,6 +2,44 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT (post-recuperación `0b1d370`) — TANDA UGC / TÉRMINOS / IDENTIDAD (REANUDAR AQUÍ)
+>
+> Estado real al cierre de la tanda reciente. **HEAD del desarrollador: `0b1d370 "Correcion lineas de
+> termninos y seguridad,"`** (por encima de `0e98921 "Preparación de Trazys para Google Play"`, punto
+> estable de referencia). El working tree tiene cambios SIN commit (ver `git status`; NO revertir):
+> `data/local/PreparadorLocalCuenta.kt`, `ui/viewmodel/ClienteViewModel.kt`, `ui/viewmodel/MainViewModel.kt`
+> (Admin), `ui/auth/RegistroScreen.kt` (Admin), `ui/configuracion/MiNegocioScreen.kt` (Admin), y
+> `VinculacionRepository.kt`, `EditarPerfilScreen.kt`, `RegistroScreen.kt`, `HomeScreen.kt`,
+> `ui/viewmodel/MainViewModel.kt` (Cliente).
+>
+> ### Qué se cerró en esta tanda (working tree, SIN deploy/commit)
+> 1. **Términos en Registro (:app y :appCliente):** checkbox obligatorio + enlaces a Términos y Política
+>    (dos líneas), alineados en la misma columna y con el checkbox alineado a la primera línea. La
+>    pantalla de Términos refleja la aceptación persistida (uid + versión + fecha): no repite el botón si
+>    ya aceptó la vigente y muestra "Términos aceptados — versión 1.0".
+> 2. **Configuración Admin:** Política de privacidad y Términos como entradas de lista (sin cards),
+>    estilo app Cliente.
+> 3. **Gates de Términos para FOTOS:** cliente (edición de foto), VÍA 2 (foto pendiente sin romper la
+>    vinculación) y ADMIN (alta/edición/reintento de fotos; en edición de cliente existente no se escribe
+>    la ruta local como foto remota). En EditarPerfil hay aviso con enlace a `Routes.TERMINOS_CONDICIONES`.
+> 4. **Gate del LOGO:** bloqueado en `MainViewModel.sincronizarLogoNegocio` ANTES de
+>    `NegocioRepository.guardarLogoRemoto` (sin `putFile` ni actualización de Firestore); MiNegocio
+>    muestra aviso y botón "Ver y aceptar los Términos de uso"; la imagen seleccionada se conserva.
+> 5. **Aislamiento de identidad Admin entre cuentas:** `refrescarIdentidadLocal()` solo expone la caché
+>    si `uid == uid_propietario_datos_locales`; `PreparadorLocalCuenta.resolver` limpia la identidad de
+>    DataStore antes de adoptar (owner null sin datos). Evita mostrar nombre/logo de la cuenta anterior.
+> 6. **UI tarjeta de estado (Cliente Home):** si no hay fecha real no se muestra "Fecha no disponible";
+>    solo estado ("Activo"/"Registrado"); con fecha se muestra "Hasta el …".
+> 7. **Análisis (sin implementar):** la regla "sin movimientos → REGISTRADO en VÍA 1" NO se aplica por
+>    conflicto con Rules (acceso solo ACTIVO) y con la activación manual (pendiente decisión de negocio).
+>    Diagnóstico del rechazo de email en Registro Admin (sin corrección): causado por carácter invisible
+>    no estándar y por el mapeo de `FirebaseAuthInvalidCredentialsException` a "formato no válido";
+>    corrección recomendada: normalizar email y validar con `Patterns.EMAIL_ADDRESS` en cliente.
+>
+> ### Verificación
+> `:app` y `:appCliente`: `testDebugUnitTest` y `assembleDebug` → BUILD SUCCESSFUL. `git diff --check`
+> limpio. Sin commit, sin push, sin deploy.
+
 > ## ⚠️ CHECKPOINT 2026-09-07 — MARCA TRAZYS + PRE-BETA + UGC (REANUDAR AQUÍ)
 >
 > Estado REAL al cierre de la última tanda. **HEAD del desarrollador:** `b863397` ("foto storage
