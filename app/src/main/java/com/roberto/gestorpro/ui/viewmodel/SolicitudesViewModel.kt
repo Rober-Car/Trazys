@@ -50,6 +50,16 @@ class SolicitudesViewModel @Inject constructor(
     private val _solicitudes = MutableStateFlow<List<SolicitudBaja>>(emptyList())
     val solicitudes = _solicitudes.asStateFlow()
 
+    /**
+     * _solicitudesPendientes / solicitudesPendientes
+     * ----------------------------------------------
+     * Número de solicitudes de baja con estado PENDIENTE. Lo consume el badge
+     * de la Home del ADMIN. Se calcula con una lectura SOLA (sin generar los
+     * avisos SOLICITUD_BAJA, que solo debe provocar la lista de solicitudes).
+     */
+    private val _solicitudesPendientes = MutableStateFlow(0)
+    val solicitudesPendientes = _solicitudesPendientes.asStateFlow()
+
     private val _errorSincronizacion = MutableStateFlow<String?>(null)
     val errorSincronizacion = _errorSincronizacion.asStateFlow()
 
@@ -88,6 +98,29 @@ class SolicitudesViewModel @Inject constructor(
                 _error.value = e.message ?: "No se pudieron cargar las solicitudes"
             } finally {
                 _cargando.value = false
+            }
+        }
+    }
+
+    /**
+     * cargarPendientes
+     * ----------------
+     * Actualiza el contador de solicitudes PENDIENTES para el badge de la Home.
+     * Es una lectura SOLA (obtenerSolicitudes) y NO genera los avisos
+     * SOLICITUD_BAJA: eso solo debe ocurrir al abrir la lista de solicitudes.
+     * Ante un fallo conserva el último valor conocido.
+     */
+    fun cargarPendientes() {
+        viewModelScope.launch {
+            val negocioId = solicitudRemotoRepository.negocioIdActual() ?: return@launch
+            try {
+                _solicitudesPendientes.value = solicitudRemotoRepository
+                    .obtenerSolicitudes(negocioId)
+                    .count { it.estado == EstadoSolicitud.PENDIENTE }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // El badge conserva el último valor conocido.
             }
         }
     }

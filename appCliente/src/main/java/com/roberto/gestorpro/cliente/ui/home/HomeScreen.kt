@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavHostController
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.model.EstadoIndicadorCliente
@@ -65,6 +66,7 @@ import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.cliente.ui.components.DialogoDenuncia
 import com.roberto.gestorpro.cliente.ui.components.LogoNegocioAutenticado
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
+import com.roberto.gestorpro.cliente.ui.viewmodel.NotificacionesClienteViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -72,12 +74,15 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun HomeScreen(
     navController: NavHostController,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    notificacionesViewModel: NotificacionesClienteViewModel = hiltViewModel()
 ) {
     val idCliente by mainViewModel.idCliente.collectAsStateWithLifecycle()
     val nombreNegocio by mainViewModel.nombreNegocio.collectAsStateWithLifecycle()
     val logoNegocio by mainViewModel.logoNegocio.collectAsStateWithLifecycle()
     val estadoHome by mainViewModel.estadoHome.collectAsStateWithLifecycle()
+    val notificaciones by notificacionesViewModel.notificaciones.collectAsStateWithLifecycle()
+    val noLeidas = notificaciones.count { !it.leida }
     val vinculado = idCliente != null
 
     var menuCentroAbierto by remember { mutableStateOf(false) }
@@ -96,6 +101,9 @@ fun HomeScreen(
     LifecycleResumeEffect(idCliente) {
         if (idCliente != null) {
             mainViewModel.refrescarEstadoHome()
+            // Recarga el buzón para mantener el contador de no leídas del badge
+            // al volver al Home (p. ej. tras leer notificaciones).
+            notificacionesViewModel.cargar()
         }
         onPauseOrDispose { }
     }
@@ -272,11 +280,11 @@ fun HomeScreen(
                 }
                 item {
                     HomeClientMenuCard(
-                        titulo = "Notificaciones",
-                        descripcion = "Consulta tus avisos",
-                        icono = Icons.Default.Notifications,
-                        color = Color(0xFF7E57C2),
-                        onClick = { navController.navigate(Routes.NOTIFICACIONES) }
+                        titulo = "Rutinas",
+                        descripcion = "Rutinas de entrenamiento",
+                        icono = Icons.Default.FitnessCenter,
+                        color = Color(0xFF26A69A),
+                        onClick = { navController.navigate(Routes.RUTINAS) }
                     )
                 }
                 item {
@@ -290,11 +298,12 @@ fun HomeScreen(
                 }
                 item {
                     HomeClientMenuCard(
-                        titulo = "Rutinas",
-                        descripcion = "Rutinas de entrenamiento",
-                        icono = Icons.Default.FitnessCenter,
-                        color = Color(0xFF26A69A),
-                        onClick = { navController.navigate(Routes.RUTINAS) }
+                        titulo = "Notificaciones",
+                        descripcion = "Consulta tus avisos",
+                        icono = Icons.Default.Notifications,
+                        color = Color(0xFF7E57C2),
+                        badge = noLeidas,
+                        onClick = { navController.navigate(Routes.NOTIFICACIONES) }
                     )
                 }
             }
@@ -383,6 +392,7 @@ private fun HomeClientMenuCard(
     descripcion: String,
     icono: ImageVector,
     color: Color = Color(0xFF1E88E5),
+    badge: Int? = null,
     onClick: () -> Unit
 ) {
     Card(
@@ -395,42 +405,79 @@ private fun HomeClientMenuCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = color,
-                modifier = Modifier.size(44.dp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icono,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = color,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icono,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                Column {
+                    Text(
+                        text = titulo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = descripcion,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-
-            Column {
-                Text(
-                    text = titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = descripcion,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            if (badge != null && badge > 0) {
+                HomeMenuBadge(
+                    cantidad = badge,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 14.dp, end = 14.dp)
                 )
             }
         }
+    }
+}
+
+/**
+ * HomeMenuBadge
+ * -------------
+ * Badge numérico rojo usado en la esquina superior derecha del card de
+ * "Notificaciones" del Home cuando existen avisos sin leer. No se dibuja
+ * si la cantidad es 0.
+ */
+@Composable
+private fun HomeMenuBadge(cantidad: Int, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(
+                color = Color(0xFFE53935),
+                shape = CircleShape
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = cantidad.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
     }
 }
 

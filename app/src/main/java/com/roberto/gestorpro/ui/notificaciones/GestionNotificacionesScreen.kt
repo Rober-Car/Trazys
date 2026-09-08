@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.data.firebase.LecturaNotificacion
 import com.roberto.gestorpro.model.NotificacionAdmin
 import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.AppDialogDangerConfirmButton
@@ -73,6 +74,7 @@ fun GestionNotificacionesScreen(
     viewModel: NotificacionesViewModel
 ) {
     val notificaciones by viewModel.notificaciones.collectAsStateWithLifecycle()
+    val lecturaPorNotificacion by viewModel.lecturaPorNotificacion.collectAsStateWithLifecycle()
     val cargando by viewModel.cargando.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorSincronizacion by viewModel.errorSincronizacion.collectAsStateWithLifecycle()
@@ -221,6 +223,7 @@ fun GestionNotificacionesScreen(
                         items(notificaciones, key = { it.id }) { notificacion ->
                             NotificacionAdminCard(
                                 notificacion = notificacion,
+                                lectura = lecturaPorNotificacion[notificacion.id],
                                 retirando = retirandoNotificacion == notificacion.id,
                                 onCancelar = {
                                     notificacionACancelar = notificacion
@@ -309,6 +312,7 @@ fun GestionNotificacionesScreen(
 @Composable
 private fun NotificacionAdminCard(
     notificacion: NotificacionAdmin,
+    lectura: LecturaNotificacion?,
     retirando: Boolean,
     onCancelar: () -> Unit,
     onRetirar: () -> Unit
@@ -378,6 +382,20 @@ private fun NotificacionAdminCard(
                 )
             }
 
+            lectura?.takeIf { it.total > 0 }?.let { resumen ->
+                Spacer(modifier = Modifier.size(6.dp))
+                Text(
+                    text = textoDeLectura(resumen),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (resumen.leidas >= resumen.total) {
+                        Color(0xFF2E7D32)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
+            }
+
             if (notificacion.programada && notificacion.estado == "PROGRAMADA") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -415,6 +433,14 @@ private fun NotificacionAdminCard(
                 }
             }
         }
+    }
+}
+
+private fun textoDeLectura(lectura: LecturaNotificacion): String {
+    return if (lectura.total <= 1) {
+        if (lectura.leidas >= 1) "Leída" else "Sin leer"
+    } else {
+        "${lectura.leidas}/${lectura.total} leídas"
     }
 }
 

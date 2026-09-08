@@ -16,6 +16,7 @@ import com.roberto.gestorpro.data.repository.MovimientoRepository
 import com.roberto.gestorpro.data.repository.PreferencesRepository
 import com.roberto.gestorpro.model.TipoUsuario
 import com.roberto.gestorpro.navigation.Routes
+import com.roberto.gestorpro.util.IdiomaAplicacion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -93,6 +94,30 @@ class MainViewModel @Inject constructor(
     fun setThemeMode(mode: String) {
         viewModelScope.launch {
             preferencesRepository.setThemeMode(mode)
+        }
+    }
+
+    /**
+     * idioma
+     * ------
+     * Idioma elegido (es/en). El valor inicial coincide con el idioma que ya se
+     * está aplicando en el proceso para no provocar recreaciones en el arranque.
+     */
+    val idioma = preferencesRepository.idioma.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = IdiomaAplicacion.actual
+    )
+
+    /**
+     * setIdioma
+     * ---------
+     * Persiste el idioma elegido en DataStore. La Activity lo observa y se
+     * recrea cuando detecta que el idioma cambió.
+     */
+    fun setIdioma(idioma: String) {
+        viewModelScope.launch {
+            preferencesRepository.setIdioma(idioma)
         }
     }
 

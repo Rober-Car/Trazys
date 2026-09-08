@@ -39,6 +39,11 @@ class PreferencesRepository @Inject constructor(
         const val THEME_OSCURO = "oscuro"
         const val THEME_SISTEMA = "sistema"
 
+        private val IDIOMA_KEY = stringPreferencesKey("idioma")
+        const val IDIOMA_ES = "es"
+        const val IDIOMA_EN = "en"
+        const val IDIOMA_DEFECTO = IDIOMA_ES
+
         private val ID_CLIENTE_KEY = intPreferencesKey("id_cliente")
         private val NEGOCIO_ID_KEY = stringPreferencesKey("negocio_id")
         private val DNI_PENDIENTE_KEY = stringPreferencesKey("dni_pendiente")
@@ -55,6 +60,37 @@ class PreferencesRepository @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE_KEY] = mode
         }
+    }
+
+    /**
+     * idioma
+     * ------
+     * Idioma elegido por el usuario ("es" o "en"). Por defecto "es".
+     * Sigue el mismo patrón que themeMode (persistido en DataStore).
+     */
+    val idioma: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[IDIOMA_KEY] ?: IDIOMA_DEFECTO
+    }
+
+    /**
+     * setIdioma
+     * ---------
+     * Persiste el idioma elegido en DataStore.
+     */
+    suspend fun setIdioma(idioma: String) {
+        context.dataStore.edit { preferences ->
+            preferences[IDIOMA_KEY] = idioma
+        }
+    }
+
+    /**
+     * obtenerIdioma
+     * -------------
+     * Lectura única (sin observar) del idioma guardado. Se usa en el arranque
+     * de la aplicación para aplicar el locale antes del primer frame.
+     */
+    suspend fun obtenerIdioma(): String {
+        return context.dataStore.data.first()[IDIOMA_KEY] ?: IDIOMA_DEFECTO
     }
 
     val idCliente: Flow<Int?> = context.dataStore.data.map { preferences ->

@@ -28,6 +28,7 @@ import com.roberto.gestorpro.cliente.model.EstadoHomeCliente
 import com.roberto.gestorpro.cliente.model.EstadoIndicadorCliente
 import com.roberto.gestorpro.cliente.model.SolicitudBaja
 import com.roberto.gestorpro.cliente.navigation.Routes
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -128,6 +129,24 @@ class MainViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = PreferencesRepository.THEME_SISTEMA
     )
+
+    /**
+     * idioma
+     * ------
+     * Idioma elegido (es/en). El valor inicial coincide con el idioma que ya se
+     * está aplicando en el proceso para no provocar recreaciones en el arranque.
+     */
+    val idioma = preferencesRepository.idioma.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = IdiomaAplicacion.actual
+    )
+
+    fun setIdioma(idioma: String) {
+        viewModelScope.launch {
+            preferencesRepository.setIdioma(idioma)
+        }
+    }
 
     val idCliente = preferencesRepository.idCliente.stateIn(
         scope = viewModelScope,

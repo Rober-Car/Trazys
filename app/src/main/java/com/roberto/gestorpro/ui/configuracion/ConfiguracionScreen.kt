@@ -253,7 +253,12 @@ fun ConfiguracionScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            Spacer(modifier = Modifier.height(20.dp))
 
             Card(
                 modifier = Modifier
@@ -261,16 +266,14 @@ fun ConfiguracionScreen(
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f))
             ) {
-                AjusteAdminItem(
+                AjusteDestructivoItem(
                     titulo = "Eliminar cuenta y negocio",
                     descripcion = "Borra permanentemente tu cuenta, tu negocio y sus datos",
-                    icono = Icons.Default.Delete,
-                    colorAcento = MaterialTheme.colorScheme.error,
                     onClick = { navController.navigate(Routes.ELIMINAR_CUENTA) }
                 )
             }
@@ -372,6 +375,57 @@ private fun AjusteInformacionOption(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp)
+        )
+    }
+}
+
+/**
+ * AjusteDestructivoItem
+ * ---------------------
+ * Entrada de acción destructiva/final (eliminación de cuenta y negocio).
+ * Usa el estilo "peligro" de la app Cliente (tarjeta con errorContainer,
+ * texto e icono en color error) para separar visualmente esta acción del
+ * resto de ajustes.
+ */
+@Composable
+private fun AjusteDestructivoItem(
+    titulo: String,
+    descripcion: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Delete,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = descripcion,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(22.dp)
         )
     }

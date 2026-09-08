@@ -1,5 +1,28 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🔴 ACTUALIZACIÓN 2026-09-09 — DEPLOY `notificacionInmediata` + LECTURA ADMIN (estado vigente):**
+> verificado contra el árbol real. **HEAD del desarrollador: `a0bc03b`** (en `origin/master`; `77e3641`
+> ya commiteó denuncias 2C-2, Login Cliente, web `/terminos` y la doc previa). El working tree mezcla
+> SIN commit trabajo en curso del desarrollador (internacionalización/idioma, ver AGENTS.md) y cambios
+> nuestros (NO revertir). Resumen de esta tanda:
+> - **Decisión de estado cerrada:** `notificaciones/{id}.estado` = SOLO estado de ENVÍO
+>   (PENDIENTE/ENVIADA/PROGRAMADA/CANCELADA/ERROR); la lectura es independiente en el buzón
+>   `notificaciones_por_destinatario` (`leida`/`fechaLeida`). NO existe estado LEIDA.
+> - **Indicador de lectura del ADMIN implementado (sin commit):** `LecturaNotificacion`,
+>   `obtenerLecturaBuzones` (una consulta `notificaciones_por_destinatario` por negocio),
+>   `NotificacionesViewModel.lecturaPorNotificacion` (best-effort) y `GestionNotificacionesScreen`
+>   ("Leída"/"Sin leer"/"X/Y leídas"; sin indicador si no hay buzones; textos temporales en español).
+> - **Cloud Function `notificacionInmediata` DESPLEGADA en producción** (v2, `onDocumentCreated`,
+>   `europe-west1`, nodejs20): hará `PENDIENTE→ENVIADA` y FCM para manuales inmediatas nuevas.
+>   Hubo que añadir `"functions": { "source": "functions" }` a `firebase.json` (aprobado, sin commit);
+>   el primer deploy falló por el Eventarc Service Agent y el reintento funcionó. Avisos: Node 20
+>   deprecado (2026-10-31), `firebase-functions` desactualizada, posibles imágenes de build sin limpiar.
+>   **PENDIENTE:** prueba funcional manual de envío real (estado + push).
+> - **Home CLIENTE:** reorden solo visual de cards (Fila 1: Actividades | Rutinas; Fila 2: Ajustes |
+>   Notificaciones) manteniendo el badge en "Notificaciones". Sin commit.
+> - `firestore.rules` (denuncias) sigue SIN desplegar. Detalle en el CHECKPOINT 2026-09-09 de AGENTS.md
+>   y en el último bloque de CONVERSACION_EXPORTADA.md.
+
 > **🔴 ACTUALIZACIÓN 2026-09-08 (2) — FASE 2C-3 + FOTOS SELECTOR + DIAGNÓSTICO LEÍDA (estado vigente):**
 > verificado contra el árbol real. **HEAD del desarrollador: `77e3641 "seguridad de google play"`**.
 > El working tree conserva cambios SIN commit de esta tanda (ver `git status`; NO revertir):

@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,15 +46,24 @@ import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.LogoNegocioAutenticado
 import com.roberto.gestorpro.ui.components.MenuCard
 import com.roberto.gestorpro.ui.viewmodel.MainViewModel
+import com.roberto.gestorpro.ui.viewmodel.SolicitudesViewModel
 import java.io.File
 
 @Composable
 fun HomeScreen(
     navController: NavHostController,
-    mainViewModel: MainViewModel = hiltViewModel()
+    mainViewModel: MainViewModel = hiltViewModel(),
+    solicitudesViewModel: SolicitudesViewModel = hiltViewModel()
 ) {
     val nombreNegocio by mainViewModel.nombreNegocio.collectAsStateWithLifecycle()
     val logoNegocio by mainViewModel.logoNegocio.collectAsStateWithLifecycle()
+    val solicitudesPendientes by solicitudesViewModel.solicitudesPendientes.collectAsStateWithLifecycle()
+
+    // Refresca el badge de solicitudes cada vez que la Home vuelve a mostrarse
+    // (p. ej. al regresar tras aceptar/rechazar solicitudes).
+    LaunchedEffect(Unit) {
+        solicitudesViewModel.cargarPendientes()
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface
@@ -182,8 +192,8 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Notificaciones",
-                        descripcion = "Consulta tus avisos",
+                        titulo = "Notificaciones enviadas",
+                        descripcion = "Envía avisos a tus clientes",
                         icono = Icons.Default.Notifications,
                         containerColor = Color(0xFFE91E63).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFFE91E63),
@@ -193,12 +203,13 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Solicitudes",
-                        descripcion = "Solicitudes de baja",
+                        titulo = "Solicitudes de baja",
+                        descripcion = "Solicitudes pendientes",
                         icono = Icons.Default.Email,
                         containerColor = Color(0xFF00ACC1).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF00ACC1),
                         iconTint = Color.White,
+                        badge = solicitudesPendientes,
                         onClick = { navController.navigate(Routes.SOLICITUDES) }
                     )
                 }

@@ -2,6 +2,52 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-09 — DEPLOY FUNCTION NOTIFICACIÓN INMEDIATA + INDICADOR DE LECTURA ADMIN + HOME CLIENTE (REANUDAR AQUÍ)
+>
+> Estado real al cierre de la tanda. **HEAD del desarrollador: `a0bc03b` "correocioens"** (en
+> `origin/master`, sin pendientes de push; `77e3641` "seguridad de google play" ya había commiteado
+> denuncias 2C-2, Login Cliente, web `/terminos` y la documentación previa; `a0bc03b` incorpora la
+> retirada 2C-3 de notificaciones y sus tests). El working tree conserva cambios SIN commit que
+> MEZCLAN trabajo en curso del desarrollador y cambios nuestros (**NO revertir**; lista en
+> `git status`).
+>
+> ### Trabajo SIN commit en el árbol (NO revertir)
+> 1. **En curso del desarrollador (internacionalización/idioma, NO tocar sin consultar):** nuevo
+>    `util/IdiomaAplicacion.kt` en `:app` y `:appCliente`, y modificados `GestorProApplication`/
+>    `MainActivity`, `PreferencesRepository`, `MainViewModel`, `SolicitudesViewModel`, `MenuCard`,
+>    `HomeScreen` (Admin), `ConfiguracionScreen`/`PreferenciasScreen` (Admin y Cliente), etc.
+> 2. **Nuestros cambios de esta tanda (sin commit):**
+>    - **Decisión cerrada `notificaciones/{id}.estado`:** `estado` sigue siendo SOLO el estado de
+>      ENVÍO (PENDIENTE/ENVIADA/PROGRAMADA/CANCELADA/ERROR); la lectura vive en
+>      `notificaciones_por_destinatario/{clienteId}_{notificacionId}` (`leida`/`fechaLeida`). NO se
+>      crea estado LEIDA. **Implementado** (Admin): `LecturaNotificacion(leidas,total)` +
+>      `NotificacionRemotoRepository.obtenerLecturaBuzones(negocioId)` (UNA consulta por negocio),
+>      `NotificacionesViewModel.lecturaPorNotificacion` (best-effort: si falla la lista sigue sin
+>      indicador) y `GestionNotificacionesScreen` con indicador independiente del chip de estado
+>      ("Leída"/"Sin leer" si 1 destinatario; "X/Y leídas" si varios; sin indicador si total==0).
+>      Textos en español temporales (i18n pendiente).
+>    - **`firebase.json`:** añadida la sección `"functions": { "source": "functions" }` (aprobada)
+>      para poder desplegar funciones. Resto intacto.
+>    - **Home del CLIENTE (`HomeScreen.kt`):** solo reorden de cards en la cuadrícula (2 columnas):
+>      Fila 1 = Actividades | Rutinas; Fila 2 = Ajustes | Notificaciones. Sin cambios de contenido/
+>      acciones; el badge de no leídas sigue en el card "Notificaciones". `:appCliente` compila.
+>
+> ### Firebase (producción) — desplegado y verificado
+> - **Cloud Function `notificacionInmediata` DESPLEGADA** (v2, `onDocumentCreated("notificaciones/{id}")`,
+>   región `europe-west1`, nodejs20) → hará `PENDIENTE→ENVIADA` (claim atómico + fechaEnvio) y envío FCM
+>   real para inmediatas MANUAL creadas a partir del despliegue. Verificado con `firebase functions:list`
+>   (junto a `eliminarMiCuenta`). Primer intento falló por permisos del Eventarc Service Agent (400) y
+>   el reintento tras unos minutos funcionó. **PENDIENTE: prueba funcional manual de envío** (estado y push).
+> - Avisos de Firebase a revisar: **Node.js 20 deprecado (decommission 2026-10-31)** y
+>   `firebase-functions` desactualizada; error de limpieza de imágenes de build (posibles restos en
+>   `gcr.io/.../eu/gcf`). Sin acciones tomadas (requiere decisión).
+> - `firestore.rules` con `denuncias` **NO desplegado** todavía (solo commiteado). Hosting `/terminos`
+>   y resto de web ya desplegados y verificados previamente.
+>
+> ### Verificación (última)
+> `:app` y `:appCliente`: unit tests y assembleDebug OK en tandas anteriores. `:appCliente:compileDebugKotlin`
+> OK tras el reorden. `git diff --check` limpio (avisos CRLF preexistentes). Sin commit/push de lo de arriba.
+
 > ## ⚠️ CHECKPOINT 2026-09-08 (2) — FASE 2C-3 RETIRADA DE NOTIF. MANUALES + FOTOS EN EL SELECTOR DE CLIENTES + DIAGNÓSTICO "MARCAR COMO LEÍDA" (REANUDAR AQUÍ)
 >
 > Estado real al cierre de la tanda. **HEAD del desarrollador: `77e3641 "seguridad de google play"`**

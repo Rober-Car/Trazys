@@ -3,6 +3,7 @@ package com.roberto.gestorpro.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roberto.gestorpro.data.firebase.AutenticacionRepository
+import com.roberto.gestorpro.data.firebase.LecturaNotificacion
 import com.roberto.gestorpro.data.firebase.NotificacionRemotoRepository
 import com.roberto.gestorpro.data.repository.PreferencesRepository
 import com.roberto.gestorpro.model.ConfiguracionNotificaciones
@@ -65,6 +66,17 @@ class NotificacionesViewModel @Inject constructor(
 
     private val _notificaciones = MutableStateFlow<List<NotificacionAdmin>>(emptyList())
     val notificaciones = _notificaciones.asStateFlow()
+
+    /**
+     * lecturaPorNotificacion
+     * ----------------------
+     * Resumen de lectura (leídas/total) por notificacionId, calculado desde el
+     * buzón. Independiente del estado de envío. Si la consulta falla queda
+     * vacío y la lista se muestra igual, sin indicador de lectura.
+     */
+    private val _lecturaPorNotificacion =
+        MutableStateFlow<Map<String, LecturaNotificacion>>(emptyMap())
+    val lecturaPorNotificacion = _lecturaPorNotificacion.asStateFlow()
 
     private val _resolviendo = MutableStateFlow(false)
     val resolviendo = _resolviendo.asStateFlow()
@@ -201,7 +213,9 @@ class NotificacionesViewModel @Inject constructor(
     /**
      * cargarNotificaciones
      * --------------------
-     * Carga la lista de notificaciones del negocio del ADMIN autenticado.
+     * Carga la lista de notificaciones del negocio del ADMIN autenticado y, en
+     * paralelo y best-effort, el resumen de lectura del buzón (si esta segunda
+     * consulta falla, la lista se muestra igualmente sin indicador de lectura).
      */
     fun cargarNotificaciones() {
         viewModelScope.launch {
@@ -213,8 +227,13 @@ class NotificacionesViewModel @Inject constructor(
             _cargando.value = true
             _error.value = null
             try {
+                // La lista de gestión muestra SOLO los envíos del negocio a los
+                // clientes. Los avisos automáticos dirigidos al ADMIN
+                // (SOLICITUD_BAJA/VINCULACION) no se ocultan aquí en Firestore,
+                // simplemente se excluyen de esta lista.
                 _notificaciones.value =
                     notificacionRemotoRepository.obtenerNotificaciones(negocioId)
+                        .filter { esEnvioAClientes(it) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -222,6 +241,27 @@ class NotificacionesViewModel @Inject constructor(
             } finally {
                 _cargando.value = false
             }
+            cargarLecturaBuzones(negocioId)
+        }
+    }
+
+    /**
+     * cargarLecturaBuzones
+     * --------------------
+     * Actualiza el mapa de lectura por notificación. Best-effort: un fallo de
+     * esta consulta NO afecta a la lista de notificaciones; simplemente deja
+     * el mapa vacío (sin indicador de lectura).
+     */
+    private suspend fun cargarLecturaBuzones(negocioId: String) {
+        _lecturaPorNotificacion.value = emptyMap()
+        try {
+            _lecturaPorNotificacion.value =
+                notificacionRemotoRepository.obtenerLecturaBuzones(negocioId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Best-effort: sin indicador de lectura, la lista sigue visible.
+            _lecturaPorNotificacion.value = emptyMap()
         }
     }
 
@@ -494,6 +534,7 @@ class NotificacionesViewModel @Inject constructor(
         _cargando.value = false
         _error.value = null
         _notificaciones.value = emptyList()
+        _lecturaPorNotificacion.value = emptyMap()
         _resolviendo.value = false
         _errorResolucion.value = null
         _resolucion.value = null
@@ -558,3 +599,18 @@ class NotificacionesViewModel @Inject constructor(
         }
     }
 }
+
+/**
+ * esEnvioAClientes
+ * ----------------
+ * Determina si un registro de `notificaciones/{id}` corresponde a un ENVÍO del
+ * negocio hacia los clientes (y no a un aviso automático dirigido al ADMIN).
+ *
+ * Los únicos escritores de avisos hacia el ADMIN en esa colección usan
+ * `tipo == SOLICITUD_BAJA` (generado por la gestión de solicitudes de baja) o
+ * `tipo == VINCULACION` (generado al vincularse un cliente). El resto de tipos
+ * que produce el sistema (MANUAL, PROGRAMADA, BAJA_CONFIRMADA, MOROSIDAD) son
+ * envíos destinados a clientes, por lo que se consideran "enviadas".
+ */
+private fun esEnvioAClientes(notificacion: com.roberto.gestorpro.model.NotificacionAdmin): Boolean =
+    notificacion.tipo != "SOLICITUD_BAJA" && notificacion.tipo != "VINCULACION"

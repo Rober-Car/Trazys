@@ -14,6 +14,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
+ * LecturaNotificacion
+ * -------------------
+ * Resumen de lectura de una notificación calculado desde su buzón
+ * (notificaciones_por_destinatario): número de destinatarios y de leídas.
+ * Independiente del `estado` (envío) del registro global `notificaciones/{id}`.
+ */
+data class LecturaNotificacion(
+    val leidas: Int,
+    val total: Int
+)
+
+/**
  * NotificacionRemotoRepository
  * ----------------------------
  * Repositorio remoto de las notificaciones del ADMIN.
@@ -133,6 +145,36 @@ class NotificacionRemotoRepository @Inject constructor(
                 )
             }
             .sortedByDescending { it.fechaEnvio ?: it.fechaProgramada ?: it.fechaCreacion }
+    }
+
+    /**
+     * obtenerLecturaBuzones
+     * ---------------------
+     * Consulta UNA sola vez todos los buzones `notificaciones_por_destinatario`
+     * del negocio (filtro `negocioId`, exigido por las Rules) y los agrupa por
+     * `notificacionId`. Devuelve para cada notificación el total de buzones
+     * (destinatarios reales) y cuántos están leídos. La lectura es independiente
+     * del estado de envío del registro global. Sin consultas por notificación.
+     */
+    suspend fun obtenerLecturaBuzones(negocioId: String): Map<String, LecturaNotificacion> {
+        val snapshots = db.collection(COLECCION_BUZON)
+            .whereEqualTo("negocioId", negocioId)
+            .get()
+            .esperar()
+
+        val acumulado = mutableMapOf<String, MutableList<Boolean>>()
+        snapshots.documents.forEach { documento ->
+            val datos = documento.data ?: return@forEach
+            val notificacionId = datos["notificacionId"] as? String ?: return@forEach
+            val leida = (datos["leida"] as? Boolean) ?: false
+            acumulado.getOrPut(notificacionId) { mutableListOf() }.add(leida)
+        }
+        return acumulado.mapValues { (_, leidas) ->
+            LecturaNotificacion(
+                leidas = leidas.count { it },
+                total = leidas.size
+            )
+        }
     }
 
     /**

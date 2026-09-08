@@ -26,9 +26,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -40,7 +38,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,8 +49,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import com.roberto.gestorpro.cliente.navigation.Routes
-import com.roberto.gestorpro.cliente.ui.components.AppDialogConfirmButton
-import com.roberto.gestorpro.cliente.ui.components.AppDialogTextButton
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 
@@ -70,10 +65,7 @@ fun ConfiguracionScreen(
     mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
-    val azul = Color(0xFF1E88E5)
-    var mostrarDialogoCerrarSesion by androidx.compose.runtime.remember {
-        androidx.compose.runtime.mutableStateOf(false)
-    }
+    val idioma by mainViewModel.idioma.collectAsStateWithLifecycle()
 
     Scaffold { innerPadding ->
         Column(
@@ -227,56 +219,37 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "ACCIÓN",
+                text = "IDIOMA",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
 
             Card(
-                onClick = { mostrarDialogoCerrarSesion = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.45f)
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f))
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(24.dp)
+                Column(modifier = Modifier.padding(4.dp)) {
+                    IdiomaOption(
+                        nombre = "Español",
+                        selected = idioma == PreferencesRepository.IDIOMA_ES,
+                        onClick = { mainViewModel.setIdioma(PreferencesRepository.IDIOMA_ES) }
                     )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Cerrar sesión",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Salir de la aplicación",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Filled.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(22.dp)
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                    IdiomaOption(
+                        nombre = "English",
+                        selected = idioma == PreferencesRepository.IDIOMA_EN,
+                        onClick = { mainViewModel.setIdioma(PreferencesRepository.IDIOMA_EN) }
                     )
                 }
             }
@@ -289,11 +262,36 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "CUENTA",
+                text = "INFORMACIÓN",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
             )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+            ) {
+                AjusteInformacionOption(
+                    icon = Icons.Filled.PrivacyTip,
+                    label = "Política de privacidad",
+                    onClick = { navController.navigate(Routes.POLITICA_PRIVACIDAD) }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                AjusteInformacionOption(
+                    icon = Icons.Filled.Description,
+                    label = "Términos y condiciones",
+                    onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            Spacer(modifier = Modifier.height(20.dp))
 
             Card(
                 modifier = Modifier
@@ -343,74 +341,8 @@ fun ConfiguracionScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(
-                text = "INFORMACIÓN",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
-            ) {
-                AjusteInformacionOption(
-                    icon = Icons.Filled.PrivacyTip,
-                    label = "Política de privacidad",
-                    onClick = { navController.navigate(Routes.POLITICA_PRIVACIDAD) }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                AjusteInformacionOption(
-                    icon = Icons.Filled.Description,
-                    label = "Términos y condiciones",
-                    onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) }
-                )
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
         }
-    }
-
-    if (mostrarDialogoCerrarSesion) {
-        AlertDialog(
-            onDismissRequest = { mostrarDialogoCerrarSesion = false },
-            title = {
-                Text(
-                    text = "Cerrar sesión",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = azul
-                )
-            },
-            text = {
-                Text("¿Seguro que quieres cerrar sesión?")
-            },
-            confirmButton = {
-                AppDialogConfirmButton(
-                    text = "Cerrar sesión",
-                    onClick = {
-                        mostrarDialogoCerrarSesion = false
-                        mainViewModel.cerrarSesion()
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
-                )
-            },
-            dismissButton = {
-                AppDialogTextButton(
-                    text = "Cancelar",
-                    onClick = { mostrarDialogoCerrarSesion = false }
-                )
-            }
-        )
     }
 }
 
@@ -532,6 +464,37 @@ private fun TemaOption(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(selectedColor = azul)
+        )
+    }
+}
+
+@Composable
+private fun IdiomaOption(
+    nombre: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val azul = Color(0xFF1E88E5)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(if (selected) azul.copy(alpha = 0.08f) else Color.Transparent)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = nombre,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = if (selected) azul else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
         RadioButton(
             selected = selected,
             onClick = onClick,

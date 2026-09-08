@@ -1,6 +1,7 @@
 package com.roberto.gestorpro.cliente
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -19,6 +20,7 @@ import com.roberto.gestorpro.cliente.data.firebase.DispositivoRepository
 import com.roberto.gestorpro.cliente.navigation.AppNavigation
 import com.roberto.gestorpro.cliente.ui.theme.GestorProClienteTheme
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -62,10 +64,25 @@ class MainActivity : ComponentActivity() {
 
             val viewModel: MainViewModel = hiltViewModel()
             val themeMode by viewModel.themeMode.collectAsState()
+            val idioma by viewModel.idioma.collectAsState()
+
+            LaunchedEffect(idioma) {
+                if (idioma != IdiomaAplicacion.actual) {
+                    IdiomaAplicacion.marcarActual(idioma)
+                    recreate()
+                }
+            }
 
             GestorProClienteTheme(themeMode = themeMode) {
                 AppNavigation()
             }
         }
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        // Aplica el idioma elegido a los recursos de la Activity. IdiomaAplicacion
+        // ya contiene el valor precargado en la Application (o el actualizado antes
+        // de recrear) cuando se ejecuta attachBaseContext.
+        super.attachBaseContext(IdiomaAplicacion.baseConIdioma(newBase))
     }
 }

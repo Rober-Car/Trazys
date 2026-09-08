@@ -1,5 +1,26 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
+> **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-09, resumen para continuar):** tanda de FASE 1 de i18n +
+> organización visual y badges en las Home. Working tree SIN commit (NO revertir; estado real en
+> AGENTS.md y en git status). Resumen de lo cerrado en esta tanda (todo compilando y con tests OK):
+> 1. **FASE 1 infraestructura de idioma (es/en) en `:app` y `:appCliente`:** preferencia `idioma` en
+>    DataStore (`PreferencesRepository`, valores `"es"`/`"en"`, default `"es"`), helper `util/IdiomaAplicacion`
+>    (locale + context override), precarga en la Application y aplicación vía `attachBaseContext` +
+>    `recreate()` en `MainActivity`. Selector Español/English en `PreferenciasScreen` (Admin) y
+>    `ConfiguracionScreen` (Cliente). Sin AppCompat, sin dependencias nuevas, sin traducir textos todavía.
+> 2. **Organización visual de Configuración:** Admin → acción destructiva "Eliminar cuenta y negocio" como
+>    bloque final separado (divisor + tarjeta errorContainer + `AjusteDestructivoItem`). Cliente → reorden
+>    CUENTA / PREFERENCIAS / APARIENCIA / IDIOMA / INFORMACIÓN + "Eliminar mi cuenta" final separado;
+>    eliminado el "Cerrar sesión" duplicado de Configuración (se conserva el de la pantalla "Mi cuenta").
+> 3. **Badge no leídas Home del CLIENTE** (card "Notificaciones"): cuenta `leida == false` desde
+>    `NotificacionesClienteViewModel`/`NotificacionRepository` (recarga al volver al Home).
+> 4. **Home del ADMIN:** card renombrada **"Notificaciones enviadas"** → `GestionNotificacionesScreen` con
+>    filtro en memoria (`esEnvioAClientes`: excluye `SOLICITUD_BAJA`/`VINCULACION`, que son avisos al
+>    ADMIN; el resto son envíos a clientes). Card **"Solicitudes de baja"** con badge =
+>    `EstadoSolicitud.PENDIENTE` (`SolicitudesViewModel.solicitudesPendientes`/`cargarPendientes`, lectura
+>    sola sin generar avisos SOLICITUD_BAJA). `MenuCard` soporta badge opcional. Sin nuevos estados/colecciones.
+> 5. Verificación: `:app` y `:appCliente` compilan y sus `testDebugUnitTest` pasan. Sin commit/push/deploy.
+
 > **🔴 ÚLTIMA ACTUALIZACIÓN (2026-09-08, resumen para continuar):** ver detalle en el CHECKPOINT
 > 2026-09-08 (2) de AGENTS.md y en la ACTUALIZACIÓN 2026-09-08 (2) de CONTEXTO_PROYECTO.md. Resumen:
 > **FASE 2C-3** (retirar notificaciones MANUALES publicadas: regla pura `RetiradaNotificacionReglas`,
@@ -3048,3 +3069,66 @@ Sin commit, sin push, sin deploy.
 3. Pendientes previos no cerrados: denuncias 2C-2 sin deploy (Rules con `denuncias` pendiente de
    autorización), logs de diagnóstico, `fallbackToDestructiveMigration`, Storage/bucket + Blaze/Functions,
    VÍA 2/fecha de nacimiento opcional, renombrar repo/`origin` a Trazys.
+
+# ACTUALIZACIÓN 2026-09-09 — DECISIÓN DE ESTADO + INDICADOR DE LECTURA ADMIN + DEPLOY `notificacionInmediata` + HOME CLIENTE
+
+> Estado real al cierre. HEAD del desarrollador: `a0bc03b "correocioens"` (`origin/master`); `77e3641`
+> commiteó denuncias 2C-2, Login Cliente, web `/terminos` y doc previa; `a0bc03b` commiteó la retirada
+> 2C-3 y tests. El working tree mezcla SIN commit trabajo del desarrollador (internacionalización/idioma)
+> y cambios nuestros (NO revertir). Resumen operativo en AGENTS.md/CONTEXTO_PROYECTO.md (2026-09-09).
+
+## 1) Decisión de producto — `notificaciones/{id}.estado`
+- **Cerrada:** `estado` representa SOLO el estado de ENVÍO (PENDIENTE/ENVIADA/PROGRAMADA/CANCELADA/
+  ERROR). La lectura es independiente y vive en el buzón `notificaciones_por_destinatario` (`leida`,
+  `fechaLeida`). NO se crea estado LEIDA ni se cambia el significado.
+
+## 2) Indicador de lectura del ADMIN (implementado, sin commit)
+- Diagnóstico previo: la pantalla Admin solo consultaba `notificaciones` (nunca el buzón) → no podía
+  distinguir leída/no leída.
+- Implementado:
+  - `app/.../data/firebase/NotificacionRemotoRepository.kt`: `data class LecturaNotificacion(leidas,total)`
+    + `obtenerLecturaBuzones(negocioId)` = UNA consulta `notificaciones_por_destinatario
+    whereEqualTo("negocioId", negocioId)` agrupada por `notificacionId` (sin índice nuevo).
+  - `NotificacionesViewModel`: estado `lecturaPorNotificacion: Map<String, LecturaNotificacion>`; carga
+    best-effort tras la lista (si falla → mapa vacío, lista intacta, sin indicador). Reset en cambio de cuenta.
+  - `GestionNotificacionesScreen`: indicador independiente del chip de estado — total==0 → nada;
+    total==1 → "Leída"/"Sin leer"; total>1 → "X/Y leídas". Chip de estado/colores intactos.
+- Prueba manual previa confirmada: buzón pasa `leida=true` y el contador "2/2 leídas" funciona; el
+  estado principal seguía PENDIENTE porque la CF no estaba desplegada (no por el flujo de lectura).
+- No se tocó: `NotificacionAdmin`, Rules, Functions, flujo de envío/lectura, `appCliente`.
+
+## 3) Cloud Function `notificacionInmediata` — diagnóstico y DEPLOY
+- Diagnóstico: definida en `functions/index.js` (v2, `onDocumentCreated("notificaciones/{id}")`,
+  `europe-west1`), `procesarNotificacionInmediata` en `functions/lib/procesadores.js` (guard
+  PENDIENTE+programada=false+MANUAL → claim atómico PENDIENTE→ENVIADA+fechaEnvio → FCM). No desplegada
+  (`functions:list` solo mostraba `eliminarMiCuenta`). La notificación "llega" sin la CF porque la app
+  crea buzones directamente; la CF aporta push + estado.
+- Bloqueante de deploy: `firebase.json` no tenía target `functions`. **Aprobado** y añadido
+  `"functions": { "source": "functions" }` (sin commit).
+- **Desplegada (verificado con `functions:list`)**: `notificacionInmediata` v2, trigger
+  `google.cloud.firestore.document.v1.created`, `europe-west1`, nodejs20.
+  - 1er intento: HTTP 400 "Permission denied while using the Eventarc Service Agent" (setup inicial 2ª gen).
+  - Reintento tras unos minutos: **Deploy complete**.
+  - Avisos: Node.js 20 deprecado (decommission 2026-10-31); `firebase-functions` desactualizada; error
+    de limpieza de imágenes de build (posibles restos `gcr.io/.../eu/gcf`). Sin acciones (requiere decisión).
+  - **PENDIENTE:** prueba funcional manual de envío real (estado PENDIENTE→ENVIADA + push FCM) para
+    manuales inmediatas creadas DESPUÉS del despliegue.
+
+## 4) Home CLIENTE — reorden solo visual
+- `appCliente/.../ui/home/HomeScreen.kt`: en `LazyVerticalGrid` (2 columnas) los cards quedan Fila 1 =
+  Actividades | Rutinas; Fila 2 = Ajustes | Notificaciones. Contenido/acciones/colores intactos; el badge
+  de no leídas sigue en "Notificaciones". `:appCliente:compileDebugKotlin` OK.
+
+## Verificación (working tree)
+- `:app`/`:appCliente`: unit tests y assembleDebug OK en tandas previas; `compileDebugKotlin` OK tras el
+  reorden. `git diff --check` limpio (avisos CRLF). Sin commit/push de nada de esta tanda.
+
+## Para reanudar (mañana)
+1. **Prueba funcional manual de envío** tras el deploy: crear manual inmediata → verificar en Firestore
+   `PENDIENTE→ENVIADA` (claim) y recepción de push FCM; validar el indicador de lectura del Admin
+   ("Leída"/"X/Y leídas") con lectura real desde el Cliente.
+2. Revisar el WIP de internacionalización/idioma del desarrollador (working tree) ANTES de tocar pantallas
+   (posibles conflictos con textos temporales en español del indicador de lectura).
+3. Decidir despliegue de `firestore.rules` con `denuncias`; limpiar imágenes de build de GCF; planificar
+   subida a Node 22/24 (deprecación 2026-10-31) y actualización de `firebase-functions`; commit agrupado
+   del working tree (firebase.json, indicador lectura, Home Cliente).
