@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.roberto.gestorpro.data.entity.ClienteEntity
 import com.roberto.gestorpro.data.entity.ServicioEntity
 import com.roberto.gestorpro.data.entity.toCliente
+import com.roberto.gestorpro.data.firebase.AutenticacionRepository
 import com.roberto.gestorpro.data.firebase.BajaClienteRemotoRepository
 import com.roberto.gestorpro.data.firebase.ClienteRemotoRepository
 import com.roberto.gestorpro.data.firebase.FotoClienteCache
@@ -17,6 +18,7 @@ import com.roberto.gestorpro.data.firebase.FotoClienteStorage
 import com.google.firebase.storage.FirebaseStorage
 import com.roberto.gestorpro.data.repository.ClienteRepository
 import com.roberto.gestorpro.data.repository.MovimientoRepository
+import com.roberto.gestorpro.data.repository.PreferencesRepository
 import com.roberto.gestorpro.data.repository.ReservaRepository
 import com.roberto.gestorpro.data.repository.ServicioRepository
 import com.roberto.gestorpro.model.Cliente
@@ -73,7 +75,9 @@ class ClienteViewModel @Inject constructor(
     private val reservaRepository: ReservaRepository,
     private val bajaClienteRemotoRepository: BajaClienteRemotoRepository,
     private val storage: FirebaseStorage,
-    private val fotoClienteCache: FotoClienteCache
+    private val fotoClienteCache: FotoClienteCache,
+    private val autenticacionRepository: AutenticacionRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     /**
@@ -88,6 +92,17 @@ class ClienteViewModel @Inject constructor(
             movimientoRepository.reintentarEliminacionesPendientesGlobal()
         }
         reintentarFotosPendientes()
+    }
+
+    /**
+     * terminosVigentes
+     * ----------------
+     * ¿El ADMIN autenticado aceptó la versión vigente de los Términos de uso?
+     * Es el gate de publicación de fotos de cliente (UGC). Lectura local.
+     */
+    private suspend fun terminosVigentes(): Boolean {
+        val uid = autenticacionRepository.uidActual() ?: return false
+        return preferencesRepository.terminosAceptados(uid)
     }
 
     companion object {
@@ -504,6 +519,14 @@ class ClienteViewModel @Inject constructor(
                 }
 
                 // 3) + 4) Subida y URL.
+                // GATE TÉRMINOS: sin aceptación vigente NO se publica la foto.
+                // La foto local queda en Room y el reintento la subirá cuando
+                // los Términos estén aceptados.
+                if (!terminosVigentes()) {
+                    _error.value =
+                        "La foto quedará pendiente hasta que aceptes los Términos de uso vigentes."
+                    return@launch
+                }
                 val url = FotoClienteStorage.subirFotoCliente(
                     storage,
                     idClienteAlta,
@@ -587,6 +610,10 @@ class ClienteViewModel @Inject constructor(
                             }
                             continue
                         }
+
+                        // GATE TÉRMINOS (reintento automático): sin aceptación
+                        // vigente no se sube ni se elimina la foto pendiente.
+                        if (!terminosVigentes()) continue
 
                         val url = FotoClienteStorage.subirFotoCliente(
                             storage,
@@ -781,15 +808,25 @@ class ClienteViewModel @Inject constructor(
 
             // FOTO: migración progresiva a Storage. Si se quita la foto de un
             // cliente que tenía foto remota, se elimina el objeto de Storage.
+            val fotoRemotaPrevia = fichaPrevia?.foto?.takeIf { FotoClienteStorage.esUrlFoto(it) }
+            var fotoLocalBloqueada = false
             if (cliente.foto.isBlank()) {
                 if (FotoClienteStorage.esUrlFoto(fichaPrevia?.foto)) {
                     FotoClienteStorage.eliminarFotoCliente(storage, cliente.idCliente)
                 }
             } else if (!FotoClienteStorage.esUrlFoto(cliente.foto)) {
-                FotoClienteStorage.subirFotoCliente(storage, cliente.idCliente, cliente.foto)
-                    ?.let { url ->
-                        clienteAEscribir = clienteAEscribir.copy(foto = url)
-                    }
+                // GATE TÉRMINOS: sin aceptación vigente NO se sube la foto nueva;
+                // se conserva la ruta local en Room y el reintento la publicará
+                // más adelante cuando los Términos estén aceptados. El documento
+                // remoto NO recibe la ruta local (se mantiene la foto previa).
+                if (terminosVigentes()) {
+                    FotoClienteStorage.subirFotoCliente(storage, cliente.idCliente, cliente.foto)
+                        ?.let { url ->
+                            clienteAEscribir = clienteAEscribir.copy(foto = url)
+                        }
+                } else {
+                    fotoLocalBloqueada = true
+                }
             }
 
             try {
@@ -801,7 +838,14 @@ class ClienteViewModel @Inject constructor(
                 if (cambiaEstado) {
                     movimientoRepository.recalcularMorosidadDeCliente(clienteAEscribir.idCliente)
                 }
-                if (replicar(clienteAEscribir, esAlta = false, dniAnterior = dniAnterior)) {
+                val clienteParaRemoto = if (fotoLocalBloqueada) {
+                    // No publicar una ruta local como foto remota mientras el
+                    // ADMIN no tenga los Términos aceptados.
+                    clienteAEscribir.copy(foto = fotoRemotaPrevia ?: "")
+                } else {
+                    clienteAEscribir
+                }
+                if (replicar(clienteParaRemoto, esAlta = false, dniAnterior = dniAnterior)) {
                     onExito()
                 }
             } catch (e: SQLiteConstraintException) {
