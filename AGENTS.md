@@ -2,6 +2,68 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-08 — CAMBIO DE CONTRASEÑA REAL + GATE NOTIF. MANUALES (FASE 2B-1) + LOGIN CLIENTE + WEB /TERMINOS (2C-1) + DENUNCIAS UGC (2C-2) (REANUDAR AQUÍ)
+>
+> Estado real al cierre de la tanda. **HEAD del desarrollador: `63d74f2` "correcion contraseñas"**
+> (ahead de `origin/master` en 1; **sin push**). El working tree conserva cambios SIN commit de
+> las últimas fases (**NO revertir**; lista en `git status`). El bloque anterior (post-recuperación
+> `0b1d370`) queda SUPERADO: su working tree fue commiteado por el desarrollador en `0b1d370`/
+> `84d23ef`/`0f5d332` (tanda UGC/Términos/Identidad) y parte de lo de esta tanda también.
+>
+> ### Commiteado por el desarrollador en `63d74f2` (NO revertir; sin push)
+> 1. **Cambio de contraseña REAL en ADMIN y CLIENTE** (todo lo implementado en esta tanda):
+>    `AutenticacionRepository.cambiarContrasena(actual, nueva)` en `:app` y `:appCliente`
+>    (reautenticación `EmailAuthProvider` + `updatePassword`, solo tras reauth correcta; sin
+>    persistir contraseñas) + validador puro `validarCambioContrasena(actual,nueva,repetida)`;
+>    `MainViewModel.cambiarContrasena(actual,nueva,repetida)` (3 args) con `_cambiandoContrasena`;
+>    Admin `CuentaScreen` (diálogo real con carga/error/éxito "Contraseña actualizada
+>    correctamente.") y Cliente `CuentaScreen` (nueva tarjeta "Cambiar contraseña" + diálogo, éxito
+>    por snackbar). Tests `CambiarContrasenaTest` en ambos módulos.
+> 2. **FASE 2B-1 — Gate de Términos para notificaciones MANUALES (Admin):** `util/GateUgcNotificaciones.kt`
+>    (regla pura `esPublicacionManual`/`decidir` + `ResultadoGateUgc`); `NotificacionesViewModel`
+>    con gate ANTES de publicar (inmediata, programada y reintento) y estado `requiereAceptarTerminos`;
+>    `CrearNotificacionScreen` con aviso + botón "Ver y aceptar los Términos de uso" →
+>    `Routes.TERMINOS_CONDICIONES` sin perder el formulario. Automáticas (BAJA_CONFIRMADA/
+>    SOLICITUD_BAJA/VINCULACION) NUNCA bloqueadas. Tests `GateUgcNotificacionesTest` (11).
+> 3. Incluye basura `.idea/shelf/…` (irrelevante).
+>
+> ### Cambios SIN commit en el árbol (pendientes; NO revertir)
+> 4. **Estética Login Cliente (`:appCliente/.../ui/auth/LoginScreen.kt`):** ahora igual que el Login
+>    Admin: desaparece la "tarjeta gris" (`Card.containerColor = surface`), bloque de logo (remoto o
+>    icono), cabecera interna "Iniciar sesión", espaciados, `unfocusedBorderColor`, spinner y pie
+>    "© 2026 Trazys". Solo presentación; lógica intacta.
+> 5. **FASE 2B-2 (motivo de baja) — DECISIÓN: NO implementar.** Verificado: el CLIENTE no tiene campo
+>    "Motivo" (CuentaScreen llama a `solicitarBaja(null)`); no hay UGC de texto que gatear. Sin cambios.
+> 6. **FASE 2C-1 — Términos en la web:** creado `web/terminos/index.html` (contenido de los Términos
+>    neutrales de `:app`, formato web) y enlazado `/terminos` desde portada, `/privacidad` y
+>    `/eliminar-cuenta` (nav + pie + referencias). **DEPLOY autorizado SOLO hosting** ya ejecutado →
+>    `https://trazys.web.app/terminos` (y resto) verificados 200.
+> 7. **FASE 2C-2 — Sistema de denuncias UGC (implementado, SIN deploy de Rules):**
+>    - `firestore.rules`: bloque `denuncias/{denunciaId}` (create autenticado del MISMO negocio,
+>      `denuncianteUid == auth.uid`, whitelists tipo/motivo/estado PENDIENTE, sin autodenuncia,
+>      usuario denunciado del negocio; `get` ADMIN del negocio o CLIENTE solo suya; `list` solo ADMIN;
+>      `update` ADMIN solo `estado`; `delete` false). Sin tocar otras colecciones.
+>    - `:app`: `data/firebase/DenunciaRepository.kt`, `ui/viewmodel/DenunciasViewModel.kt`,
+>      `ui/components/DialogoDenuncia.kt`, `ui/configuracion/GestionDenunciasScreen.kt` (lista +
+>      "Marcar como revisada"; Configuración → sección MODERACIÓN → "Denuncias"; ruta `DENUNCIAS`),
+>      y en `PerfilClienteAdministradorScreen` menú ⋮ → "Denunciar contenido" (foto remota) /
+>      "Denunciar usuario" (si `firebaseUid`).
+>    - `:appCliente`: `data/firebase/DenunciaRepository.kt`, `ui/components/DialogoDenuncia.kt`,
+>      `MainViewModel.denunciarNotificacion/denunciarLogoNegocio`, `⋮` en cada notificación MANUAL
+>      (`ListaNotificacionesScreen`) y `⋮` "Denunciar el centro" en el Home (logo/negocio).
+>    - Modelo: `denuncias/{id}` = negocioId, denuncianteUid, usuarioDenunciadoUid?, tipo
+>      (FOTO_CLIENTE/NOTIFICACION/LOGO_NEGOCIO), referencia, motivo (INAPROPIADO/ACOSO/OFENSIVO/
+>      SUPLANTACION/OTRO), descripcion?, fecha, estado (PENDIENTE/REVISADA).
+>    - Tests Rules **PRUEBA 151–163** → suite **182/182**; unit `DenunciaReglasTest` en `:app` y
+>      `:appCliente`. Pendiente reconocido: sin UI de "retirar notificación entregada" (Rules lo
+>      permiten); sin bloqueo de usuarios (no hay P2P; el ADMIN gestiona con BAJA/ARCHIVADO).
+>    - **Rules NO desplegadas.**
+>
+> ### Verificación (última)
+> Rules Firestore/Storage **182/182** (`npm --prefix firestore-tests test`). `:app` y `:appCliente`:
+> `testDebugUnitTest` y `assembleDebug` → BUILD SUCCESSFUL. `git diff --check` limpio (solo avisos
+> CRLF preexistentes). Sin commit/push de las fases 4–7 (el desarrollador commiteó solo 1–2).
+
 > ## ⚠️ CHECKPOINT (post-recuperación `0b1d370`) — TANDA UGC / TÉRMINOS / IDENTIDAD (REANUDAR AQUÍ)
 >
 > Estado real al cierre de la tanda reciente. **HEAD del desarrollador: `0b1d370 "Correcion lineas de

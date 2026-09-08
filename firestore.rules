@@ -1390,6 +1390,92 @@ service cloud.firestore {
 
 
     // =========================================================
+    // DENUNCIAS DE CONTENIDO UGC (denuncias/{denunciaId})
+    // =========================================================
+
+    // Una denuncia se registra para que el ADMIN del negocio la revise.
+    // - La crea un usuario autenticado del MISMO negocio (ADMIN o CLIENTE
+    //   vinculado) denunciando contenido/usuarios de su propio negocio.
+    // - El ADMIN de ese negocio puede leer y marcar como REVISADA.
+    // - El CLIENTE nunca lista denuncias; solo puede leer las propias.
+    match /denuncias/{denunciaId} {
+      function denuncianteDelMismoNegocio(negocioId) {
+        return (esAdmin() && negocioId == usuarioActual().negocioId)
+          || (esCliente()
+              && usuarioActual().clienteId is int
+              && usuarioActual().negocioId is string
+              && negocioId == usuarioActual().negocioId);
+      }
+
+      // El usuario denunciado (si existe) debe pertenecer al negocio: el propio
+      // ADMIN/negocio (uid == negocioId) o un CLIENTE activo del mismo negocio.
+      // Nunca puede denunciarse a uno mismo.
+      function usuarioDenunciadoValido(negocioId, uid) {
+        let ref = /databases/$(database)/documents/usuarios/$(uid);
+        return uid == negocioId
+          || (uid != request.auth.uid
+              && uid is string
+              && exists(ref)
+              && get(ref).data.rol == "CLIENTE"
+              && get(ref).data.activo == true
+              && get(ref).data.negocioId == negocioId);
+      }
+
+      function usuarioDenunciadoEnNegocio(negocioId) {
+        return !("usuarioDenunciadoUid" in request.resource.data.keys())
+          || usuarioDenunciadoValido(
+               negocioId,
+               request.resource.data.usuarioDenunciadoUid
+             );
+      }
+
+      allow create: if autenticado()
+        && denuncianteDelMismoNegocio(request.resource.data.negocioId)
+        && request.resource.data.denuncianteUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+             "negocioId",
+             "denuncianteUid",
+             "usuarioDenunciadoUid",
+             "tipo",
+             "referencia",
+             "motivo",
+             "descripcion",
+             "fecha",
+             "estado"
+           ])
+        && request.resource.data.negocioId is string
+        && request.resource.data.tipo in ["FOTO_CLIENTE", "NOTIFICACION", "LOGO_NEGOCIO"]
+        && request.resource.data.referencia is string
+        && request.resource.data.motivo in [
+             "INAPROPIADO", "ACOSO", "OFENSIVO", "SUPLANTACION", "OTRO"
+           ]
+        && request.resource.data.fecha is timestamp
+        && request.resource.data.estado == "PENDIENTE"
+        && (!("usuarioDenunciadoUid" in request.resource.data.keys())
+            || request.resource.data.usuarioDenunciadoUid is string)
+        && (!("descripcion" in request.resource.data.keys())
+            || request.resource.data.descripcion is string)
+        && usuarioDenunciadoEnNegocio(request.resource.data.negocioId);
+
+      allow get: if (esAdmin()
+          && resource.data.negocioId == usuarioActual().negocioId)
+        || (esCliente() && resource.data.denuncianteUid == request.auth.uid);
+
+      allow list: if esAdmin()
+        && resource.data.negocioId == usuarioActual().negocioId;
+
+      allow update: if esAdmin()
+        && resource.data.negocioId == usuarioActual().negocioId
+        && request.resource.data.negocioId == resource.data.negocioId
+        && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["estado"])
+        && request.resource.data.estado in ["PENDIENTE", "REVISADA"];
+
+      allow delete: if false;
+    }
+
+    // =========================================================
     // BLOQUEO POR DEFECTO
     // =========================================================
 

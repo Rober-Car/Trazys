@@ -4402,3 +4402,210 @@ test("PRUEBA 150: crear negocio SIN reservar el código en la misma operación -
     batch.update(doc(db, "usuarios", admin), { negocioId: admin });
     await assertFails(batch.commit());
 });
+
+// =========================================================
+// DENUNCIAS UGC (PRUEBA 151+)
+// =========================================================
+
+function denunciaDoc(negocioId, denuncianteUid, extra = {}) {
+    return {
+        negocioId,
+        denuncianteUid,
+        tipo: "FOTO_CLIENTE",
+        referencia: "clientes/123",
+        motivo: "INAPROPIADO",
+        fecha: Timestamp.now(),
+        estado: "PENDIENTE",
+        ...extra
+    };
+}
+
+async function setDenunciaComo(uid, idDenuncia, datos) {
+    const db = testEnvironment.authenticatedContext(uid).firestore();
+    await setDoc(doc(db, "denuncias", idDenuncia), datos);
+}
+
+async function sembrarDenunciaDirecta(idDenuncia, datos) {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "denuncias", idDenuncia), datos);
+    });
+}
+
+test("PRUEBA 151: el ADMIN denuncia la foto de un CLIENTE sin vínculo (solo contenido) -> ALLOW", async () => {
+    const admin = "admin-den-151";
+    await seedAdminNotif(admin, NEGOCIO_A);
+    const datos = denunciaDoc(NEGOCIO_A, admin, {
+        tipo: "FOTO_CLIENTE",
+        referencia: "clientes/151"
+    });
+    await assertSucceeds(setDenunciaComo(admin, "denuncia-151", datos));
+});
+
+test("PRUEBA 152: el ADMIN denuncia al usuario CLIENTE (foto con firebaseUid) -> ALLOW", async () => {
+    const admin = "admin-den-152";
+    const denunciado = "cliente-den-152";
+    await seedAdminNotif(admin, NEGOCIO_A);
+    await seedClienteNotif(denunciado, 15201, NEGOCIO_A);
+    const datos = denunciaDoc(NEGOCIO_A, admin, {
+        tipo: "FOTO_CLIENTE",
+        referencia: "clientes/15201",
+        usuarioDenunciadoUid: denunciado
+    });
+    await assertSucceeds(setDenunciaComo(admin, "denuncia-152", datos));
+});
+
+test("PRUEBA 153: el CLIENTE denuncia una notificación MANUAL y al ADMIN creador -> ALLOW", async () => {
+    const cliente = "cliente-den-153";
+    await seedClienteNotif(cliente, 15301, NEGOCIO_A);
+    const datos = denunciaDoc(NEGOCIO_A, cliente, {
+        tipo: "NOTIFICACION",
+        referencia: "notificaciones/notif-153",
+        usuarioDenunciadoUid: NEGOCIO_A,
+        motivo: "OFENSIVO"
+    });
+    await assertSucceeds(setDenunciaComo(cliente, "denuncia-153", datos));
+});
+
+test("PRUEBA 154: el CLIENTE denuncia al ADMIN (logo del negocio) -> ALLOW", async () => {
+    const cliente = "cliente-den-154";
+    await seedClienteNotif(cliente, 15401, NEGOCIO_A);
+    const datos = denunciaDoc(NEGOCIO_A, cliente, {
+        tipo: "LOGO_NEGOCIO",
+        referencia: `negocios_publicos/${NEGOCIO_A}`,
+        usuarioDenunciadoUid: NEGOCIO_A,
+        motivo: "INAPROPIADO"
+    });
+    await assertSucceeds(setDenunciaComo(cliente, "denuncia-154", datos));
+});
+
+test("PRUEBA 155: el CLIENTE denuncia el logo (solo contenido, sin usuario) -> ALLOW", async () => {
+    const cliente = "cliente-den-155";
+    await seedClienteNotif(cliente, 15501, NEGOCIO_A);
+    const datos = denunciaDoc(NEGOCIO_A, cliente, {
+        tipo: "LOGO_NEGOCIO",
+        referencia: `negocios_publicos/${NEGOCIO_A}`
+    });
+    await assertSucceeds(setDenunciaComo(cliente, "denuncia-155", datos));
+});
+
+test("PRUEBA 156: un usuario NO autenticado no puede crear denuncias -> DENY", async () => {
+    const db = testEnvironment.unauthenticatedContext().firestore();
+    await assertFails(
+        setDoc(doc(db, "denuncias", "denuncia-156"), denunciaDoc(NEGOCIO_A, "x"))
+    );
+});
+
+test("PRUEBA 157: un usuario de OTRO negocio no puede denunciar contenido de otro negocio -> DENY", async () => {
+    const clienteB = "cliente-den-157b";
+    await seedClienteNotif(clienteB, 15701, NEGOCIO_B);
+    await assertFails(
+        setDenunciaComo(
+            clienteB,
+            "denuncia-157-b",
+            denunciaDoc(NEGOCIO_A, clienteB, { referencia: "clientes/157" })
+        )
+    );
+    const adminA = "admin-den-157a";
+    await seedAdminNotif(adminA, NEGOCIO_A);
+    await assertFails(
+        setDenunciaComo(
+            adminA,
+            "denuncia-157-a",
+            denunciaDoc(NEGOCIO_B, adminA, { referencia: "clientes/157" })
+        )
+    );
+});
+
+test("PRUEBA 158: denuncianteUid distinto de auth.uid -> DENY", async () => {
+    const cliente = "cliente-den-158";
+    await seedClienteNotif(cliente, 15801, NEGOCIO_A);
+    await assertFails(
+        setDenunciaComo(
+            cliente,
+            "denuncia-158",
+            denunciaDoc(NEGOCIO_A, "otro-uid", { referencia: "clientes/158" })
+        )
+    );
+});
+
+test("PRUEBA 159: el CLIENTE no puede listar denuncias ni leer denuncias ajenas -> DENY", async () => {
+    const cliente = "cliente-den-159";
+    await seedClienteNotif(cliente, 15901, NEGOCIO_A);
+    await sembrarDenunciaDirecta("denuncia-159-ajena", denunciaDoc(NEGOCIO_A, "otro-denunciante"));
+    const db = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(getDoc(doc(db, "denuncias", "denuncia-159-ajena")));
+    await assertFails(getDocs(query(collection(db, "denuncias"))));
+});
+
+test("PRUEBA 160: el ADMIN lee y lista las denuncias de SU negocio -> ALLOW; las de otro negocio -> DENY", async () => {
+    const adminA = "admin-den-160a";
+    const adminB = "admin-den-160b";
+    await seedAdminNotif(adminA, NEGOCIO_A);
+    await seedAdminNotif(adminB, NEGOCIO_B);
+    await sembrarDenunciaDirecta("denuncia-160-a", denunciaDoc(NEGOCIO_A, adminA));
+    await sembrarDenunciaDirecta("denuncia-160-b", denunciaDoc(NEGOCIO_B, adminB));
+    const dbA = testEnvironment.authenticatedContext(adminA).firestore();
+    await assertSucceeds(getDoc(doc(dbA, "denuncias", "denuncia-160-a")));
+    await assertSucceeds(getDocs(query(collection(dbA, "denuncias"), where("negocioId", "==", NEGOCIO_A))));
+    await assertFails(getDoc(doc(dbA, "denuncias", "denuncia-160-b")));
+});
+
+test("PRUEBA 161: el ADMIN marca REVISADA -> ALLOW; el CLIENTE no; cambiar otro campo -> DENY", async () => {
+    const adminA = "admin-den-161";
+    const cliente = "cliente-den-161";
+    await seedAdminNotif(adminA, NEGOCIO_A);
+    await seedClienteNotif(cliente, 16101, NEGOCIO_A);
+    await sembrarDenunciaDirecta("denuncia-161", denunciaDoc(NEGOCIO_A, adminA));
+
+    const dbAdmin = testEnvironment.authenticatedContext(adminA).firestore();
+    await assertSucceeds(updateDoc(doc(dbAdmin, "denuncias", "denuncia-161"), { estado: "REVISADA" }));
+    await assertFails(updateDoc(doc(dbAdmin, "denuncias", "denuncia-161"), { tipo: "NOTIFICACION" }));
+
+    const dbCliente = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(updateDoc(doc(dbCliente, "denuncias", "denuncia-161"), { estado: "REVISADA" }));
+});
+
+test("PRUEBA 162: autodenuncia y creación con estado distinto de PENDIENTE -> DENY", async () => {
+    const cliente = "cliente-den-162";
+    await seedClienteNotif(cliente, 16201, NEGOCIO_A);
+    await assertFails(
+        setDenunciaComo(
+            cliente,
+            "denuncia-162-self",
+            denunciaDoc(NEGOCIO_A, cliente, { usuarioDenunciadoUid: cliente })
+        )
+    );
+    await assertFails(
+        setDenunciaComo(
+            cliente,
+            "denuncia-162-estado",
+            denunciaDoc(NEGOCIO_A, cliente, { estado: "REVISADA" })
+        )
+    );
+});
+
+test("PRUEBA 163: tipo y motivo no permitidos (contenido no denunciable ni automático) -> DENY", async () => {
+    const cliente = "cliente-den-163";
+    await seedClienteNotif(cliente, 16301, NEGOCIO_A);
+    await assertFails(
+        setDenunciaComo(
+            cliente,
+            "denuncia-163-tipo",
+            denunciaDoc(NEGOCIO_A, cliente, { tipo: "COMENTARIO" })
+        )
+    );
+    await assertFails(
+        setDenunciaComo(
+            cliente,
+            "denuncia-163-origen",
+            denunciaDoc(NEGOCIO_A, cliente, { tipo: "BAJA_CONFIRMADA" })
+        )
+    );
+    await assertFails(
+        setDenunciaComo(
+            cliente,
+            "denuncia-163-motivo",
+            denunciaDoc(NEGOCIO_A, cliente, { motivo: "SPAM" })
+        )
+    );
+});

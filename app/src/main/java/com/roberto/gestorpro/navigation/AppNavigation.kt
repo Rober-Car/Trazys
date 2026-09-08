@@ -41,6 +41,7 @@ import com.roberto.gestorpro.ui.configuracion.PreferenciasScreen
 import com.roberto.gestorpro.ui.configuracion.PoliticaPrivacidadScreen
 import com.roberto.gestorpro.ui.configuracion.EliminarCuentaScreen
 import com.roberto.gestorpro.ui.configuracion.TerminosDeUsoScreen
+import com.roberto.gestorpro.ui.configuracion.GestionDenunciasScreen
 import com.roberto.gestorpro.ui.economia.EconomiaScreen
 import com.roberto.gestorpro.ui.home.HomeScreen
 import com.roberto.gestorpro.ui.notificaciones.ConfigNotificacionesScreen
@@ -218,6 +219,10 @@ fun AppNavigation() {
 
         composable(Routes.TERMINOS_CONDICIONES) {
             TerminosDeUsoScreen(navController)
+        }
+
+        composable(Routes.DENUNCIAS) {
+            GestionDenunciasScreen(navController)
         }
 
         composable(Routes.CLASES) {

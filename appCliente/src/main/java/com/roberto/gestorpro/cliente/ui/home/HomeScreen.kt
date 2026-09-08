@@ -23,10 +23,14 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Icon
@@ -34,6 +38,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +62,7 @@ import coil3.compose.AsyncImage
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.model.EstadoIndicadorCliente
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
+import com.roberto.gestorpro.cliente.ui.components.DialogoDenuncia
 import com.roberto.gestorpro.cliente.ui.components.LogoNegocioAutenticado
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 import java.time.Instant
@@ -71,6 +79,19 @@ fun HomeScreen(
     val logoNegocio by mainViewModel.logoNegocio.collectAsStateWithLifecycle()
     val estadoHome by mainViewModel.estadoHome.collectAsStateWithLifecycle()
     val vinculado = idCliente != null
+
+    var menuCentroAbierto by remember { mutableStateOf(false) }
+    var mostrarDenunciaLogo by remember { mutableStateOf(false) }
+
+    if (mostrarDenunciaLogo) {
+        DialogoDenuncia(
+            titulo = "Denunciar contenido del centro",
+            onDismiss = { mostrarDenunciaLogo = false },
+            onEnviar = { motivo, descripcion ->
+                mainViewModel.denunciarLogoNegocio(motivo, descripcion)
+            }
+        )
+    }
 
     LifecycleResumeEffect(idCliente) {
         if (idCliente != null) {
@@ -129,6 +150,28 @@ fun HomeScreen(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
+
+                        Box {
+                            IconButton(onClick = { menuCentroAbierto = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Más opciones del centro",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuCentroAbierto,
+                                onDismissRequest = { menuCentroAbierto = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Denunciar el centro") },
+                                    onClick = {
+                                        menuCentroAbierto = false
+                                        mostrarDenunciaLogo = true
+                                    }
+                                )
+                            }
+                        }
                     }
                 } else {
                     Text(

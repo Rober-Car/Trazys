@@ -1,5 +1,28 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🔴 ACTUALIZACIÓN 2026-09-08 — CONTRASEÑA REAL + GATE 2B-1 + LOGIN CLIENTE + WEB /TERMINOS +
+> DENUNCIAS 2C-2 (estado vigente):** verificado contra el árbol real. **HEAD del desarrollador:
+> `63d74f2` "correcion contraseñas"** (ahead 1 de `origin/master`, sin push). El working tree tiene
+> cambios SIN commit de esta tanda (ver `git status`; NO revertir). Resumen:
+> - **Cambio de contraseña REAL** (ADMIN y CLIENTE): `cambiarContrasena(actual,nueva)` en cada
+>   `AutenticacionRepository` (reauth `EmailAuthProvider` → `updatePassword`; sin guardar contraseñas)
+>   + validador puro `validarCambioContrasena(actual,nueva,repetida)`; `CuentaScreen` cableada en ambas
+>   apps (la de Admin dejó de ser placeholder). Ya COMMITEADO por el desarrollador en `63d74f2`.
+> - **FASE 2B-1** (gate de Términos a notificaciones MANUALES del Admin) implementado y COMMITEADO en
+>   `63d74f2` (`GateUgcNotificaciones`, `NotificacionesViewModel`, `CrearNotificacionScreen`).
+> - **Login Cliente estético** = Login Admin (sin tarjeta gris, logo, cabecera, footer) — SIN commit.
+> - **FASE 2B-2** (gate motivo de baja): NO implementado (no existe campo Motivo en la UI del Cliente).
+> - **FASE 2C-1**: `web/terminos/index.html` + enlaces `/terminos` en portada/privacidad/eliminar-cuenta;
+>   **hosting desplegado** (`https://trazys.web.app/terminos` y resto 200) — SIN commit.
+> - **FASE 2C-2 denuncias UGC** (ADMIN denuncia foto/usuario; CLIENTE denuncia notificación MANUAL y
+>   logo/negocio): bloque `denuncias` en `firestore.rules` + tests PRUEBA 151–163 (**182/182**);
+>   `DenunciaRepository`/`DialogoDenuncia`/`GestionDenunciasScreen`/`DenunciasViewModel` en `:app` y
+>   `DenunciaRepository`/`DialogoDenuncia` en `:appCliente` + puntos ⋮ (perfil Admin, notificaciones y
+>   Home del Cliente). **Rules SIN desplegar; SIN commit.** Sin bloqueo de usuarios (no hay P2P).
+> - Verificación de la tanda: unit + assemble de `:app`/`:appCliente` OK; Rules 182/182; `git diff
+>   --check` limpio. Detalle en el CHECKPOINT 2026-09-08 de AGENTS.md y en el último bloque de
+>   CONVERSACION_EXPORTADA.md.
+
 > **🔴 ACTUALIZACIÓN 2026-09-07 — MARCA TRAZYS + PRE-BETA (estado vigente):** el proyecto pasa a
 > llamarse **Trazys** de forma visible (apps, web, textos), sin tocar identificadores técnicos
 > (applicationId `com.roberto.gestorpro[.cliente]`, Firebase Project ID `gestorpro-50e83`, paquetes).

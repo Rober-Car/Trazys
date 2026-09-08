@@ -21,18 +21,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,6 +51,8 @@ import androidx.navigation.NavHostController
 import com.roberto.gestorpro.cliente.model.Notificacion
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppSecondaryButton
+import com.roberto.gestorpro.cliente.ui.components.DialogoDenuncia
+import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 import com.roberto.gestorpro.cliente.ui.viewmodel.NotificacionesClienteViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -60,15 +68,32 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ListaNotificacionesScreen(
     navController: NavHostController,
-    viewModel: NotificacionesClienteViewModel = hiltViewModel()
+    viewModel: NotificacionesClienteViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val cargando by viewModel.cargando.collectAsStateWithLifecycle()
     val noVinculado by viewModel.noVinculado.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val notificaciones by viewModel.notificaciones.collectAsStateWithLifecycle()
 
+    var notificacionADenunciar by remember { mutableStateOf<Notificacion?>(null) }
+
     LaunchedEffect(Unit) {
         viewModel.cargar()
+    }
+
+    notificacionADenunciar?.let { notificacion ->
+        DialogoDenuncia(
+            titulo = "Denunciar contenido",
+            onDismiss = { notificacionADenunciar = null },
+            onEnviar = { motivo, descripcion ->
+                mainViewModel.denunciarNotificacion(
+                    notificacion.notificacionId,
+                    motivo,
+                    descripcion
+                )
+            }
+        )
     }
 
     val morado = Color(0xFF7E57C2)
@@ -151,6 +176,8 @@ fun ListaNotificacionesScreen(
                             notificacion = notificacion,
                             morado = morado,
                             formateador = formateador,
+                            esManual = notificacion.origen == "MANUAL",
+                            onDenunciar = { notificacionADenunciar = notificacion },
                             onClick = { viewModel.marcarLeida(notificacion.id) }
                         )
                     }
@@ -172,6 +199,8 @@ private fun NotificacionCard(
     notificacion: Notificacion,
     morado: Color,
     formateador: DateTimeFormatter,
+    esManual: Boolean,
+    onDenunciar: () -> Unit,
     onClick: () -> Unit
 ) {
     val leida = notificacion.leida
@@ -180,6 +209,7 @@ private fun NotificacionCard(
     } else {
         morado
     }
+    var menuAbierto by remember { mutableStateOf(false) }
 
     Card(
         onClick = onClick,
@@ -237,6 +267,30 @@ private fun NotificacionCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = colorIcono
                 )
+            }
+
+            if (esManual) {
+                Box {
+                    IconButton(onClick = { menuAbierto = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Más opciones",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = menuAbierto,
+                        onDismissRequest = { menuAbierto = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Denunciar") },
+                            onClick = {
+                                menuAbierto = false
+                                onDenunciar()
+                            }
+                        )
+                    }
+                }
             }
         }
     }

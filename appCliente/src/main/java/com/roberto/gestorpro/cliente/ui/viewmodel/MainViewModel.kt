@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException
 import com.roberto.gestorpro.cliente.data.firebase.AutenticacionRepository
 import com.roberto.gestorpro.cliente.data.firebase.ClienteRepository
 import com.roberto.gestorpro.cliente.data.firebase.DispositivoRepository
+import com.roberto.gestorpro.cliente.data.firebase.DenunciaRepository
 import com.roberto.gestorpro.cliente.data.firebase.FotoClienteCache
 import com.roberto.gestorpro.cliente.data.firebase.FotoClienteStorage
 import com.roberto.gestorpro.cliente.data.firebase.NegocioRepository
@@ -78,6 +79,7 @@ class MainViewModel @Inject constructor(
     private val clienteRepository: ClienteRepository,
     private val dispositivoRepository: DispositivoRepository,
     private val solicitudRepository: SolicitudRepository,
+    private val denunciaRepository: DenunciaRepository,
     private val storage: FirebaseStorage,
     private val fotoClienteCache: FotoClienteCache
 ) : ViewModel() {
@@ -820,5 +822,66 @@ class MainViewModel @Inject constructor(
         } finally {
             _operandoSolicitudBaja.value = false
         }
+    }
+
+    /**
+     * denunciarNotificacion
+     * ---------------------
+     * Denuncia una notificación MANUAL del ADMIN junto con el ADMIN creador
+     * (usuarioDenunciadoUid = negocioId). Devuelve null o el error.
+     */
+    suspend fun denunciarNotificacion(
+        notificacionId: String,
+        motivo: String,
+        descripcion: String?
+    ): String? = denunciarContenidoDelNegocio(
+        tipo = com.roberto.gestorpro.cliente.data.firebase.TiposContenidoDenunciable.NOTIFICACION,
+        referencia = "notificaciones/$notificacionId",
+        motivo = motivo,
+        descripcion = descripcion
+    )
+
+    /**
+     * denunciarLogoNegocio
+     * --------------------
+     * Denuncia el logo/nombre del negocio y al ADMIN responsable.
+     */
+    suspend fun denunciarLogoNegocio(
+        motivo: String,
+        descripcion: String?
+    ): String? {
+        val negocio = preferencesRepository.negocioId.first()
+            ?.takeIf { it.isNotBlank() } ?: return "Sin negocio vinculado"
+        return denunciarContenidoDelNegocio(
+            tipo = com.roberto.gestorpro.cliente.data.firebase.TiposContenidoDenunciable.LOGO_NEGOCIO,
+            referencia = "negocios_publicos/$negocio",
+            motivo = motivo,
+            descripcion = descripcion
+        )
+    }
+
+    /**
+     * denunciarContenidoDelNegocio
+     * ----------------------------
+     * Núcleo de la denuncia: el denunciante es siempre el usuario autenticado y
+     * el usuario denunciado es el ADMIN del negocio vinculado (negocioId).
+     */
+    private suspend fun denunciarContenidoDelNegocio(
+        tipo: String,
+        referencia: String,
+        motivo: String,
+        descripcion: String?
+    ): String? {
+        val negocioId = preferencesRepository.negocioId.first()
+            ?.takeIf { it.isNotBlank() } ?: return "Sin negocio vinculado"
+        val resultado = denunciaRepository.crearDenuncia(
+            negocioId = negocioId,
+            tipo = tipo,
+            referencia = referencia,
+            usuarioDenunciadoUid = negocioId,
+            motivo = motivo,
+            descripcion = descripcion
+        )
+        return if (resultado.exito) null else resultado.mensaje
     }
 }

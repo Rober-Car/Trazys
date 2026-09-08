@@ -105,8 +105,10 @@ import com.roberto.gestorpro.ui.components.DialogoEdicionMovimiento
 import com.roberto.gestorpro.ui.components.AppSecondaryButton
 import com.roberto.gestorpro.ui.components.AppTextLinkButton
 import com.roberto.gestorpro.ui.components.BotonSelectorFoto
+import com.roberto.gestorpro.ui.components.DialogoDenuncia
 import com.roberto.gestorpro.ui.economia.ResumenEconomiaCard
 import com.roberto.gestorpro.ui.viewmodel.ClienteViewModel
+import com.roberto.gestorpro.ui.viewmodel.DenunciasViewModel
 import com.roberto.gestorpro.ui.viewmodel.MovimientoViewModel
 import com.roberto.gestorpro.util.MovimientoPrecio
 import com.roberto.gestorpro.util.MovimientoPago
@@ -130,6 +132,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.input.KeyboardType
 import com.roberto.gestorpro.data.entity.MovimientoEntity
 import com.roberto.gestorpro.data.firebase.FotoClienteStorage
+import com.roberto.gestorpro.data.firebase.TiposContenidoDenunciable
 import com.roberto.gestorpro.model.EstadoMovimiento
 import com.roberto.gestorpro.model.MetodoPago
 
@@ -182,7 +185,13 @@ fun PerfilClienteScreen(
      * Es el ViewModel de movimientos que recibe la pantalla.
      * Sirve para cargar y gestionar los movimientos (servicios) del cliente.
      */
-    movimientoViewModel: MovimientoViewModel = hiltViewModel()
+    movimientoViewModel: MovimientoViewModel = hiltViewModel(),
+    /**
+     * denunciasViewModel
+     * ------------------
+     * ViewModel del sistema de denuncias UGC del ADMIN.
+     */
+    denunciasViewModel: DenunciasViewModel = hiltViewModel()
 ) {
 
     /**
@@ -487,6 +496,15 @@ fun PerfilClienteScreen(
     var mostrarConfirmarArchivar by rememberSaveable { mutableStateOf(false) }
 
     /**
+     * mostrarDenunciaContenido / mostrarDenunciaUsuario
+     * -------------------------------------------------
+     * Controlan el diálogo de denuncia UGC (contenido o usuario) del perfil.
+     * Solo contenido (foto) si hay foto remota; solo usuario si hay firebaseUid.
+     */
+    var mostrarDenunciaContenido by rememberSaveable { mutableStateOf(false) }
+    var mostrarDenunciaUsuario by rememberSaveable { mutableStateOf(false) }
+
+    /**
      * menuAbierto
      * ------------
      * Controla si el menú de acciones administrativas (⋮) de la cabecera
@@ -690,6 +708,26 @@ fun PerfilClienteScreen(
                                 onClick = {
                                     menuAbierto = false
                                     mostrarConfirmarArchivar = true
+                                }
+                            )
+
+                            HorizontalDivider()
+
+                            DropdownMenuItem(
+                                text = { Text("Denunciar contenido") },
+                                enabled = FotoClienteStorage.esUrlFoto(cliente?.foto),
+                                onClick = {
+                                    menuAbierto = false
+                                    mostrarDenunciaContenido = true
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text("Denunciar usuario") },
+                                enabled = cliente?.firebaseUid != null,
+                                onClick = {
+                                    menuAbierto = false
+                                    mostrarDenunciaUsuario = true
                                 }
                             )
                         }
@@ -2115,6 +2153,40 @@ fun PerfilClienteScreen(
                     TextButton(onClick = { mostrarConfirmarArchivar = false }) {
                         Text("Cancelar")
                     }
+                }
+            )
+        }
+
+        if (mostrarDenunciaContenido) {
+            val clienteActual = cliente
+            DialogoDenuncia(
+                titulo = "Denunciar contenido",
+                onDismiss = { mostrarDenunciaContenido = false },
+                onEnviar = { motivo, descripcion ->
+                    denunciasViewModel.enviarDenuncia(
+                        tipo = TiposContenidoDenunciable.FOTO_CLIENTE,
+                        referencia = clienteActual?.let { "clientes/${it.idCliente}" } ?: "",
+                        usuarioDenunciadoUid = null,
+                        motivo = motivo,
+                        descripcion = descripcion
+                    )
+                }
+            )
+        }
+
+        if (mostrarDenunciaUsuario) {
+            val clienteActual = cliente
+            DialogoDenuncia(
+                titulo = "Denunciar usuario",
+                onDismiss = { mostrarDenunciaUsuario = false },
+                onEnviar = { motivo, descripcion ->
+                    denunciasViewModel.enviarDenuncia(
+                        tipo = TiposContenidoDenunciable.FOTO_CLIENTE,
+                        referencia = clienteActual?.let { "clientes/${it.idCliente}" } ?: "",
+                        usuarioDenunciadoUid = clienteActual?.firebaseUid,
+                        motivo = motivo,
+                        descripcion = descripcion
+                    )
                 }
             )
         }

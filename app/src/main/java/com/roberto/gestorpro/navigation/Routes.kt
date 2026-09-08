@@ -273,6 +273,13 @@ object Routes {
     const val TERMINOS_CONDICIONES = "terminos_condiciones"
 
     /**
+     * DENUNCIAS
+     * ---------
+     * Ruta de la gestión de denuncias UGC del ADMIN.
+     */
+    const val DENUNCIAS = "denuncias"
+
+    /**
      * ELIMINAR_CUENTA
      * ---------------
      * Ruta de la eliminación permanente de la cuenta y del negocio (app Admin).

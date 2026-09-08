@@ -2921,3 +2921,59 @@ Sin commit, sin push, sin deploy.
 2. Revisar/prueba visual de los cambios SIN commit y decidir commit agrupado.
 3. Continuar pendientes previos (logs de diagnóstico, Storage/bucket, Functions/Blaze, VÍA 2/fecha,
    tests instrumentados de gates e identidad).
+
+# ACTUALIZACIÓN 2026-09-08 — CONTRASEÑA REAL + FASE 2B-1 + LOGIN CLIENTE + WEB /TERMINOS + FASE 2C-2 DENUNCIAS
+
+> Resumen operativo y detalle en el CHECKPOINT 2026-09-08 de AGENTS.md y en la ACTUALIZACIÓN
+> 2026-09-08 de CONTEXTO_PROYECTO.md. Estado real al cierre: **HEAD del desarrollador `63d74f2`
+> "correcion contraseñas"** (ahead 1, sin push). El bloque previo (post-recuperación `0b1d370`) queda
+> SUPERADO: su contenido fue commiteado en `0b1d370`/`84d23ef`/`0f5d332` y parte de esta tanda en
+> `63d74f2`.
+
+## Qué se ha hecho en esta tanda (cronológico)
+1. **Actualización del repo:** el local estaba 3 commits detrás de `origin/master` (`0b1d370`,
+   `84d23ef`, `0f5d332`). `git pull --ff-only` (apartando `.idea/.name`) → HEAD `0f5d332`.
+2. **FASE 2B-1 — Gate de Términos a notificaciones MANUALES (Admin):** regla pura
+   `util/GateUgcNotificaciones.kt` (`esPublicacionManual`/`decidir` + `ResultadoGateUgc`); gate en
+   `NotificacionesViewModel` antes de publicar (inmediata/programada/reintento) con
+   `requiereAceptarTerminos`; aviso + "Ver y aceptar los Términos de uso" en `CrearNotificacionScreen`
+   sin perder el formulario. Automáticas nunca bloqueadas. Tests `GateUgcNotificacionesTest` (11).
+3. **Diagnóstico cambio de contraseña Admin (solo análisis):** el diálogo de `CuentaScreen` era un
+   placeholder (el botón "Guardar" solo hacía `onDismiss`); Cliente no tenía la opción.
+4. **Cambio de contraseña REAL en ADMIN y CLIENTE:** `cambiarContrasena(actual, nueva)` en cada
+   `AutenticacionRepository` (reauth `EmailAuthProvider` → `updatePassword`; sin persistir) +
+   `validarCambioContrasena`; `MainViewModel.cambiarContrasena(actual,nueva,repetida)` con
+   `_cambiandoContrasena`; diálogos cableados en `CuentaScreen` de ambas apps (éxito real). Tests
+   `CambiarContrasenaTest` en ambos módulos.
+5. **Estética Login Cliente = Login Admin** (`LoginScreen.kt` de `:appCliente`): sin tarjeta gris
+   (`Card.containerColor = surface`), logo de cabecera, "Iniciar sesión", espaciados, campos y pie
+   iguales; lógica intacta.
+6. **FASE 2B-2 (motivo de baja):** tras auditoría se confirmó que NO existe campo "Motivo" en la UI
+   del CLIENTE (`solicitarBaja(null)`). DECISIÓN del propietario: no añadir campo ni gate (sin UGC de
+   texto). Sin cambios de código.
+7. **FASE 2C-1 — Términos en la web:** creado `web/terminos/index.html` con el contenido neutral de
+   Términos de `:app`; `/terminos` enlazado en nav/pie/contenido de portada, `/privacidad` y
+   `/eliminar-cuenta`. **DEPLOY hosting autorizado** → `https://trazys.web.app/terminos` y resto (200).
+8. **FASE 2C-2 — Sistema de denuncias UGC:** diseño previo (inventario, modelo `denuncias`, Rules,
+   moderación, retirada, no-bloqueo) y **implementación**:
+   - `firestore.rules`: bloque `denuncias/{denunciaId}`; tests PRUEBA 151–163 → **182/182**.
+   - `:app`: `DenunciaRepository`, `DenunciasViewModel`, `DialogoDenuncia`, `GestionDenunciasScreen`
+     (Configuración → MODERACIÓN → Denuncias; ruta `DENUNCIAS`), ⋮ en `PerfilClienteAdministradorScreen`
+     ("Denunciar contenido"/"Denunciar usuario").
+   - `:appCliente`: `DenunciaRepository`, `DialogoDenuncia`, `MainViewModel.denunciarNotificacion/
+     denunciarLogoNegocio`, ⋮ en notificaciones MANUAL y ⋮ "Denunciar el centro" en el Home.
+   - Unit `DenunciaReglasTest` en ambos módulos. Sin bloqueo de usuarios (no hay P2P).
+
+## Verificación (cierre)
+- Rules Firestore/Storage **182/182**. `:app` y `:appCliente`: unit tests y assembleDebug → BUILD
+  SUCCESSFUL. `git diff --check` limpio (solo avisos CRLF).
+- **Sin commit ni push** de las fases 5–8 (el desarrollador commiteó solo las fases 2 y 4 en
+  `63d74f2`, junto con basura `.idea/shelf`). **Rules NO desplegadas.**
+
+## Para reanudar
+1. Prueba visual del Login Cliente rediseñado y decisión de commit agrupado de las fases SIN commit
+   (Login, web/terminos, denuncias apps+rules+tests).
+2. Decidir si se despliegan las Rules con `denuncias` (pendiente autorización) y si se añade la UI de
+   "retirar notificación entregada" (Rules ya lo permiten).
+3. Pendientes previos no cerrados: logs de diagnóstico, `fallbackToDestructiveMigration`, Storage/
+   bucket + Blaze/Functions, VÍA 2/fecha de nacimiento opcional, renombrar repo/`origin` a Trazys.
