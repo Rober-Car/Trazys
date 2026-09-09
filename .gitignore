@@ -22,3 +22,5 @@ firestore-tests/auditoria_backfill_indices.cjs
 
 .firebase/
 functions/node_modules/
+
+.idea/shelf/
