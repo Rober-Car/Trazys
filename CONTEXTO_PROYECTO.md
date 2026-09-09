@@ -1,5 +1,26 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🔴 ACTUALIZACIÓN 2026-09-09 — SISTEMA DE RESERVAS + ASISTENTES (estado vigente):** verificado contra
+> el árbol real. **HEAD del desarrollador: `e31e701`** (i18n, en `origin/master`). El working tree
+> conserva SIN commit el sistema de reservas (FASES 1–4) y sus correcciones (**NO revertir**; ver
+> CHECKPOINT superior de AGENTS.md). En producción `gestorpro-50e83` están desplegadas las callable
+> `reservar`/`cancelarReserva` (europe-west1, v2) y el ruleset de Firestore de FASE 4.
+> - **Backend (Functions):** las reservas del CLIENTE ya NO las crea/borra la app por Rules: lo hacen las
+>   callable `reservar`/`cancelarReserva` (Admin SDK). La callable también mantiene `sesiones/{id}
+>   .asistentes` (map clienteId→nombre, solo nombre) y la agenda derivada `clientes/{clienteId}/agenda/
+>   {fecha}` = `{negocioId, fecha, sesiones:{sesionId:idServicio}}`. Regla de negocio `permiteCombinarDia`
+>   en `servicios/{id}` (default true si falta).
+> - **Rules (FASE 4):** el CLIENTE puede leer reservas/sesiones/servicios y su propia agenda, pero NO
+>   escribir reservas ni modificar plazas/asistentes/agenda. El ADMIN gestiona sus sesiones/servicios,
+>   la agenda de sus clientes y `permiteCombinarDia`.
+> - **`permiteCombinarDia` en `:app`:** añadido en Room (v19 + `MIGRACION_18_19`), en la réplica remota
+>   y en el switch "Permitir combinar con otras actividades el mismo día" de alta/edición.
+> - **Asistentes en `:appCliente`:** pantalla independiente `AsistentesSesionScreen` (ruta
+>   `asistentes_sesion/{idSesion}`), accesible solo desde una sesión RESERVADA; lista solo con nombres.
+> - **Fix `cancelarReserva`:** se reordenó la Transaction (todas las lecturas antes de las escrituras);
+>   desplegada en producción.
+> - Los bloques inferiores de este documento son histórico y pueden estar superados por AGENTS.md.
+
 > **🔴 ACTUALIZACIÓN 2026-09-09 — I18N ES/EN POR BLOQUES (estado vigente):** verificado contra el árbol
 > real. **HEAD del desarrollador: `64de014`** ("Ignorar archivos Shelf"). El working tree conserva SIN
 > commit TODO el trabajo de i18n de esta tanda (**NO revertir**; lista en `git status`; ver CHECKPOINT

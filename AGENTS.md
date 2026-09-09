@@ -2,6 +2,55 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-09 — SISTEMA DE RESERVAS (FASES 1–4) + CORRECCIONES + DEPLOYS (REANUDAR AQUÍ)
+>
+> Estado real al cierre de la tanda. **HEAD del desarrollador: `e31e701` "Internacionalizacion ES/EN por
+> bloques en Admin y Cliente"** (en `origin/master`; sin pendientes nuestros de push). El **working tree
+> conserva SIN commit** el sistema de reservas completo y sus correcciones (**NO revertir**; 31 cambios en
+> `git status`). Se han realizado DEPLOYS autorizados en producción `gestorpro-50e83`: las callable
+> `reservar` y `cancelarReserva` (v2, europe-west1, nodejs20) y el **ruleset de Firestore de FASE 4**
+> (cierre del acceso directo del CLIENTE). NO se desplegó Storage ni otras Functions.
+>
+> ### Sistema de reservas del CLIENTE (FASE 1–4)
+> - **FASE 1 (backend):** Cloud Functions callable `reservar({sesionId})` y `cancelarReserva({sesionId})`
+>   en `functions/lib/reservas.js` + reglas puras en `functions/lib/plan_reservas.js` (Admin SDK; no pasan
+>   por Rules). Escriben `reservas/{clienteId}_{sesionId}`, `sesiones/{id}.asistentes.{clienteId}=nombre`
+>   (solo nombre), agenda derivada `clientes/{clienteId}/agenda/{fecha}` = `{negocioId, fecha, sesiones:
+>   {sesionId: idServicio}}`, y leen `servicios/{id}.permiteCombinarDia` (default true si falta). Tests
+>   puros 24/24.
+> - **FASE 2 (appCliente):** `ReservaRepository` ahora invoca las callables (europe-west1); modelos
+>   `Servicio.permiteCombinarDia` y `Sesion.asistentes`; parseo en `SesionRepository`. Asistentes
+>   inicialmente en la tarjeta de sesión (luego movidos, ver correcciones).
+> - **FASE 3 (cascadas ADMIN):** `ReservaRemotoRepository` limpia la agenda en batches ≤400 tras eliminar
+>   sesión/reservas y al cancelar (retira asistente y entrada de agenda); `BajaClienteRemotoRepository`
+>   pasa por `cancelarReservaRemota`; `eliminarMiCuenta` (Functions) borra la subcolección agenda y retira
+>   asistentes. Rules: match agenda `clientes/{clienteId}/agenda/{fecha}` (ADMIN de SU negocio gestiona;
+>   CLIENTE solo `get` de la suya) y `sesiones` update ADMIN admite `asistentes`.
+> - **FASE 4 (Rules):** se cierra el acceso directo del CLIENTE: reservas sin `create/delete` de CLIENTE,
+>   sesiones sin `update` de plazas/asistentes del CLIENTE, agenda solo lectura propia, servicios
+>   `permiteCombinarDia` solo ADMIN. Helpers huérfanos eliminados. Suite Rules **197/197**.
+>
+> ### Correcciones reales (diagnóstico + arreglo)
+> 1. **ADMIN — `permiteCombinarDia`:** no existía en `:app` (solo backend/Rules/CLIENTE). Añadido en
+>    `ServicioEntity` + **Room v19** (`MIGRACION_18_19` recrea `servicio` con la columna NOT NULL 1),
+>    `ServicioRemotoRepository` (create/update), `ServicioViewModel.crearServicio(+param)`,
+>    `EditarServicioScreen` (switch "Permitir combinar…" SIEMPRE en alta y edición, default true) y
+>    `HidratacionMapeadores` (default true si el campo remoto falta).
+> 2. **CLIENTE — asistentes:** fuera de la tarjeta de sesión (tarjeta compacta de nuevo). Nueva pantalla
+>    **`AsistentesSesionScreen`** + `AsistentesSesionViewModel`, ruta `asistentes_sesion/{idSesion}`,
+>    acceso con botón "Ver asistentes" SOLO en estado RESERVADA, `SesionRepository.obtenerSesionPorId`,
+>    y `SesionVisible` sin el campo `asistentes`. UI: lista con icono de persona + nombre y separadores,
+>    encabezado con total (plurals `asistentes_total`).
+> 3. **CLIENTE — cancelar reserva con varias reservas:** bug en `cancelarReserva` (Functions): se hacía
+>    `tx.get(agendaRef)` DESPUÉS de `tx.delete/update` → error del SDK "Firestore transactions require all
+>    reads…". Reordenada la Transaction para hacer TODAS las lecturas antes de las escrituras. **Deploy
+>    autorizado solo de `cancelarReserva`** ya ejecutado y verificado.
+>
+> ### Verificación (última)
+> `:app` y `:appCliente`: `testDebugUnitTest` y `assembleDebug` BUILD SUCCESSFUL. Functions puras 47/47
+> (24 de reservas + resto) y Rules **197/197**. `git diff --check` limpio. **Sin commit/push.** Los
+> bloques inferiores (i18n y anteriores) quedan como histórico ya superado en parte por este checkpoint.
+
 > ## ⚠️ CHECKPOINT 2026-09-09 (I18N) — INTERNACIONALIZACIÓN ES/EN IMPLEMENTADA POR BLOQUES EN `:app` Y `:appCliente` (REANUDAR AQUÍ)
 >
 > Estado real al cierre de la tanda de i18n. **HEAD del desarrollador: `64de014` "Ignorar archivos Shelf

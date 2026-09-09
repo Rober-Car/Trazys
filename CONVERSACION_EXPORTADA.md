@@ -1,5 +1,17 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
+> **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-09, sistema de reservas + asistentes + despliegues):** FASE 1–4 del
+> sistema de reservas del CLIENTE. Working tree SIN commit (NO revertir; estado real en AGENTS.md y
+> `git status`; HEAD del desarrollador `e31e701`). Resumen de lo cerrado en esta tanda (compilando y con
+> tests OK): backend callable `reservar`/`cancelarReserva` en Functions (europe-west1, Admin SDK) que
+> escriben reserva, `asistentes` en la sesión y agenda derivada por cliente/día; appCliente invoca esas
+> callables y lee `permiteCombinarDia`/`asistentes`; cascadas ADMIN y `eliminarMiCuenta` mantienen
+> agenda/asistentes coherentes; Rules de FASE 4 cierran el acceso directo del CLIENTE (reservas,
+> plazas/asistentes, agenda). Correcciones: `permiteCombinarDia` en `:app` (Room v19 + switch alta/
+> edición), asistentes en pantalla independiente `AsistentesSesionScreen` (no en la tarjeta), y bug de
+> `cancelarReserva` (lectura tras escritura en la Transaction) reordenado. Desplegado en
+> `gestorpro-50e83`: `reservar`, `cancelarReserva` y ruleset Firestore FASE 4.
+
 > **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-09, resumen para continuar):** tanda de **internacionalización
 > (i18n) ES/EN por bloques** en `:app` y `:appCliente`. Working tree SIN commit (NO revertir; estado
 > real en AGENTS.md y en git status). Resumen de lo cerrado en esta tanda (todo compilando y con tests OK):
