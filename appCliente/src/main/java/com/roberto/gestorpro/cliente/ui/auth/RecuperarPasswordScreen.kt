@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -26,11 +26,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
@@ -48,6 +50,13 @@ fun RecuperarPasswordScreen(
     var mensaje by rememberSaveable { mutableStateOf("") }
     var esError by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Textos localizados del bloque de autenticación.
+    val textoRecuperarTitulo = stringResource(R.string.auth_recuperar_titulo)
+    val textoInstrucciones = stringResource(R.string.auth_recuperar_instrucciones)
+    val textoEmail = stringResource(R.string.auth_email)
+    val textoExito = stringResource(R.string.auth_recuperar_exito)
+    val textoEnviarCorreo = stringResource(R.string.auth_recuperar_enviar)
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
@@ -72,7 +81,7 @@ fun RecuperarPasswordScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Recuperar contraseña",
+                        text = textoRecuperarTitulo,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -81,8 +90,7 @@ fun RecuperarPasswordScreen(
             }
 
             Text(
-                text = "Introduce el email de tu cuenta y recibirás un enlace " +
-                    "para restablecer la contraseña.",
+                text = textoInstrucciones,
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -92,7 +100,7 @@ fun RecuperarPasswordScreen(
                     email = it
                     mensaje = ""
                 },
-                label = { Text("Email") },
+                label = { Text(textoEmail) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -106,15 +114,14 @@ fun RecuperarPasswordScreen(
             }
 
             AppPrimaryButton(
-                text = "Enviar correo",
+                text = textoEnviarCorreo,
                 onClick = {
                     scope.launch {
                         mensaje = ""
                         val error = mainViewModel.enviarCorreoRecuperacion(email.trim())
                         if (error == null) {
                             esError = false
-                            mensaje = "Si el email existe, recibirás un enlace para " +
-                                "restablecer tu contraseña"
+                            mensaje = textoExito
                         } else {
                             esError = true
                             mensaje = error

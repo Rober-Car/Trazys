@@ -49,14 +49,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.PerfilPendiente
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
@@ -102,6 +104,23 @@ fun CompletarPerfilScreen(
     var mensajeError by rememberSaveable { mutableStateOf("") }
     var fotoTemporal by remember { mutableStateOf<File?>(null) }
     val scope = rememberCoroutineScope()
+
+    // Textos localizados del bloque de incorporación.
+    val textoCompletaRegistro = stringResource(R.string.perfil_titulo_completar)
+    val textoIntroTemporal = stringResource(R.string.perfil_intro_temporal)
+    val textoCamposObligatorios = stringResource(R.string.perfil_aviso_campos_obligatorios)
+    val textoFotoRostro = stringResource(R.string.perfil_etiqueta_foto)
+    val textoFotoPerfil = stringResource(R.string.perfil_foto_descripcion)
+    val textoNombre = stringResource(R.string.perfil_label_nombre)
+    val textoApellidos = stringResource(R.string.perfil_label_apellidos)
+    val textoDni = stringResource(R.string.perfil_label_dni)
+    val textoTelefono = stringResource(R.string.perfil_label_telefono)
+    val textoEmailOpcional = stringResource(R.string.perfil_label_email_opcional)
+    val textoFechaNacimiento = stringResource(R.string.perfil_label_fecha_nacimiento)
+    val textoAyudaFecha = stringResource(R.string.perfil_ayuda_fecha_opcional)
+    val textoGuardarPerfil = stringResource(R.string.perfil_accion_guardar)
+    val textoAceptar = stringResource(R.string.accion_aceptar)
+    val textoCancelar = stringResource(R.string.accion_cancelar)
 
     // Carga el perfil pendiente existente (perfiles_pendientes/{uid}) para que
     // los campos aparezcan rellenados si el usuario ya los completó antes.
@@ -166,7 +185,7 @@ fun CompletarPerfilScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Completa tu registro",
+                        text = textoCompletaRegistro,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -175,8 +194,7 @@ fun CompletarPerfilScreen(
             }
 
             Text(
-                text = "Tus datos se guardarán temporalmente hasta que te vincules " +
-                    "a un centro con su código maestro.",
+                text = textoIntroTemporal,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -184,7 +202,7 @@ fun CompletarPerfilScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Los campos marcados con * son obligatorios.",
+                text = textoCamposObligatorios,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -192,7 +210,7 @@ fun CompletarPerfilScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Foto del rostro *",
+                text = textoFotoRostro,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -206,7 +224,7 @@ fun CompletarPerfilScreen(
                 if (foto.isNotBlank()) {
                     AsyncImage(
                         model = File(foto),
-                        contentDescription = "Foto de perfil",
+                        contentDescription = textoFotoPerfil,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(80.dp)
@@ -250,7 +268,7 @@ fun CompletarPerfilScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre *") },
+                label = { Text(textoNombre) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -260,7 +278,7 @@ fun CompletarPerfilScreen(
             OutlinedTextField(
                 value = apellidos,
                 onValueChange = { apellidos = it },
-                label = { Text("Apellidos *") },
+                label = { Text(textoApellidos) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -270,7 +288,7 @@ fun CompletarPerfilScreen(
             OutlinedTextField(
                 value = dni,
                 onValueChange = { dni = it.uppercase() },
-                label = { Text("DNI *") },
+                label = { Text(textoDni) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -280,7 +298,7 @@ fun CompletarPerfilScreen(
             OutlinedTextField(
                 value = telefono,
                 onValueChange = { telefono = it },
-                label = { Text("Teléfono *") },
+                label = { Text(textoTelefono) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth()
@@ -291,7 +309,7 @@ fun CompletarPerfilScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email (opcional)") },
+                label = { Text(textoEmailOpcional) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -301,12 +319,12 @@ fun CompletarPerfilScreen(
             OutlinedTextField(
                 value = fechaNacimientoMillis?.let(::formatearFechaCompletarPerfil) ?: "",
                 onValueChange = {},
-                label = { Text("Fecha de nacimiento") },
+                label = { Text(textoFechaNacimiento) },
                 leadingIcon = {
                     Icon(Icons.Default.DateRange, contentDescription = null)
                 },
                 supportingText = {
-                    Text("Opcional. Toca para abrir el calendario")
+                    Text(textoAyudaFecha)
                 },
                 singleLine = true,
                 readOnly = true,
@@ -337,7 +355,7 @@ fun CompletarPerfilScreen(
             }
 
             AppPrimaryButton(
-                text = "Guardar perfil",
+                text = textoGuardarPerfil,
                 onClick = {
                     mensajeError = ""
                     scope.launch {
@@ -396,12 +414,12 @@ fun CompletarPerfilScreen(
                         mostrarSelectorFecha = false
                     }
                 ) {
-                    Text("Aceptar")
+                    Text(textoAceptar)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarSelectorFecha = false }) {
-                    Text("Cancelar")
+                    Text(textoCancelar)
                 }
             }
         ) {

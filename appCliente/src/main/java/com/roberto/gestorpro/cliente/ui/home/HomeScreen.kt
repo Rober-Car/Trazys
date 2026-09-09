@@ -45,12 +45,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
@@ -60,6 +62,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavHostController
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.model.EstadoIndicadorCliente
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
@@ -88,9 +91,29 @@ fun HomeScreen(
     var menuCentroAbierto by remember { mutableStateOf(false) }
     var mostrarDenunciaLogo by remember { mutableStateOf(false) }
 
+    // Textos localizados del bloque Home.
+    val textoDenunciarTitulo = stringResource(R.string.home_denunciar_titulo)
+    val textoLogoCentro = stringResource(R.string.auth_logo_desc)
+    val textoNombrePorDefecto = stringResource(R.string.auth_login_subtitulo_centro)
+    val textoNombreApp = stringResource(R.string.app_name)
+    val textoMasOpciones = stringResource(R.string.home_mas_opciones_centro)
+    val textoDenunciarCentro = stringResource(R.string.home_denunciar_centro)
+    val textoNoVinculado = stringResource(R.string.home_no_vinculado_titulo)
+    val textoNoVinculadoDesc = stringResource(R.string.home_no_vinculado_descripcion)
+    val textoVincularCentro = stringResource(R.string.home_vincular_centro)
+    val textoCardActividades = stringResource(R.string.home_card_actividades)
+    val textoCardActividadesDesc = stringResource(R.string.home_card_actividades_descripcion)
+    val textoCardRutinas = stringResource(R.string.home_card_rutinas)
+    val textoCardRutinasDesc = stringResource(R.string.home_card_rutinas_descripcion)
+    val textoCardAjustes = stringResource(R.string.home_card_ajustes)
+    val textoCardAjustesDesc = stringResource(R.string.home_card_ajustes_descripcion)
+    val textoCardNotificaciones = stringResource(R.string.home_card_notificaciones)
+    val textoCardNotificacionesDesc =
+        stringResource(R.string.home_card_notificaciones_descripcion)
+
     if (mostrarDenunciaLogo) {
         DialogoDenuncia(
-            titulo = "Denunciar contenido del centro",
+            titulo = textoDenunciarTitulo,
             onDismiss = { mostrarDenunciaLogo = false },
             onEnviar = { motivo, descripcion ->
                 mainViewModel.denunciarLogoNegocio(motivo, descripcion)
@@ -132,14 +155,14 @@ fun HomeScreen(
                             if (logoNegocio.startsWith("http")) {
                                 LogoNegocioAutenticado(
                                     url = logoNegocio,
-                                    contentDescription = "Logo del centro",
+                                    contentDescription = textoLogoCentro,
                                     tamano = 48.dp
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                             } else {
                                 AsyncImage(
                                     model = logoNegocio,
-                                    contentDescription = "Logo del centro",
+                                    contentDescription = textoLogoCentro,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .size(48.dp)
@@ -150,7 +173,7 @@ fun HomeScreen(
                         }
 
                         Text(
-                            text = nombreNegocio.ifBlank { "Tu centro" },
+                            text = nombreNegocio.ifBlank { textoNombrePorDefecto },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -163,7 +186,7 @@ fun HomeScreen(
                             IconButton(onClick = { menuCentroAbierto = true }) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "Más opciones del centro",
+                                    contentDescription = textoMasOpciones,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -172,7 +195,7 @@ fun HomeScreen(
                                 onDismissRequest = { menuCentroAbierto = false }
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Denunciar el centro") },
+                                    text = { Text(textoDenunciarCentro) },
                                     onClick = {
                                         menuCentroAbierto = false
                                         mostrarDenunciaLogo = true
@@ -183,7 +206,7 @@ fun HomeScreen(
                     }
                 } else {
                     Text(
-                        text = "Trazys Cliente",
+                        text = textoNombreApp,
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -211,7 +234,7 @@ fun HomeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "No estás vinculado.",
+                            text = textoNoVinculado,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onErrorContainer,
@@ -219,14 +242,14 @@ fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Vincula tu cuenta para acceder a las funciones de tu centro.",
+                            text = textoNoVinculadoDesc,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         AppPrimaryButton(
-                            text = "Vincular centro",
+                            text = textoVincularCentro,
                             onClick = { navController.navigate(Routes.INICIO) },
                             fullWidth = false
                         )
@@ -270,8 +293,8 @@ fun HomeScreen(
                 if (puedeVerClases) {
                     item {
                         HomeClientMenuCard(
-                            titulo = "Actividades",
-                            descripcion = "Consulta y reserva tus actividades",
+                            titulo = textoCardActividades,
+                            descripcion = textoCardActividadesDesc,
                             icono = Icons.Default.FitnessCenter,
                             color = Color(0xFFFB8C00),
                             onClick = { navController.navigate(Routes.CLASES) }
@@ -280,8 +303,8 @@ fun HomeScreen(
                 }
                 item {
                     HomeClientMenuCard(
-                        titulo = "Rutinas",
-                        descripcion = "Rutinas de entrenamiento",
+                        titulo = textoCardRutinas,
+                        descripcion = textoCardRutinasDesc,
                         icono = Icons.Default.FitnessCenter,
                         color = Color(0xFF26A69A),
                         onClick = { navController.navigate(Routes.RUTINAS) }
@@ -289,8 +312,8 @@ fun HomeScreen(
                 }
                 item {
                     HomeClientMenuCard(
-                        titulo = "Ajustes",
-                        descripcion = "Configuración general",
+                        titulo = textoCardAjustes,
+                        descripcion = textoCardAjustesDesc,
                         icono = Icons.Default.Settings,
                         color = Color(0xFF78909C),
                         onClick = { navController.navigate(Routes.CONFIGURACION) }
@@ -298,8 +321,8 @@ fun HomeScreen(
                 }
                 item {
                     HomeClientMenuCard(
-                        titulo = "Notificaciones",
-                        descripcion = "Consulta tus avisos",
+                        titulo = textoCardNotificaciones,
+                        descripcion = textoCardNotificacionesDesc,
                         icono = Icons.Default.Notifications,
                         color = Color(0xFF7E57C2),
                         badge = noLeidas,
@@ -331,41 +354,45 @@ fun HomeScreen(
  * --------------
  * Aviso de texto integrado en el Home cuando el cliente sigue ACTIVO pero con
  * el período vencido (PAGO_VENCIDO). Es una advertencia contextual sin fondo
- * rojo: todo el texto va en el color de error del tema y la palabra "aquí" se
- * distingue como enlace (color primario, negrita y subrayada). Solo "aquí" es
+ * rojo: todo el texto va en el color de error del tema y la palabra enlazada se
+ * distingue como enlace (color primario, negrita y subrayada). Solo el enlace es
  * clicable y navega a la cuenta del cliente para renovar o solicitar la baja.
+ *
+ * El enlace se construye con recursos (texto + palabra enlazada) y una anotación
+ * posicional: no depende de buscar la palabra en un literal concreto, por lo que
+ * funciona igual en ES y EN.
  */
 @Composable
 private fun AvisoMorosidad(
     onRenovar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val texto = "Renueva la mensualidad o solicita la baja aquí"
-    val etiqueta = "aquí"
-    val indice = texto.indexOf(etiqueta)
+    val texto = stringResource(R.string.home_aviso_morosidad_texto)
+    val enlace = stringResource(R.string.home_aviso_morosidad_enlace)
     val enlaceColor = MaterialTheme.colorScheme.primary
 
     val annotated = buildAnnotatedString {
         append(texto)
-        if (indice >= 0) {
-            addStyle(
-                SpanStyle(
-                    color = enlaceColor,
-                    fontWeight = FontWeight.Bold,
-                    textDecoration = TextDecoration.Underline
-                ),
-                indice,
-                indice + etiqueta.length
+        append(" ")
+        pushStringAnnotation(ETIQUETA_ANOTACION, ETIQUETA_ANOTACION)
+        withStyle(
+            SpanStyle(
+                color = enlaceColor,
+                fontWeight = FontWeight.Bold,
+                textDecoration = TextDecoration.Underline
             )
+        ) {
+            append(enlace)
         }
+        pop()
     }
 
     ClickableText(
         text = annotated,
         onClick = { offset ->
-            if (indice >= 0 && offset in indice until indice + etiqueta.length) {
-                onRenovar()
-            }
+            annotated.getStringAnnotations(ETIQUETA_ANOTACION, offset, offset)
+                .firstOrNull()
+                ?.let { onRenovar() }
         },
         style = MaterialTheme.typography.bodyLarge.copy(
             color = MaterialTheme.colorScheme.error,
@@ -374,6 +401,8 @@ private fun AvisoMorosidad(
         modifier = modifier.fillMaxWidth()
     )
 }
+
+private const val ETIQUETA_ANOTACION = "renovar"
 
 /**
  * HomeClientMenuCard
@@ -484,9 +513,8 @@ private fun HomeMenuBadge(cantidad: Int, modifier: Modifier = Modifier) {
 /**
  * EstadoVisualCliente
  * -------------------
- * Modelo visual (sin datos) de los tres estados que puede mostrar el indicador
- * de estado del cliente en el Home de GestorPro Cliente. Solo se usa para la
- * presentación; la conexión con Firestore corresponde a la Fase 2.
+ * Modelo visual (sin datos) de los estados que puede mostrar el indicador de
+ * estado del cliente en el Home. Solo se usa para la presentación.
  */
 private enum class EstadoVisualCliente {
     ACTIVO, PAGO_VENCIDO, BAJA, REGISTRADO, ARCHIVADO
@@ -498,8 +526,8 @@ private enum class EstadoVisualCliente {
  * Bloque visual, neutro y discreto, que muestra el estado del cliente en el
  * Home: una bola de color a la izquierda y el texto de estado (con protagonismo)
  * junto a la fecha (secundaria). El fondo es neutro; solo la bola y el título
- * adoptan el color semántico. Queda preparado para recibir estado y fecha reales
- * en la Fase 2 sin alterar su presentación.
+ * adoptan el color semántico. El color y el texto dependen del ESTADO (enum),
+ * nunca del texto traducido.
  */
 @Composable
 private fun HomeClientEstadoIndicator(
@@ -507,18 +535,20 @@ private fun HomeClientEstadoIndicator(
     fecha: String?,
     modifier: Modifier = Modifier
 ) {
-    val (color, titulo, prefijo) = when (estado) {
+    val (color, tituloRecurso, prefijoRecurso) = when (estado) {
         EstadoVisualCliente.ACTIVO ->
-            Triple(Color(0xFF43A047), "Activo", "Hasta el")
+            Triple(Color(0xFF43A047), R.string.estado_activo, R.string.home_prefijo_hasta)
         EstadoVisualCliente.PAGO_VENCIDO ->
-            Triple(Color(0xFFE53935), "Pago vencido", "Venció el")
+            Triple(Color(0xFFE53935), R.string.home_estado_pago_vencido, R.string.home_prefijo_vencio)
         EstadoVisualCliente.BAJA ->
-            Triple(Color(0xFF78909C), "Baja", "Desde el")
+            Triple(Color(0xFF78909C), R.string.estado_baja, R.string.home_prefijo_desde)
         EstadoVisualCliente.REGISTRADO ->
-            Triple(Color(0xFF64B5F6), "Registrado", null)
+            Triple(Color(0xFF64B5F6), R.string.estado_registrado, null)
         EstadoVisualCliente.ARCHIVADO ->
-            Triple(Color(0xFF78909C), "Archivado", null)
+            Triple(Color(0xFF78909C), R.string.estado_archivado, null)
     }
+    val titulo = stringResource(tituloRecurso)
+    val prefijo = prefijoRecurso?.let { stringResource(it) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),

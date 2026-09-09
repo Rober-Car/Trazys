@@ -1,5 +1,31 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🔴 ACTUALIZACIÓN 2026-09-09 — I18N ES/EN POR BLOQUES (estado vigente):** verificado contra el árbol
+> real. **HEAD del desarrollador: `64de014`** ("Ignorar archivos Shelf"). El working tree conserva SIN
+> commit TODO el trabajo de i18n de esta tanda (**NO revertir**; lista en `git status`; ver CHECKPOINT
+> 2026-09-09 (I18N) de AGENTS.md). Resumen de esta tanda:
+> - **Infraestructura previa (del desarrollador, ya commiteada):** preferencia `idioma` en DataStore
+>   (es/en, default es), `util/IdiomaAplicacion` (locale + contexto override), precarga en Application y
+>   `attachBaseContext`+`recreate` en MainActivity. **Nosotros añadimos** en `IdiomaAplicacion` de ambos
+>   módulos los helpers `textoDe(base, recurso[, vararg])` para resolver recursos en el idioma elegido
+>   desde repositorios/ViewModels (`@ApplicationContext`).
+> - **`values-en/` nuevo en `:app` y `:appCliente`** (carpeta sin versionar aún). Contadores finales:
+>   `:app` 48+48 (solo AUTH del ADMIN), `:appCliente` 237+237 (todos los bloques del CLIENTE).
+> - **`:app` (ADMIN):** internacionalizado únicamente el bloque AUTENTICACIÓN (Login/Registro/Recuperar +
+>   mensajes del `AutenticacionRepository` + validaciones visibles del `MainViewModel`). El resto de
+>   pantallas ADMIN sigue hardcodeado en español (bloques i18n futuros).
+> - **`:appCliente` (CLIENTE):** completados AUTENTICACIÓN, INCORPORACIÓN (Elección/Inicio código+DNI/
+>   CompletarPerfil/BotonSelectorFoto), MI PERFIL y EDITAR PERFIL, MI CUENTA (CuentaScreen y diálogos),
+>   HOME (incluido `AvisoMorosidad` sin `indexOf("aquí")` y `DialogoDenuncia` + motivos), CONFIGURACIÓN
+>   (incluida `EliminarCuentaScreen`) y NOTIFICACIONES (buzón + preferencias de avisos). Errores visibles
+>   de repos/ViewModels localizados; funciones puras testadas (`validarCambioContrasena`,
+>   `validarDatosDenuncia`, `MotivosDenuncia.etiqueta`) intactas con sus tests.
+> - **Excluido del alcance (ver AGENTS.md):** cuerpo legal de `PoliticaPrivacidadScreen` y
+>   `TerminosDeUsoScreen` (solo interfaz/cabeceras/versión traducidas), `ClasesScreen`/Actividades y
+>   Rutinas del CLIENTE, pantallas ADMIN fuera de AUTH, `InformacionLegalScreen` (sin ruta), web.
+> - Verificación: `:app` y `:appCliente` compilan y sus `testDebugUnitTest`/`assembleDebug` pasan;
+>   claves ES/EN idénticas y sin `R.string` huérfanos; `git diff --check` limpio. Sin commit/push/deploy.
+
 > **🔴 ACTUALIZACIÓN 2026-09-09 — DEPLOY `notificacionInmediata` + LECTURA ADMIN (estado vigente):**
 > verificado contra el árbol real. **HEAD del desarrollador: `a0bc03b`** (en `origin/master`; `77e3641`
 > ya commiteó denuncias 2C-2, Login Cliente, web `/terminos` y la doc previa). El working tree mezcla

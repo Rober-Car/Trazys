@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
@@ -52,24 +54,30 @@ fun EliminarCuentaScreen(
     var error by remember { mutableStateOf<String?>(null) }
     val eliminando by mainViewModel.eliminandoCuenta.collectAsStateWithLifecycle()
 
+    // Textos localizados del bloque de eliminación de cuenta.
+    val textoEliminarMiCuenta = stringResource(R.string.eliminar_titulo)
+    val textoConfirmacion = stringResource(R.string.eliminar_confirmacion_texto)
+    val textoContinuar = stringResource(R.string.vinculacion_accion_continuar)
+    val textoCancelar = stringResource(R.string.accion_cancelar)
+    val textoEliminacionPermanente = stringResource(R.string.eliminar_titulo_permanente)
+    val textoIntro = stringResource(R.string.eliminar_intro)
+    val textoContrasenaActual = stringResource(R.string.cuenta_label_contrasena_actual)
+    val textoEliminando = stringResource(R.string.eliminar_accion_eliminando)
+
     if (mostrarConfirmacion) {
         AlertDialog(
             onDismissRequest = { navController.popBackStack() },
-            title = { Text("Eliminar mi cuenta") },
+            title = { Text(textoEliminarMiCuenta) },
             text = {
-                Text(
-                    "Se eliminará PERMANENTEMENTE tu cuenta de Firebase y tus " +
-                        "datos asociados. Esta acción es irreversible. " +
-                        "Introduce tu contraseña para continuar."
-                )
+                Text(textoConfirmacion)
             },
             confirmButton = {
                 TextButton(onClick = { mostrarConfirmacion = false }) {
-                    Text("Continuar", color = MaterialTheme.colorScheme.error)
+                    Text(textoContinuar, color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { navController.popBackStack() }) { Text("Cancelar") }
+                TextButton(onClick = { navController.popBackStack() }) { Text(textoCancelar) }
             }
         )
     }
@@ -88,15 +96,14 @@ fun EliminarCuentaScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Eliminación permanente",
+                text = textoEliminacionPermanente,
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Se borrará tu cuenta de Firebase, tu perfil y tus datos " +
-                    "asociados. No podrás recuperarlos.",
+                text = textoIntro,
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -105,7 +112,7 @@ fun EliminarCuentaScreen(
             OutlinedTextField(
                 value = contrasena,
                 onValueChange = { contrasena = it },
-                label = { Text("Contraseña actual") },
+                label = { Text(textoContrasenaActual) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -128,7 +135,7 @@ fun EliminarCuentaScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             AppPrimaryButton(
-                text = if (eliminando) "Eliminando…" else "Eliminar mi cuenta",
+                text = if (eliminando) textoEliminando else textoEliminarMiCuenta,
                 enabled = !eliminando && contrasena.isNotBlank(),
                 onClick = {
                     error = null

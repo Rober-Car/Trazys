@@ -1,3 +1,58 @@
 <resources>
     <string name="app_name">Trazys</string>
+
+    <!-- ===== Autenticación: Login ===== -->
+    <string name="auth_login_titulo">Iniciar sesión</string>
+    <string name="auth_login_subtitulo_gestion">Gestión de clientes y cuotas</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_contrasena">Contraseña</string>
+    <string name="auth_mostrar_contrasena">Mostrar contraseña</string>
+    <string name="auth_ocultar_contrasena">Ocultar contraseña</string>
+    <string name="auth_boton_entrar">Entrar</string>
+    <string name="auth_enlace_no_tienes_cuenta">¿No tienes cuenta? Crear una</string>
+    <string name="auth_enlace_olvidaste_contrasena">¿Has olvidado tu contraseña?</string>
+    <string name="auth_copyright">© 2026 Trazys</string>
+    <string name="auth_logo_desc">Logo del negocio</string>
+    <string name="auth_error_credenciales_generico">El correo o la contraseña no son correctos.</string>
+
+    <!-- ===== Autenticación: Registro ===== -->
+    <string name="auth_registro_titulo">Crear una cuenta</string>
+    <string name="auth_registro_perfil">Perfil: %1$s</string>
+    <string name="auth_rol_administrador">Administrador</string>
+    <string name="auth_rol_cliente">Cliente</string>
+    <string name="auth_repetir_contrasena">Repetir contraseña</string>
+    <string name="auth_registro_acepta_terminos">He leído y acepto los Términos de uso</string>
+    <string name="auth_registro_ver_terminos">Ver Términos de uso</string>
+    <string name="auth_registro_ver_privacidad">Ver Política de privacidad</string>
+    <string name="auth_registro_error_terminos">Debes aceptar los Términos de uso para crear la cuenta</string>
+    <string name="auth_registro_boton">Crear cuenta</string>
+    <string name="auth_registro_ya_tengo_cuenta">Ya tengo cuenta. Iniciar sesión</string>
+
+    <!-- ===== Autenticación: Recuperar contraseña ===== -->
+    <string name="auth_recuperar_titulo">Recuperar contraseña</string>
+    <string name="auth_recuperar_instrucciones">Introduce tu email y te enviaremos un enlace para restablecerla.</string>
+    <string name="auth_recuperar_enviar">Enviar correo</string>
+    <string name="auth_recuperar_exito">Si el email existe, recibirás un enlace para restablecer tu contraseña</string>
+    <string name="auth_recuperar_volver">Volver a iniciar sesión</string>
+
+    <!-- ===== Autenticación: mensajes de validación y de Firebase ===== -->
+    <string name="auth_introduce_email">Introduce tu email</string>
+    <string name="auth_error_email_formato">El email no tiene un formato válido</string>
+    <string name="auth_error_contrasena_debil">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="auth_error_contrasenas_no_coinciden">Las contraseñas no coinciden</string>
+    <string name="auth_error_email_ya_existe">Ya existe una cuenta con este email</string>
+    <string name="auth_error_cuenta_no_existe">No existe una cuenta con este email</string>
+    <string name="auth_error_credenciales">Email o contraseña incorrectos</string>
+    <string name="auth_error_cuenta_desactivada">Esta cuenta está desactivada</string>
+    <string name="auth_error_usuario_sin_perfil">El usuario no tiene perfil en la base de datos</string>
+    <string name="auth_error_no_pertenece_a_app">Esta cuenta no pertenece a la app de clientes</string>
+    <string name="auth_error_no_crear_cuenta">No se pudo crear la cuenta</string>
+    <string name="auth_error_no_perfil_usuario">No se pudo crear el perfil del usuario: %1$s</string>
+    <string name="auth_error_no_iniciar_sesion">No se pudo iniciar sesión</string>
+    <string name="auth_error_no_leer_perfil">No se pudo leer el perfil del usuario: %1$s</string>
+    <string name="auth_error_inesperado">Error inesperado. Inténtalo de nuevo</string>
+    <string name="auth_error_sin_conexion">No hay conexión con Firebase. Comprueba tu conexión a Internet</string>
+    <string name="auth_error_no_enviar_correo">No se pudo enviar el correo. Inténtalo de nuevo</string>
+    <string name="auth_cuenta_creada_ok">Cuenta creada correctamente</string>
+    <string name="auth_sesion_iniciada_ok">Sesión iniciada correctamente</string>
 </resources>

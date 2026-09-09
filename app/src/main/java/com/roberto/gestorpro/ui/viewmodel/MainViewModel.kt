@@ -1,8 +1,10 @@
 package com.roberto.gestorpro.ui.viewmodel
 
+import android.content.Context
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.data.firebase.AutenticacionRepository
 import com.roberto.gestorpro.data.firebase.EstadoNegocioDeCuenta
 import com.roberto.gestorpro.data.firebase.NegocioRepository
@@ -18,6 +20,7 @@ import com.roberto.gestorpro.model.TipoUsuario
 import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.util.IdiomaAplicacion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +32,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesRepository: PreferencesRepository,
     private val autenticacionRepository: AutenticacionRepository,
     private val negocioRepository: NegocioRepository,
@@ -37,6 +41,14 @@ class MainViewModel @Inject constructor(
     private val hidratadorCacheLocal: HidratadorCacheLocal,
     private val desactivacionServicioSincronizador: DesactivacionServicioSincronizador
 ) : ViewModel() {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     /**
      * _autenticando / autenticando
@@ -337,10 +349,10 @@ class MainViewModel @Inject constructor(
      */
     suspend fun enviarCorreoRecuperacion(email: String): String? {
         if (email.isBlank()) {
-            return "Introduce tu email"
+            return texto(R.string.auth_introduce_email)
         }
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return "El email no tiene un formato válido"
+            return texto(R.string.auth_error_email_formato)
         }
 
         _autenticando.value = true
@@ -364,10 +376,10 @@ class MainViewModel @Inject constructor(
         contrasenaRepetida: String
     ): String? {
         if (contrasena.length < 6) {
-            return "La contraseña debe tener al menos 6 caracteres"
+            return texto(R.string.auth_error_contrasena_debil)
         }
         if (contrasena != contrasenaRepetida) {
-            return "Las contraseñas no coinciden"
+            return texto(R.string.auth_error_contrasenas_no_coinciden)
         }
 
         _autenticando.value = true

@@ -20,10 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 
@@ -42,6 +44,15 @@ import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 fun EleccionInicioScreen(
     navController: NavHostController
 ) {
+    val textoComoEmpezar = stringResource(R.string.inicio_eleccion_titulo)
+    val textoCentroYaTieneDatos = stringResource(R.string.inicio_eleccion_centro_titulo)
+    val textoCentroYaTieneDatosDesc = stringResource(R.string.inicio_eleccion_centro_descripcion)
+    val textoVincularme = stringResource(R.string.vinculacion_titulo_accion)
+    val textoCentroNoRegistrado = stringResource(R.string.inicio_eleccion_registro_titulo)
+    val textoCentroNoRegistradoDesc = stringResource(R.string.inicio_eleccion_registro_descripcion)
+    val textoRegistrarme = stringResource(R.string.vinculacion_accion_registrarse)
+    val textoNotaSinCodigo = stringResource(R.string.inicio_eleccion_nota)
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
     ) { innerPadding ->
@@ -57,7 +68,7 @@ fun EleccionInicioScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "¿Cómo quieres empezar?",
+                text = textoComoEmpezar,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -66,31 +77,26 @@ fun EleccionInicioScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-
-
-
             OpcionInicioCard(
-                titulo = "Tu centro ya tiene tus datos",
-                descripcion = "Si tu centro ha registrado tus datos y tienes el " +
-                    "código maestro, pulsa aquí.",
-                textoBoton = "Vincularme al centro",
+                titulo = textoCentroYaTieneDatos,
+                descripcion = textoCentroYaTieneDatosDesc,
+                textoBoton = textoVincularme,
                 onClick = { navController.navigate(Routes.INICIO) }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             OpcionInicioCard(
-                titulo = "Tu centro aún no te ha registrado",
-                descripcion = "Si tu centro no ha registrado tus datos, pulsa aquí.",
-                textoBoton = "Registrarme",
+                titulo = textoCentroNoRegistrado,
+                descripcion = textoCentroNoRegistradoDesc,
+                textoBoton = textoRegistrarme,
                 onClick = { navController.navigate(Routes.COMPLETAR_PERFIL) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Si aún no tienes el código maestro, puedes registrarte " +
-                    "primero y vincular tu cuenta a tu centro después.",
+                text = textoNotaSinCodigo,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

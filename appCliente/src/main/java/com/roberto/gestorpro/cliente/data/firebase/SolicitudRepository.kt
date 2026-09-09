@@ -1,11 +1,16 @@
 package com.roberto.gestorpro.cliente.data.firebase
 
+import android.content.Context
 import android.util.Log
+import androidx.annotation.StringRes
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.model.EstadoSolicitud
 import com.roberto.gestorpro.cliente.model.SolicitudBaja
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,9 +24,18 @@ import javax.inject.Singleton
  */
 @Singleton
 class SolicitudRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val auth: FirebaseAuth,
     private val db: FirebaseFirestore
 ) {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(@StringRes recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     companion object {
         private const val COLECCION_SOLICITUDES = "solicitudes"
@@ -83,14 +97,17 @@ class SolicitudRepository @Inject constructor(
         motivo: String?
     ): ResultadoAutenticacion {
         val uid = auth.currentUser?.uid
-            ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
+            ?: return ResultadoAutenticacion(
+                false,
+                texto(R.string.vinculacion_error_sin_sesion)
+            )
 
         return try {
             val existentes = obtenerSolicitudes(clienteId, negocioId)
             if (existentes.any { it.estado == EstadoSolicitud.PENDIENTE }) {
                 return ResultadoAutenticacion(
                     false,
-                    "Ya tienes una solicitud de baja pendiente de revisión"
+                    texto(R.string.cuenta_error_baja_pendiente)
                 )
             }
 
@@ -113,7 +130,7 @@ class SolicitudRepository @Inject constructor(
                 .esperar()
 
             Log.i(TAG, "Solicitud de baja creada: $idSolicitud")
-            ResultadoAutenticacion(true, "Solicitud de baja enviada")
+            ResultadoAutenticacion(true, texto(R.string.cuenta_baja_enviada_ok))
         } catch (e: Exception) {
             Log.e(TAG, "Error creando la solicitud de baja", e)
             ResultadoAutenticacion(false, mensajeDe(e))
@@ -136,8 +153,8 @@ class SolicitudRepository @Inject constructor(
     private fun mensajeDe(e: Exception): String {
         return when {
             e.message?.contains("permission", ignoreCase = true) == true ->
-                "No tienes permisos para solicitar la baja"
-            else -> e.message ?: "Error inesperado al solicitar la baja"
+                texto(R.string.cuenta_error_permisos_baja)
+            else -> e.message ?: texto(R.string.cuenta_error_inesperado_baja)
         }
     }
 }

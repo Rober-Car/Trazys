@@ -30,11 +30,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.ui.viewmodel.NotificacionesClienteViewModel
 
 /**
@@ -52,6 +54,11 @@ fun NotificacionesScreen(
     val notificacionesActivadas by viewModel.notificacionesActivadas
         .collectAsStateWithLifecycle(initialValue = true)
     val morado = Color(0xFF7E57C2)
+
+    // Textos localizados del bloque de notificaciones.
+    val textoNotificaciones = stringResource(R.string.home_card_notificaciones)
+    val textoVolver = stringResource(R.string.accion_volver)
+    val textoRecibirAvisos = stringResource(R.string.notif_recibir_avisos_centro)
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
@@ -74,14 +81,14 @@ fun NotificacionesScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
+                            contentDescription = textoVolver,
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Notificaciones",
+                        text = textoNotificaciones,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -92,7 +99,7 @@ fun NotificacionesScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Notificaciones",
+                text = textoNotificaciones,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -124,14 +131,14 @@ fun NotificacionesScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Notificaciones",
+                            text = textoNotificaciones,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Recibir avisos del centro",
+                            text = textoRecibirAvisos,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

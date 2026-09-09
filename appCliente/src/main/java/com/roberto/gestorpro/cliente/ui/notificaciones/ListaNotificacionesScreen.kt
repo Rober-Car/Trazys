@@ -42,12 +42,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.model.Notificacion
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppSecondaryButton
@@ -78,13 +80,24 @@ fun ListaNotificacionesScreen(
 
     var notificacionADenunciar by remember { mutableStateOf<Notificacion?>(null) }
 
+    // Textos localizados del bloque de notificaciones.
+    val textoNotificaciones = stringResource(R.string.home_card_notificaciones)
+    val textoDenunciarTitulo = stringResource(R.string.notif_denunciar_titulo)
+    val textoNoVinculadoTitulo = stringResource(R.string.notif_no_vinculado_titulo)
+    val textoNoVinculadoDetalle = stringResource(R.string.notif_no_vinculado_detalle)
+    val textoVaciaTitulo = stringResource(R.string.notif_vacia_titulo)
+    val textoVaciaDetalle = stringResource(R.string.notif_vacia_detalle)
+    val textoReintentar = stringResource(R.string.notif_reintentar)
+    val textoMasOpciones = stringResource(R.string.notif_mas_opciones)
+    val textoDenunciar = stringResource(R.string.notif_accion_denunciar)
+
     LaunchedEffect(Unit) {
         viewModel.cargar()
     }
 
     notificacionADenunciar?.let { notificacion ->
         DialogoDenuncia(
-            titulo = "Denunciar contenido",
+            titulo = textoDenunciarTitulo,
             onDismiss = { notificacionADenunciar = null },
             onEnviar = { motivo, descripcion ->
                 mainViewModel.denunciarNotificacion(
@@ -120,7 +133,7 @@ fun ListaNotificacionesScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Notificaciones",
+                        text = textoNotificaciones,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -137,8 +150,8 @@ fun ListaNotificacionesScreen(
                 }
 
                 noVinculado -> MensajeNotificaciones(
-                    titulo = "No estás vinculado a un centro",
-                    detalle = "Vincula tu cuenta para recibir avisos."
+                    titulo = textoNoVinculadoTitulo,
+                    detalle = textoNoVinculadoDetalle
                 )
 
                 error != null -> Column(
@@ -155,15 +168,15 @@ fun ListaNotificacionesScreen(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     AppSecondaryButton(
-                        text = "Reintentar",
+                        text = textoReintentar,
                         onClick = { viewModel.cargar() },
                         fullWidth = false
                     )
                 }
 
                 notificaciones.isEmpty() -> MensajeNotificaciones(
-                    titulo = "No tienes notificaciones",
-                    detalle = "Cuando recibas un aviso aparecerá aquí."
+                    titulo = textoVaciaTitulo,
+                    detalle = textoVaciaDetalle
                 )
 
                 else -> LazyColumn(
@@ -210,6 +223,9 @@ private fun NotificacionCard(
         morado
     }
     var menuAbierto by remember { mutableStateOf(false) }
+
+    val textoMasOpciones = stringResource(R.string.notif_mas_opciones)
+    val textoDenunciar = stringResource(R.string.notif_accion_denunciar)
 
     Card(
         onClick = onClick,
@@ -274,7 +290,7 @@ private fun NotificacionCard(
                     IconButton(onClick = { menuAbierto = true }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Más opciones",
+                            contentDescription = textoMasOpciones,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -283,7 +299,7 @@ private fun NotificacionCard(
                         onDismissRequest = { menuAbierto = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Denunciar") },
+                            text = { Text(textoDenunciar) },
                             onClick = {
                                 menuAbierto = false
                                 onDenunciar()

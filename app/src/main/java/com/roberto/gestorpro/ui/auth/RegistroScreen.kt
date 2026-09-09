@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.model.TipoUsuario
 import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
@@ -106,6 +108,24 @@ fun RegistroScreen(
 
     val azulPrincipal = Color(0xFF1E88E5)
 
+    // Textos localizados del bloque de autenticación.
+    val textoCrearCuenta = stringResource(R.string.auth_registro_titulo)
+    val textoEmail = stringResource(R.string.auth_email)
+    val textoContrasena = stringResource(R.string.auth_contrasena)
+    val textoRepetirContrasena = stringResource(R.string.auth_repetir_contrasena)
+    val textoOcultarContrasena = stringResource(R.string.auth_ocultar_contrasena)
+    val textoMostrarContrasena = stringResource(R.string.auth_mostrar_contrasena)
+    val textoHeLeidoYAcepto = stringResource(R.string.auth_registro_acepta_terminos)
+    val textoVerTerminos = stringResource(R.string.auth_registro_ver_terminos)
+    val textoVerPrivacidad = stringResource(R.string.auth_registro_ver_privacidad)
+    val textoErrorTerminos = stringResource(R.string.auth_registro_error_terminos)
+    val textoBotonCrear = stringResource(R.string.auth_registro_boton)
+    val textoYaTengoCuenta = stringResource(R.string.auth_registro_ya_tengo_cuenta)
+    val textoCopyright = stringResource(R.string.auth_copyright)
+    val textoSubtituloGestion = stringResource(R.string.auth_login_subtitulo_gestion)
+    val textoRolAdministrador = stringResource(R.string.auth_rol_administrador)
+    val textoRolCliente = stringResource(R.string.auth_rol_cliente)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -115,7 +135,7 @@ fun RegistroScreen(
         Spacer(modifier = Modifier.height(80.dp))
 
         Text(
-            text = "Crear una cuenta",
+            text = textoCrearCuenta,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -123,11 +143,16 @@ fun RegistroScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        val rolLocalizado = when (tipoGuardado) {
+            "Administrador" -> textoRolAdministrador
+            "Cliente" -> textoRolCliente
+            else -> null
+        }
         Text(
-            text = if (tipoGuardado != null) {
-                "Perfil: $tipoGuardado"
+            text = if (rolLocalizado != null) {
+                stringResource(R.string.auth_registro_perfil, rolLocalizado)
             } else {
-                "Gestión de clientes y cuotas"
+                textoSubtituloGestion
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -152,7 +177,7 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text(textoEmail) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Person,
@@ -176,7 +201,7 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = contrasena,
                     onValueChange = { contrasena = it },
-                    label = { Text("Contraseña") },
+                    label = { Text(textoContrasena) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Lock,
@@ -195,9 +220,9 @@ fun RegistroScreen(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (contrasenaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = azulPrincipal
                             )
@@ -224,7 +249,7 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = contrasenaRepetida,
                     onValueChange = { contrasenaRepetida = it },
-                    label = { Text("Repetir contraseña") },
+                    label = { Text(textoRepetirContrasena) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Lock,
@@ -243,9 +268,9 @@ fun RegistroScreen(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (contrasenaRepetidaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = azulPrincipal
                             )
@@ -293,12 +318,12 @@ fun RegistroScreen(
                     // el texto de aceptación y los dos enlaces empiezan igualados.
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "He leído y acepto los Términos de uso",
+                            text = textoHeLeidoYAcepto,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Ver Términos de uso",
+                            text = textoVerTerminos,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
@@ -306,7 +331,7 @@ fun RegistroScreen(
                                 .clickable { navController.navigate(Routes.TERMINOS_CONDICIONES) }
                         )
                         Text(
-                            text = "Ver Política de privacidad",
+                            text = textoVerPrivacidad,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
@@ -318,12 +343,11 @@ fun RegistroScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 AppPrimaryButton(
-                    text = "Crear cuenta",
+                    text = textoBotonCrear,
                     onClick = {
                         scope.launch {
                             if (!aceptaTerminos) {
-                                mensajeError =
-                                    "Debes aceptar los Términos de uso para crear la cuenta"
+                                mensajeError = textoErrorTerminos
                                 return@launch
                             }
                             val error = mainViewModel.registrarse(
@@ -361,7 +385,7 @@ fun RegistroScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         AppTextLinkButton(
-            text = "Ya tengo cuenta. Iniciar sesión",
+            text = textoYaTengoCuenta,
             onClick = {
                 if (!autenticando) navController.popBackStack()
             }
@@ -370,7 +394,7 @@ fun RegistroScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = "© 2026 Trazys",
+            text = textoCopyright,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 24.dp)

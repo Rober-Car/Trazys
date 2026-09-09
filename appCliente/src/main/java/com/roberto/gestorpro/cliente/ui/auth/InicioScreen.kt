@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
-import androidx.compose.foundation.background
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -27,12 +26,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
@@ -64,6 +65,17 @@ fun InicioScreen(
     var necesitaRegistro by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Textos localizados del bloque de incorporación.
+    val textoVincularme = stringResource(R.string.vinculacion_titulo_accion)
+    val textoIntro = stringResource(R.string.vinculacion_intro)
+    val textoCodigoMaestro = stringResource(R.string.vinculacion_label_codigo_maestro)
+    val textoDni = stringResource(R.string.vinculacion_label_dni)
+    val textoAvisoSinFicha = stringResource(R.string.vinculacion_aviso_sin_ficha)
+    val textoRegistrarme = stringResource(R.string.vinculacion_accion_registrarse)
+    val textoContinuar = stringResource(R.string.vinculacion_accion_continuar)
+    val textoNoTengoVinculo = stringResource(R.string.vinculacion_accion_sin_vinculo)
+    val textoErrorGenerico = stringResource(R.string.vinculacion_error_generico)
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
     ) { innerPadding ->
@@ -87,7 +99,7 @@ fun InicioScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Vincularme al centro",
+                        text = textoVincularme,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -96,8 +108,7 @@ fun InicioScreen(
             }
 
             Text(
-                text = "Introduce el código maestro de tu centro y tu DNI " +
-                    "para vincular tu cuenta.",
+                text = textoIntro,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -111,7 +122,7 @@ fun InicioScreen(
                     mensajeError = ""
                     necesitaRegistro = false
                 },
-                label = { Text("Código maestro") },
+                label = { Text(textoCodigoMaestro) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -123,7 +134,7 @@ fun InicioScreen(
                     mensajeError = ""
                     necesitaRegistro = false
                 },
-                label = { Text("DNI") },
+                label = { Text(textoDni) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -131,17 +142,14 @@ fun InicioScreen(
             if (necesitaRegistro) {
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
-                    text = mensajeError.ifBlank {
-                        "No encontramos una ficha con este DNI. Comprueba con tu " +
-                            "centro o regístrate primero."
-                    },
+                    text = mensajeError.ifBlank { textoAvisoSinFicha },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.size(12.dp))
                 AppSecondaryButton(
-                    text = "Registrarme",
+                    text = textoRegistrarme,
                     onClick = { navController.navigate(Routes.COMPLETAR_PERFIL) },
                     enabled = !operandoRemoto
                 )
@@ -154,7 +162,7 @@ fun InicioScreen(
             }
 
             AppPrimaryButton(
-                text = "Continuar",
+                text = textoContinuar,
                 onClick = {
                     mensajeError = ""
                     necesitaRegistro = false
@@ -173,7 +181,7 @@ fun InicioScreen(
                             }
                             TipoResultadoVinculacion.ERROR -> {
                                 mensajeError = resultado.mensaje
-                                    ?: "No se pudo completar la vinculación. Inténtalo de nuevo"
+                                    ?: textoErrorGenerico
                             }
                         }
                     }
@@ -182,7 +190,7 @@ fun InicioScreen(
             )
 
             AppSecondaryButton(
-                text = "No tengo vinculación",
+                text = textoNoTengoVinculo,
                 onClick = {
                     navController.navigate(Routes.HOME) {
                         popUpTo(0) { inclusive = true }

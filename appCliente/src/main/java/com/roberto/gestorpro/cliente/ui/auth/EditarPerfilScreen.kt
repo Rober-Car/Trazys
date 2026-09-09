@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -53,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.PerfilPendiente
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
@@ -82,6 +84,7 @@ fun EditarPerfilScreen(
     mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val operandoRemoto by mainViewModel.operandoRemoto.collectAsStateWithLifecycle()
+    val requiereTerminosFoto by mainViewModel.requiereTerminosParaFoto.collectAsStateWithLifecycle()
     val idCliente by mainViewModel.idCliente.collectAsStateWithLifecycle()
     val cliente by mainViewModel.cliente.collectAsStateWithLifecycle()
     val perfilPendiente by mainViewModel.perfilPendiente.collectAsStateWithLifecycle()
@@ -98,6 +101,21 @@ fun EditarPerfilScreen(
     var mensajeError by rememberSaveable { mutableStateOf("") }
     var fotoTemporal by remember { mutableStateOf<File?>(null) }
     val scope = rememberCoroutineScope()
+
+    // Textos localizados del bloque de perfil.
+    val textoModificarDatos = stringResource(R.string.perfil_accion_modificar_datos)
+    val textoAvisoVinculado = stringResource(R.string.perfil_aviso_editar_vinculado)
+    val textoAvisoSinVincular = stringResource(R.string.perfil_aviso_editar_sin_vincular)
+    val textoFotoPerfil = stringResource(R.string.perfil_foto_descripcion)
+    val textoNombre = stringResource(R.string.perfil_campo_nombre)
+    val textoApellidos = stringResource(R.string.perfil_campo_apellidos)
+    val textoDni = stringResource(R.string.vinculacion_label_dni)
+    val textoTelefono = stringResource(R.string.perfil_campo_telefono)
+    val textoEmailOpcional = stringResource(R.string.perfil_label_email_opcional)
+    val textoFechaNacimientoFormato =
+        stringResource(R.string.perfil_campo_fecha_nacimiento_formato)
+    val textoPulsaAquiTerminos = stringResource(R.string.perfil_pulsa_aqui_aceptar_terminos)
+    val textoGuardarCambios = stringResource(R.string.perfil_accion_guardar_cambios)
 
     LaunchedEffect(Unit) {
         mainViewModel.cargarPerfilVista()
@@ -184,7 +202,7 @@ fun EditarPerfilScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Modificar mis datos",
+                        text = textoModificarDatos,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -193,13 +211,7 @@ fun EditarPerfilScreen(
             }
 
             Text(
-                text = if (vinculado) {
-                    "Solo puedes modificar tus datos personales. El DNI y los " +
-                        "datos de tu centro no se pueden cambiar desde aquí."
-                } else {
-                    "Todavía no estás vinculado a un centro. Puedes modificar " +
-                        "tus datos, incluido el DNI; al vincularlo, el DNI quedará bloqueado."
-                },
+                text = if (vinculado) textoAvisoVinculado else textoAvisoSinVincular,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -222,7 +234,7 @@ fun EditarPerfilScreen(
                 if (modeloFotoEditar != null) {
                     AsyncImage(
                         model = modeloFotoEditar,
-                        contentDescription = "Foto de perfil",
+                        contentDescription = textoFotoPerfil,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(80.dp)
@@ -266,7 +278,7 @@ fun EditarPerfilScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre") },
+                label = { Text(textoNombre) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -276,7 +288,7 @@ fun EditarPerfilScreen(
             OutlinedTextField(
                 value = apellidos,
                 onValueChange = { apellidos = it },
-                label = { Text("Apellidos") },
+                label = { Text(textoApellidos) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -287,7 +299,7 @@ fun EditarPerfilScreen(
                 OutlinedTextField(
                     value = dni,
                     onValueChange = { dni = it.uppercase() },
-                    label = { Text("DNI") },
+                    label = { Text(textoDni) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -298,7 +310,7 @@ fun EditarPerfilScreen(
             OutlinedTextField(
                 value = telefono,
                 onValueChange = { telefono = it },
-                label = { Text("Teléfono") },
+                label = { Text(textoTelefono) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -308,7 +320,7 @@ fun EditarPerfilScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email (opcional)") },
+                label = { Text(textoEmailOpcional) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -318,7 +330,7 @@ fun EditarPerfilScreen(
             OutlinedTextField(
                 value = fechaNacimiento,
                 onValueChange = { fechaNacimiento = it },
-                label = { Text("Fecha de nacimiento (dd/MM/aaaa)") },
+                label = { Text(textoFechaNacimientoFormato) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -326,7 +338,7 @@ fun EditarPerfilScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             if (mensajeError.isNotBlank()) {
-                if (mensajeError.startsWith("Debes aceptar los Términos")) {
+                if (requiereTerminosFoto) {
                     val anotado = buildAnnotatedString {
                         append(mensajeError)
                         append(" ")
@@ -337,7 +349,7 @@ fun EditarPerfilScreen(
                                 textDecoration = TextDecoration.Underline
                             )
                         ) {
-                            append("Pulsa aquí para aceptarlos.")
+                            append(textoPulsaAquiTerminos)
                         }
                         pop()
                     }
@@ -363,9 +375,10 @@ fun EditarPerfilScreen(
             }
 
             AppPrimaryButton(
-                text = "Guardar cambios",
+                text = textoGuardarCambios,
                 onClick = {
                     mensajeError = ""
+                    mainViewModel.limpiarRequiereTerminosParaFoto()
                     scope.launch {
                         // Fecha opcional: si el campo está vacío se guarda null
                         // (sin fechas ficticias). El texto "dd/MM/aaaa" se convierte

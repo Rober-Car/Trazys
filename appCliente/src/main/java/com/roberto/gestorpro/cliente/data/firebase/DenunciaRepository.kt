@@ -1,9 +1,14 @@
 package com.roberto.gestorpro.cliente.data.firebase
 
+import android.content.Context
 import android.util.Log
+import androidx.annotation.StringRes
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.roberto.gestorpro.cliente.R
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +30,8 @@ object TiposContenidoDenunciable {
  * MotivosDenuncia (CLIENTE)
  * -------------------------
  * Motivos cortos para denunciar (mismos valores que las Rules).
+ * La lógica pura (códigos, `validos` y `etiqueta`) se conserva para las Rules y
+ * los tests; la UI resuelve las etiquetas visibles desde recursos.
  */
 object MotivosDenuncia {
     const val INAPROPIADO = "INAPROPIADO"
@@ -54,9 +61,18 @@ object MotivosDenuncia {
  */
 @Singleton
 class DenunciaRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val auth: FirebaseAuth,
     private val db: FirebaseFirestore
 ) {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(@StringRes recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     companion object {
         private const val COLECCION = "denuncias"
@@ -67,6 +83,8 @@ class DenunciaRepository @Inject constructor(
          * validarDatosDenuncia
          * --------------------
          * Validación pura (sin Firebase) de tipo y motivo. Testeable sin SDK.
+         * Se conserva tal cual para sus tests; los mensajes que muestra la UI se
+         * resuelven en el idioma activo dentro de [crearDenuncia].
          */
         fun validarDatosDenuncia(tipo: String, motivo: String): String? = when {
             tipo !in TiposContenidoDenunciable.validos() ->
@@ -82,6 +100,7 @@ class DenunciaRepository @Inject constructor(
      * -------------
      * Registra una denuncia con el denunciante autenticado. `usuarioDenunciadoUid`
      * suele ser el ADMIN del negocio (negocioId) cuando se denuncia su contenido.
+     * Los errores de validación y de red se devuelven localizados.
      */
     suspend fun crearDenuncia(
         negocioId: String,
@@ -92,8 +111,18 @@ class DenunciaRepository @Inject constructor(
         descripcion: String?
     ): ResultadoAutenticacion {
         val denunciante = auth.currentUser?.uid
-            ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
-        val error = validarDatosDenuncia(tipo, motivo)
+            ?: return ResultadoAutenticacion(
+                false,
+                texto(R.string.vinculacion_error_sin_sesion)
+            )
+        // Misma semántica que validarDatosDenuncia, con mensaje localizado.
+        val error = when {
+            tipo !in TiposContenidoDenunciable.validos() ->
+                texto(R.string.denuncia_error_tipo_invalido)
+            motivo !in MotivosDenuncia.validos() ->
+                texto(R.string.denuncia_error_motivo_invalido)
+            else -> null
+        }
         if (error != null) return ResultadoAutenticacion(false, error)
 
         val datos = mutableMapOf<String, Any>(
@@ -118,15 +147,15 @@ class DenunciaRepository @Inject constructor(
                 .document("denuncia_${System.currentTimeMillis()}_${(1000..9999).random()}")
                 .set(datos)
                 .esperar()
-            ResultadoAutenticacion(true, "Denuncia enviada. Gracias por tu colaboración.")
+            ResultadoAutenticacion(true, texto(R.string.denuncia_enviada_exito))
         } catch (e: Exception) {
             Log.e(TAG, "Error creando denuncia", e)
             ResultadoAutenticacion(
                 false,
                 if (e.message?.contains("permission", ignoreCase = true) == true) {
-                    "No tienes permisos para realizar esta denuncia"
+                    texto(R.string.denuncia_error_permisos)
                 } else {
-                    "No se pudo enviar la denuncia. Inténtalo de nuevo"
+                    texto(R.string.denuncia_error_envio)
                 }
             )
         }

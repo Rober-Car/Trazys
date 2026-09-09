@@ -1,11 +1,13 @@
 package com.roberto.gestorpro.cliente.ui.viewmodel
 
+import android.content.Context
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.AutenticacionRepository
 import com.roberto.gestorpro.cliente.data.firebase.ClienteRepository
 import com.roberto.gestorpro.cliente.data.firebase.DispositivoRepository
@@ -18,7 +20,6 @@ import com.roberto.gestorpro.cliente.data.firebase.PerfilPendienteRepository
 import com.roberto.gestorpro.cliente.data.firebase.SolicitudRepository
 import com.roberto.gestorpro.cliente.data.firebase.VinculacionRepository
 import com.roberto.gestorpro.cliente.data.firebase.esperar
-import com.roberto.gestorpro.cliente.data.firebase.validarCambioContrasena
 import com.google.firebase.functions.FirebaseFunctions
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import com.google.firebase.storage.FirebaseStorage
@@ -30,6 +31,7 @@ import com.roberto.gestorpro.cliente.model.SolicitudBaja
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +74,7 @@ data class ResultadoVinculacionUI(
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesRepository: PreferencesRepository,
     private val autenticacionRepository: AutenticacionRepository,
     private val negocioRepository: NegocioRepository,
@@ -84,6 +87,17 @@ class MainViewModel @Inject constructor(
     private val storage: FirebaseStorage,
     private val fotoClienteCache: FotoClienteCache
 ) : ViewModel() {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
+
+    private fun texto(recurso: Int, vararg argumentos: Any): String =
+        IdiomaAplicacion.textoDe(context, recurso, *argumentos)
 
     private val _autenticando = MutableStateFlow(false)
     val autenticando: StateFlow<Boolean> = _autenticando.asStateFlow()
@@ -123,6 +137,17 @@ class MainViewModel @Inject constructor(
 
     private val _errorSolicitudBaja = MutableStateFlow<String?>(null)
     val errorSolicitudBaja: StateFlow<String?> = _errorSolicitudBaja.asStateFlow()
+
+    /**
+     * requiereTerminosParaFoto
+     * ------------------------
+     * true cuando el último error de guardado del perfil vinculado se debe al
+     * gate de Términos de uso (publicar una foto NUEVA sin aceptarlos). La UI
+     * lo usa para mostrar el enlace "Pulsa aquí para aceptarlos" sin depender
+     * del texto del error.
+     */
+    private val _requiereTerminosParaFoto = MutableStateFlow(false)
+    val requiereTerminosParaFoto: StateFlow<Boolean> = _requiereTerminosParaFoto.asStateFlow()
 
     val themeMode = preferencesRepository.themeMode.stateIn(
         scope = viewModelScope,
@@ -247,10 +272,10 @@ class MainViewModel @Inject constructor(
         contrasenaRepetida: String
     ): String? {
         if (contrasena.length < 6) {
-            return "La contraseña debe tener al menos 6 caracteres"
+            return texto(R.string.auth_error_contrasena_debil)
         }
         if (contrasena != contrasenaRepetida) {
-            return "Las contraseñas no coinciden"
+            return texto(R.string.auth_error_contrasenas_no_coinciden)
         }
 
         _autenticando.value = true
@@ -265,9 +290,9 @@ class MainViewModel @Inject constructor(
     }
 
     suspend fun enviarCorreoRecuperacion(email: String): String? {
-        if (email.isBlank()) return "Introduce tu email"
+        if (email.isBlank()) return texto(R.string.auth_introduce_email)
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            return "El email no tiene un formato válido"
+            return texto(R.string.auth_error_email_formato)
         }
         _autenticando.value = true
         try {
@@ -319,9 +344,17 @@ class MainViewModel @Inject constructor(
      */
     suspend fun cambiarContrasena(actual: String, nueva: String, repetida: String): String? {
         if (_cambiandoContrasena.value) {
-            return "Ya hay un cambio de contraseña en curso"
+            return texto(R.string.cuenta_error_cambio_en_curso)
         }
-        val errorValidacion = validarCambioContrasena(actual, nueva, repetida)
+        // Misma semántica que validarCambioContrasena (función pura que se
+        // conserva para sus tests), pero con el mensaje resuelto en el idioma
+        // elegido por el usuario.
+        val errorValidacion = when {
+            actual.isBlank() -> texto(R.string.cuenta_error_contrasena_actual_vacia)
+            nueva.length < 6 -> texto(R.string.cuenta_error_nueva_corta)
+            nueva != repetida -> texto(R.string.cuenta_error_nuevas_no_coinciden)
+            else -> null
+        }
         if (errorValidacion != null) return errorValidacion
         _cambiandoContrasena.value = true
         return try {
@@ -346,7 +379,7 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (!autenticacionRepository.reautenticar(contrasena)) {
-                    onTerminado("La contraseña no es correcta")
+                    onTerminado(texto(R.string.eliminar_error_contrasena_incorrecta))
                     return@launch
                 }
                 FirebaseFunctions.getInstance("europe-west1")
@@ -358,7 +391,9 @@ class MainViewModel @Inject constructor(
                 autenticacionRepository.cerrarSesion()
                 onTerminado(null)
             } catch (e: Exception) {
-                onTerminado("No se pudo eliminar la cuenta: ${e.message ?: "error desconocido"}")
+                val detalle = e.message
+                    ?: texto(R.string.eliminar_error_detalle_desconocido)
+                onTerminado(texto(R.string.eliminar_error_generico, detalle))
             } finally {
                 _eliminandoCuenta.value = false
             }
@@ -475,25 +510,27 @@ class MainViewModel @Inject constructor(
      * y en DataStore (dni pendiente). Devuelve el error o null.
      */
     suspend fun guardarPerfilPendiente(perfil: PerfilPendiente): String? {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return "Sin sesión"
+        _requiereTerminosParaFoto.value = false
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+            ?: return texto(R.string.perfil_error_sin_sesion)
         if (perfil.nombre.isBlank() || perfil.apellidos.isBlank()) {
-            return "Completa nombre y apellidos"
+            return texto(R.string.perfil_error_nombre_apellidos)
         }
         if (!perfil.dni.matches(Regex("\\d{8}[A-Za-z]"))) {
-            return "El DNI debe tener 8 dígitos y una letra"
+            return texto(R.string.error_dni_formato)
         }
         if (perfil.telefono.isBlank()) {
-            return "Completa el teléfono"
+            return texto(R.string.perfil_error_telefono_vacio)
         }
         if (!perfil.telefono.matches(Regex("[6789]\\d{8}"))) {
-            return "El teléfono debe tener 9 dígitos empezando por 6, 7, 8 o 9"
+            return texto(R.string.perfil_error_telefono_formato)
         }
         val fechaNacimiento = perfil.fechaNacimiento
         if (fechaNacimiento != null && fechaNacimiento > System.currentTimeMillis()) {
-            return "La fecha de nacimiento no puede ser futura"
+            return texto(R.string.perfil_error_fecha_futura)
         }
         if (perfil.foto.isBlank()) {
-            return "Añade una foto del rostro"
+            return texto(R.string.perfil_error_foto_obligatoria)
         }
 
         _operandoRemoto.value = true
@@ -526,13 +563,13 @@ class MainViewModel @Inject constructor(
         if (codigoMaestro.isBlank()) {
             return ResultadoVinculacionUI(
                 TipoResultadoVinculacion.ERROR,
-                "Introduce el código maestro"
+                texto(R.string.vinculacion_error_codigo_vacio)
             )
         }
         if (!dni.matches(Regex("\\d{8}[A-Za-z]"))) {
             return ResultadoVinculacionUI(
                 TipoResultadoVinculacion.ERROR,
-                "El DNI debe tener 8 dígitos y una letra"
+                texto(R.string.error_dni_formato)
             )
         }
 
@@ -748,25 +785,28 @@ class MainViewModel @Inject constructor(
         foto: String,
         fechaNacimiento: Long?
     ): String? {
-        val id = preferencesRepository.idCliente.first() ?: return "Sin ficha vinculada"
+        _requiereTerminosParaFoto.value = false
+        val id = preferencesRepository.idCliente.first()
+            ?: return texto(R.string.perfil_error_sin_ficha_vinculada)
         if (nombre.isBlank() || apellidos.isBlank()) {
-            return "Completa nombre y apellidos"
+            return texto(R.string.perfil_error_nombre_apellidos)
         }
         if (telefono.isBlank()) {
-            return "Completa el teléfono"
+            return texto(R.string.perfil_error_telefono_vacio)
         }
         if (!telefono.matches(Regex("[6789]\\d{8}"))) {
-            return "El teléfono debe tener 9 dígitos empezando por 6, 7, 8 o 9"
+            return texto(R.string.perfil_error_telefono_formato)
         }
         if (fechaNacimiento != null && fechaNacimiento > System.currentTimeMillis()) {
-            return "La fecha de nacimiento no puede ser futura"
+            return texto(R.string.perfil_error_fecha_futura)
         }
 
         // GATE TÉRMINOS (UGC): solo se bloquea la publicación de una foto NUEVA
         // (ruta local, aún no subida). El resto de datos personales no se toca.
         val publicaFotoNueva = foto.isNotBlank() && !FotoClienteStorage.esUrlFoto(foto)
         if (publicaFotoNueva && !terminosAceptados()) {
-            return "Debes aceptar los Términos de uso para cambiar tu foto"
+            _requiereTerminosParaFoto.value = true
+            return texto(R.string.perfil_error_terminos_foto)
         }
 
         _operandoRemoto.value = true
@@ -788,11 +828,22 @@ class MainViewModel @Inject constructor(
                 id, nombre, apellidos, telefono, email, fotoFinal, fechaNacimiento
             )
             if (!resultado.exito) return resultado.mensaje
+            _requiereTerminosParaFoto.value = false
             _cliente.value = clienteRepository.leerFicha(id)
             return null
         } finally {
             _operandoRemoto.value = false
         }
+    }
+
+    /**
+     * limpiarRequiereTerminosParaFoto
+     * -------------------------------
+     * Limpia el indicador de "foto bloqueada por Términos" cuando el usuario
+     * vuelve a intentar guardar o descarta el error.
+     */
+    fun limpiarRequiereTerminosParaFoto() {
+        _requiereTerminosParaFoto.value = false
     }
 
     /**
@@ -813,7 +864,7 @@ class MainViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _errorSolicitudBaja.value =
-                    e.message ?: "No se pudieron cargar las solicitudes"
+                    e.message ?: texto(R.string.cuenta_error_cargar_solicitudes)
             } finally {
                 _cargandoSolicitudesBaja.value = false
             }
@@ -828,9 +879,10 @@ class MainViewModel @Inject constructor(
      * solicitud PENDIENTE, así que no se puede duplicar.
      */
     suspend fun solicitarBaja(motivo: String?): String? {
-        val id = preferencesRepository.idCliente.first() ?: return "Sin ficha vinculada"
+        val id = preferencesRepository.idCliente.first()
+            ?: return texto(R.string.perfil_error_sin_ficha_vinculada)
         val negocio = preferencesRepository.negocioId.first()
-            ?.takeIf { it.isNotBlank() } ?: return "Sin negocio vinculado"
+            ?.takeIf { it.isNotBlank() } ?: return texto(R.string.cuenta_error_sin_negocio)
         _operandoSolicitudBaja.value = true
         try {
             val resultado = solicitudRepository.crearSolicitudBaja(id, negocio, motivo)
@@ -870,7 +922,7 @@ class MainViewModel @Inject constructor(
         descripcion: String?
     ): String? {
         val negocio = preferencesRepository.negocioId.first()
-            ?.takeIf { it.isNotBlank() } ?: return "Sin negocio vinculado"
+            ?.takeIf { it.isNotBlank() } ?: return texto(R.string.cuenta_error_sin_negocio)
         return denunciarContenidoDelNegocio(
             tipo = com.roberto.gestorpro.cliente.data.firebase.TiposContenidoDenunciable.LOGO_NEGOCIO,
             referencia = "negocios_publicos/$negocio",
@@ -892,7 +944,7 @@ class MainViewModel @Inject constructor(
         descripcion: String?
     ): String? {
         val negocioId = preferencesRepository.negocioId.first()
-            ?.takeIf { it.isNotBlank() } ?: return "Sin negocio vinculado"
+            ?.takeIf { it.isNotBlank() } ?: return texto(R.string.cuenta_error_sin_negocio)
         val resultado = denunciaRepository.crearDenuncia(
             negocioId = negocioId,
             tipo = tipo,

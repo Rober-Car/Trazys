@@ -2,6 +2,7 @@ package com.roberto.gestorpro.cliente.util
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.annotation.StringRes
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import java.util.Locale
 
@@ -70,4 +71,17 @@ object IdiomaAplicacion {
         configuracion.setLocale(localeActual())
         return base.createConfigurationContext(configuracion)
     }
+
+    /**
+     * textoDe
+     * -------
+     * Devuelve el texto del recurso en el idioma elegido por el usuario. Se usa
+     * desde capas sin acceso a composición (repositorios, ViewModels) para que
+     * los mensajes se resuelvan en el idioma de la app y no en el del sistema.
+     */
+    fun textoDe(base: Context, @StringRes recurso: Int): String =
+        baseConIdioma(base).getString(recurso)
+
+    fun textoDe(base: Context, @StringRes recurso: Int, vararg argumentos: Any): String =
+        baseConIdioma(base).getString(recurso, *argumentos)
 }

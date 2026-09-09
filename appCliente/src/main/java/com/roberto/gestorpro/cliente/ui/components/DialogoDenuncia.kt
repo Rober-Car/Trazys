@@ -28,9 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.DenunciaRepository
 import com.roberto.gestorpro.cliente.data.firebase.MotivosDenuncia
 import kotlinx.coroutines.launch
@@ -40,6 +42,7 @@ import kotlinx.coroutines.launch
  * -------------------------
  * Diálogo de denuncia UGC dentro de la app del CLIENTE: motivo obligatorio,
  * descripción opcional (máx. 500) y confirmación tras el envío.
+ * Es compartido por Home (logo/centro) y por las notificaciones.
  */
 @Composable
 fun DialogoDenuncia(
@@ -53,6 +56,15 @@ fun DialogoDenuncia(
     var enviando by remember { mutableStateOf(false) }
     var enviada by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    val textoExito = stringResource(R.string.denuncia_enviada_exito)
+    val textoAceptar = stringResource(R.string.accion_aceptar)
+    val textoSeleccionaMotivo = stringResource(R.string.denuncia_selecciona_motivo)
+    val textoDescripcionOpcional = stringResource(R.string.denuncia_descripcion_opcional)
+    val textoErrorSinMotivo = stringResource(R.string.denuncia_error_selecciona_motivo)
+    val textoEnviando = stringResource(R.string.denuncia_enviando)
+    val textoEnviarDenuncia = stringResource(R.string.denuncia_enviar)
+    val textoCancelar = stringResource(R.string.accion_cancelar)
 
     Dialog(
         onDismissRequest = {
@@ -73,7 +85,7 @@ fun DialogoDenuncia(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Denuncia enviada. Gracias por tu colaboración.",
+                        text = textoExito,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2E7D32),
@@ -83,7 +95,7 @@ fun DialogoDenuncia(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Aceptar")
+                        Text(textoAceptar)
                     }
                 }
             } else {
@@ -102,7 +114,7 @@ fun DialogoDenuncia(
                     )
 
                     Text(
-                        text = "Selecciona el motivo de la denuncia.",
+                        text = textoSeleccionaMotivo,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -121,7 +133,7 @@ fun DialogoDenuncia(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = MotivosDenuncia.etiqueta(opcion),
+                                text = stringResource(recursoDeMotivo(opcion)),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -136,7 +148,7 @@ fun DialogoDenuncia(
                             error = null
                         },
                         enabled = !enviando,
-                        label = { Text("Descripción (opcional)") },
+                        label = { Text(textoDescripcionOpcional) },
                         supportingText = {
                             Text("${descripcion.length}/${DenunciaRepository.MAX_DESCRIPCION}")
                         },
@@ -160,14 +172,14 @@ fun DialogoDenuncia(
                             enabled = !enviando,
                             onClick = onDismiss
                         ) {
-                            Text("Cancelar")
+                            Text(textoCancelar)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
                                 val motivoElegido = motivo
                                 if (motivoElegido == null) {
-                                    error = "Selecciona un motivo"
+                                    error = textoErrorSinMotivo
                                     return@Button
                                 }
                                 error = null
@@ -187,11 +199,26 @@ fun DialogoDenuncia(
                             },
                             enabled = motivo != null && !enviando
                         ) {
-                            Text(if (enviando) "Enviando..." else "Enviar denuncia")
+                            Text(if (enviando) textoEnviando else textoEnviarDenuncia)
                         }
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * recursoDeMotivo
+ * ---------------
+ * Devuelve el recurso de texto del motivo en el idioma activo. `MotivosDenuncia`
+ * conserva su lógica pura (códigos + `etiqueta`) para las Rules y sus tests; la
+ * UI resuelve la etiqueta visible desde aquí, sin depender de texto traducido.
+ */
+private fun recursoDeMotivo(motivo: String): Int = when (motivo) {
+    MotivosDenuncia.INAPROPIADO -> R.string.denuncia_motivo_inapropiado
+    MotivosDenuncia.ACOSO -> R.string.denuncia_motivo_acoso
+    MotivosDenuncia.OFENSIVO -> R.string.denuncia_motivo_ofensivo
+    MotivosDenuncia.SUPLANTACION -> R.string.denuncia_motivo_suplantacion
+    else -> R.string.denuncia_motivo_otro
 }

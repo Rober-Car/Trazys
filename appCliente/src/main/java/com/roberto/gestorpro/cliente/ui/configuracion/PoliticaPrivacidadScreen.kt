@@ -20,9 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 
 /**
@@ -36,6 +38,9 @@ import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 fun PoliticaPrivacidadScreen(
     navController: NavHostController
 ) {
+    val textoPrivacidad = stringResource(R.string.privacidad_titulo)
+    val textoPrivacidadDocumento = stringResource(R.string.privacidad_titulo_documento)
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
     ) { innerPadding ->
@@ -54,7 +59,7 @@ fun PoliticaPrivacidadScreen(
                 AppNavigationBackButton(onClick = { navController.popBackStack() })
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "Política de privacidad",
+                    text = textoPrivacidad,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -69,7 +74,7 @@ fun PoliticaPrivacidadScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Política de privacidad de Trazys",
+                    text = textoPrivacidadDocumento,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )

@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -44,6 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.cliente.ui.components.AppTextLinkButton
@@ -52,28 +54,19 @@ import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
 /**
- * Mensajes de credenciales inválidas que ya devuelve el repositorio de
- * autenticación. No se revela si el email está registrado: ambos se
- * presentan con el mismo mensaje genérico en la pantalla de login.
- */
-private val erroresCredencialesLogin = setOf(
-    "Email o contraseña incorrectos",
-    "No existe una cuenta con este email"
-)
-
-private const val MENSAJE_CREDENCIALES_INCORRECTAS =
-    "El correo o la contraseña no son correctos."
-
-/**
  * textoErrorLogin
  * ---------------
  * Normaliza el error de credenciales devuelto por la autenticación a un
  * mensaje genérico. El resto de errores (cuenta desactivada, sin conexión,
  * perfil ilegible…) se muestran tal cual.
  */
-private fun textoErrorLogin(error: String): String =
-    if (error in erroresCredencialesLogin) {
-        MENSAJE_CREDENCIALES_INCORRECTAS
+private fun textoErrorLogin(
+    error: String,
+    erroresCredenciales: Set<String>,
+    mensajeCredencialesIncorrectas: String
+): String =
+    if (error in erroresCredenciales) {
+        mensajeCredencialesIncorrectas
     } else {
         error
     }
@@ -95,6 +88,27 @@ fun LoginScreen(
 
     val azul = Color(0xFF1E88E5)
 
+    // Textos localizados del bloque de autenticación.
+    val textoLogoCentro = stringResource(R.string.auth_logo_desc)
+    val textoNombreApp = stringResource(R.string.app_name)
+    val textoTuCentro = stringResource(R.string.auth_login_subtitulo_centro)
+    val textoIniciarSesion = stringResource(R.string.auth_login_titulo)
+    val textoEmail = stringResource(R.string.auth_email)
+    val textoContrasena = stringResource(R.string.auth_contrasena)
+    val textoOcultarContrasena = stringResource(R.string.auth_ocultar_contrasena)
+    val textoMostrarContrasena = stringResource(R.string.auth_mostrar_contrasena)
+    val textoEntrar = stringResource(R.string.auth_boton_entrar)
+    val textoNoTienesCuenta = stringResource(R.string.auth_enlace_no_tienes_cuenta)
+    val textoHasOlvidado = stringResource(R.string.auth_enlace_olvidaste_contrasena)
+    val textoPoliticaPrivacidad = stringResource(R.string.auth_enlace_politica_privacidad)
+    val textoCopyright = stringResource(R.string.auth_copyright)
+    val erroresCredenciales = setOf(
+        stringResource(R.string.auth_error_credenciales),
+        stringResource(R.string.auth_error_cuenta_no_existe)
+    )
+    val mensajeCredencialesIncorrectas =
+        stringResource(R.string.auth_error_credenciales_generico)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -113,13 +127,13 @@ fun LoginScreen(
             if (logoNegocio.startsWith("http")) {
                 LogoNegocioAutenticado(
                     url = logoNegocio,
-                    contentDescription = "Logo del centro",
+                    contentDescription = textoLogoCentro,
                     tamano = 80.dp
                 )
             } else {
                 AsyncImage(
                     model = logoNegocio,
-                    contentDescription = "Logo del centro",
+                    contentDescription = textoLogoCentro,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(80.dp)
@@ -138,7 +152,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Trazys Cliente",
+            text = textoNombreApp,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -147,7 +161,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = nombreNegocio.ifBlank { "Tu centro" },
+            text = nombreNegocio.ifBlank { textoTuCentro },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -169,7 +183,7 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Iniciar sesión",
+                    text = textoIniciarSesion,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = azul
@@ -183,7 +197,7 @@ fun LoginScreen(
                         email = it
                         mensajeError = ""
                     },
-                    label = { Text("Email") },
+                    label = { Text(textoEmail) },
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = null, tint = azul)
                     },
@@ -206,7 +220,7 @@ fun LoginScreen(
                         contrasena = it
                         mensajeError = ""
                     },
-                    label = { Text("Contraseña") },
+                    label = { Text(textoContrasena) },
                     leadingIcon = {
                         Icon(Icons.Default.Lock, contentDescription = null, tint = azul)
                     },
@@ -221,9 +235,9 @@ fun LoginScreen(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (contrasenaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = azul
                             )
@@ -248,13 +262,17 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 AppPrimaryButton(
-                    text = "Entrar",
+                    text = textoEntrar,
                     onClick = {
                         mensajeError = ""
                         scope.launch {
                             val error = mainViewModel.iniciarSesion(email.trim(), contrasena)
                             if (error != null) {
-                                mensajeError = textoErrorLogin(error)
+                                mensajeError = textoErrorLogin(
+                                    error,
+                                    erroresCredenciales,
+                                    mensajeCredencialesIncorrectas
+                                )
                             } else {
                                 val destino = mainViewModel.destinoTrasAutenticar()
                                 navController.navigate(destino) {
@@ -287,7 +305,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 AppTextLinkButton(
-                    text = "¿No tienes cuenta? Crear una",
+                    text = textoNoTienesCuenta,
                     onClick = {
                         if (!autenticando) {
                             navController.navigate(Routes.REGISTRO) {
@@ -298,14 +316,14 @@ fun LoginScreen(
                 )
 
                 AppTextLinkButton(
-                    text = "¿Has olvidado tu contraseña?",
+                    text = textoHasOlvidado,
                     onClick = {
                         if (!autenticando) navController.navigate(Routes.RECUPERAR_PASSWORD)
                     }
                 )
 
                 AppTextLinkButton(
-                    text = "Política de privacidad",
+                    text = textoPoliticaPrivacidad,
                     onClick = {
                         if (!autenticando) navController.navigate(Routes.POLITICA_PRIVACIDAD)
                     }
@@ -316,7 +334,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = "© 2026 Trazys",
+            text = textoCopyright,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

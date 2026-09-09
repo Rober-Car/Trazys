@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -54,7 +55,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.roberto.gestorpro.cliente.data.firebase.validarCambioContrasena
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.model.EstadoCliente
 import com.roberto.gestorpro.cliente.model.EstadoSolicitud
 import com.roberto.gestorpro.cliente.navigation.Routes
@@ -91,6 +92,23 @@ fun CuentaScreen(
     var mostrarConfirmarBaja by remember { mutableStateOf(false) }
     var mostrarPendienteInfo by remember { mutableStateOf(false) }
 
+    // Textos localizados del bloque de cuenta.
+    val textoVolver = stringResource(R.string.accion_volver)
+    val textoMiCuenta = stringResource(R.string.cuenta_titulo)
+    val textoYaDadoDeBaja = stringResource(R.string.cuenta_desc_ya_dado_de_baja)
+    val textoBajaPendiente = stringResource(R.string.cuenta_desc_baja_pendiente)
+    val textoBajaRechazada = stringResource(R.string.cuenta_desc_baja_rechazada)
+    val textoSolicitarLaBaja = stringResource(R.string.cuenta_desc_solicitar_baja)
+    val textoSolicitarBaja = stringResource(R.string.cuenta_titulo_solicitar_baja)
+    val textoCambiarContrasena = stringResource(R.string.cuenta_titulo_cambiar_contrasena)
+    val textoDescCambiarContrasena = stringResource(R.string.cuenta_desc_cambiar_contrasena)
+    val textoCerrarSesion = stringResource(R.string.cuenta_titulo_cerrar_sesion)
+    val textoDescCerrarSesion = stringResource(R.string.cuenta_desc_cerrar_sesion)
+    val textoComprobandoSolicitudes = stringResource(R.string.cuenta_comprobando_solicitudes)
+    val textoCancelar = stringResource(R.string.accion_cancelar)
+    val textoContrasenaActualizada =
+        stringResource(R.string.cuenta_snackbar_contrasena_actualizada)
+
     LaunchedEffect(Unit) {
         mainViewModel.cargarSolicitudesBaja()
     }
@@ -110,10 +128,10 @@ fun CuentaScreen(
     val estadoBaja = cliente?.estado == EstadoCliente.BAJA
 
     val descripcionBaja = when {
-        estadoBaja -> "Ya estás dado de baja"
-        tienePendiente -> "Solicitud de baja pendiente de revisión"
-        ultimaRechazada -> "Tu solicitud fue rechazada. Puedes volver a solicitarla."
-        else -> "Solicitar la baja del centro"
+        estadoBaja -> textoYaDadoDeBaja
+        tienePendiente -> textoBajaPendiente
+        ultimaRechazada -> textoBajaRechazada
+        else -> textoSolicitarLaBaja
     }
 
     Scaffold(
@@ -139,14 +157,14 @@ fun CuentaScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
+                            contentDescription = textoVolver,
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Mi cuenta",
+                        text = textoMiCuenta,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -157,7 +175,7 @@ fun CuentaScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             MenuCard(
-                titulo = "Solicitar baja",
+                titulo = textoSolicitarBaja,
                 descripcion = descripcionBaja,
                 icono = Icons.Default.Person,
                 onClick = {
@@ -174,8 +192,8 @@ fun CuentaScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             MenuCard(
-                titulo = "Cambiar contraseña",
-                descripcion = "Actualizar contraseña de acceso",
+                titulo = textoCambiarContrasena,
+                descripcion = textoDescCambiarContrasena,
                 icono = Icons.Default.Lock,
                 onClick = { mostrarDialogoContrasena = true }
             )
@@ -183,8 +201,8 @@ fun CuentaScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             MenuCard(
-                titulo = "Cerrar sesión",
-                descripcion = "Salir de la aplicación",
+                titulo = textoCerrarSesion,
+                descripcion = textoDescCerrarSesion,
                 icono = Icons.Default.ExitToApp,
                 onClick = { mostrarDialogoCerrarSesion = true }
             )
@@ -192,7 +210,7 @@ fun CuentaScreen(
             if (cargandoSolicitudes) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Comprobando solicitudes...",
+                    text = textoComprobandoSolicitudes,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
@@ -219,7 +237,7 @@ fun CuentaScreen(
             onExito = {
                 mostrarDialogoContrasena = false
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Contraseña actualizada correctamente.")
+                    snackbarHostState.showSnackbar(textoContrasenaActualizada)
                 }
             }
         )
@@ -230,13 +248,13 @@ fun CuentaScreen(
             onDismissRequest = { mostrarDialogoCerrarSesion = false },
             title = {
                 Text(
-                    text = "Cerrar sesión",
+                    text = textoCerrarSesion,
                     style = MaterialTheme.typography.titleLarge,
                     color = Color(0xFF1E88E5)
                 )
             },
             text = {
-                Text("¿Seguro que quieres cerrar sesión?")
+                Text(stringResource(R.string.cuenta_dialogo_cerrar_pregunta))
             },
             confirmButton = {
                 Button(
@@ -249,12 +267,12 @@ fun CuentaScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
                 ) {
-                    Text("Cerrar sesión", color = Color.White)
+                    Text(textoCerrarSesion, color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarDialogoCerrarSesion = false }) {
-                    Text("Cancelar")
+                    Text(textoCancelar)
                 }
             }
         )
@@ -265,17 +283,13 @@ fun CuentaScreen(
             onDismissRequest = { mostrarConfirmarBaja = false },
             title = {
                 Text(
-                    text = "Solicitar baja",
+                    text = textoSolicitarBaja,
                     style = MaterialTheme.typography.titleLarge,
                     color = Color(0xFFF44336)
                 )
             },
             text = {
-                Text(
-                    "¿Seguro que quieres solicitar la baja del centro? " +
-                        "La solicitud quedará pendiente de revisión por el administrador " +
-                        "y seguirás activo hasta que se confirme."
-                )
+                Text(stringResource(R.string.cuenta_dialogo_baja_pregunta))
             },
             confirmButton = {
                 Button(
@@ -291,12 +305,12 @@ fun CuentaScreen(
                     enabled = !operandoSolicitud,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
                 ) {
-                    Text("Solicitar baja", color = Color.White)
+                    Text(textoSolicitarBaja, color = Color.White)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostrarConfirmarBaja = false }) {
-                    Text("Cancelar")
+                    Text(textoCancelar)
                 }
             }
         )
@@ -307,21 +321,17 @@ fun CuentaScreen(
             onDismissRequest = { mostrarPendienteInfo = false },
             title = {
                 Text(
-                    text = "Solicitud de baja pendiente",
+                    text = stringResource(R.string.cuenta_dialogo_pendiente_titulo),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color(0xFFFF9800)
                 )
             },
             text = {
-                Text(
-                    "Ya tienes una solicitud de baja pendiente de revisión. " +
-                        "El administrador la aceptará o la rechazará. " +
-                        "Mientras tanto sigues activo en el centro."
-                )
+                Text(stringResource(R.string.cuenta_dialogo_pendiente_texto))
             },
             confirmButton = {
                 TextButton(onClick = { mostrarPendienteInfo = false }) {
-                    Text("Entendido")
+                    Text(stringResource(R.string.cuenta_accion_entendido))
                 }
             }
         )
@@ -334,6 +344,10 @@ fun CuentaScreen(
  * Diálogo de cambio de contraseña con el mismo comportamiento de seguridad que
  * el de ADMIN: contraseña actual + nueva + repetición, reautenticación y
  * updatePassword reales en Firebase, error visible y cierre solo tras éxito.
+ *
+ * La validación previa la resuelve el ViewModel (con mensajes localizados); la
+ * función pura `validarCambioContrasena` se conserva en el repositorio para sus
+ * tests y no se usa aquí para mostrar texto al usuario.
  */
 @Composable
 private fun DialogoCambiarContrasena(
@@ -357,6 +371,18 @@ private fun DialogoCambiarContrasena(
         nuevaContrasena.isNotBlank() &&
         nuevaContrasena == repetirContrasena
 
+    // Textos localizados del diálogo.
+    val textoCambiarContrasena = stringResource(R.string.cuenta_titulo_cambiar_contrasena)
+    val textoCambiandoContrasena = stringResource(R.string.cuenta_cambiando_contrasena)
+    val textoContrasenaActual = stringResource(R.string.cuenta_label_contrasena_actual)
+    val textoNuevaContrasena = stringResource(R.string.cuenta_label_nueva_contrasena)
+    val textoRepetirContrasena = stringResource(R.string.auth_repetir_contrasena)
+    val textoOcultarContrasena = stringResource(R.string.auth_ocultar_contrasena)
+    val textoMostrarContrasena = stringResource(R.string.auth_mostrar_contrasena)
+    val textoCancelar = stringResource(R.string.accion_cancelar)
+    val textoGuardar = stringResource(R.string.accion_guardar)
+    val textoCambiando = stringResource(R.string.cuenta_accion_cambiando)
+
     Dialog(
         onDismissRequest = {
             if (!cambiando) onDismiss()
@@ -376,7 +402,7 @@ private fun DialogoCambiarContrasena(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Cambiar contraseña",
+                    text = textoCambiarContrasena,
                     style = MaterialTheme.typography.headlineSmall,
                     color = Color(0xFF1E88E5),
                     modifier = Modifier.fillMaxWidth(),
@@ -385,7 +411,7 @@ private fun DialogoCambiarContrasena(
 
                 if (cambiando) {
                     Text(
-                        text = "Cambiando la contraseña...",
+                        text = textoCambiandoContrasena,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.fillMaxWidth(),
@@ -400,7 +426,7 @@ private fun DialogoCambiarContrasena(
                         error = null
                     },
                     enabled = !cambiando,
-                    label = { Text("Contraseña actual") },
+                    label = { Text(textoContrasenaActual) },
                     trailingIcon = {
                         IconButton(
                             onClick = { contrasenaActualVisible = !contrasenaActualVisible }
@@ -412,9 +438,9 @@ private fun DialogoCambiarContrasena(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (contrasenaActualVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = Color(0xFF1E88E5)
                             )
@@ -436,7 +462,7 @@ private fun DialogoCambiarContrasena(
                         error = null
                     },
                     enabled = !cambiando,
-                    label = { Text("Nueva contraseña") },
+                    label = { Text(textoNuevaContrasena) },
                     trailingIcon = {
                         IconButton(
                             onClick = { nuevaContrasenaVisible = !nuevaContrasenaVisible }
@@ -448,9 +474,9 @@ private fun DialogoCambiarContrasena(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (nuevaContrasenaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = Color(0xFF1E88E5)
                             )
@@ -472,7 +498,7 @@ private fun DialogoCambiarContrasena(
                         error = null
                     },
                     enabled = !cambiando,
-                    label = { Text("Repetir contraseña") },
+                    label = { Text(textoRepetirContrasena) },
                     trailingIcon = {
                         IconButton(
                             onClick = { repetirContrasenaVisible = !repetirContrasenaVisible }
@@ -484,9 +510,9 @@ private fun DialogoCambiarContrasena(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (repetirContrasenaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = Color(0xFF1E88E5)
                             )
@@ -518,34 +544,28 @@ private fun DialogoCambiarContrasena(
                         enabled = !cambiando,
                         onClick = onDismiss
                     ) {
-                        Text("Cancelar")
+                        Text(textoCancelar)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            error = validarCambioContrasena(
-                                contrasenaActual,
-                                nuevaContrasena,
-                                repetirContrasena
-                            )
-                            if (error == null) {
-                                coroutineScope.launch {
-                                    val resultado = onConfirmar(
-                                        contrasenaActual,
-                                        nuevaContrasena,
-                                        repetirContrasena
-                                    )
-                                    if (resultado == null) {
-                                        onExito()
-                                    } else {
-                                        error = resultado
-                                    }
+                            error = null
+                            coroutineScope.launch {
+                                val resultado = onConfirmar(
+                                    contrasenaActual,
+                                    nuevaContrasena,
+                                    repetirContrasena
+                                )
+                                if (resultado == null) {
+                                    onExito()
+                                } else {
+                                    error = resultado
                                 }
                             }
                         },
                         enabled = camposValidos && !cambiando
                     ) {
-                        Text(if (cambiando) "Cambiando..." else "Guardar")
+                        Text(if (cambiando) textoCambiando else textoGuardar)
                     }
                 }
             }

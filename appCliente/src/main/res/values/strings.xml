@@ -1,4 +1,276 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Trazys Cliente</string>
+
+    <!-- ===== Autenticación: Login ===== -->
+    <string name="auth_login_titulo">Iniciar sesión</string>
+    <string name="auth_login_subtitulo_centro">Tu centro</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_contrasena">Contraseña</string>
+    <string name="auth_mostrar_contrasena">Mostrar contraseña</string>
+    <string name="auth_ocultar_contrasena">Ocultar contraseña</string>
+    <string name="auth_boton_entrar">Entrar</string>
+    <string name="auth_enlace_no_tienes_cuenta">¿No tienes cuenta? Crear una</string>
+    <string name="auth_enlace_olvidaste_contrasena">¿Has olvidado tu contraseña?</string>
+    <string name="auth_enlace_politica_privacidad">Política de privacidad</string>
+    <string name="auth_copyright">© 2026 Trazys</string>
+    <string name="auth_logo_desc">Logo del centro</string>
+    <string name="auth_error_credenciales_generico">El correo o la contraseña no son correctos.</string>
+
+    <!-- ===== Autenticación: Registro ===== -->
+    <string name="auth_registro_titulo">Crear una cuenta</string>
+    <string name="auth_registro_perfil_cliente">Perfil: Cliente</string>
+    <string name="auth_contrasena_min_caracteres">Contraseña (mínimo 6 caracteres)</string>
+    <string name="auth_repetir_contrasena">Repetir contraseña</string>
+    <string name="auth_registro_acepta_terminos">He leído y acepto los Términos de uso</string>
+    <string name="auth_registro_ver_terminos">Ver Términos de uso</string>
+    <string name="auth_registro_ver_privacidad">Ver Política de privacidad</string>
+    <string name="auth_registro_error_terminos">Debes aceptar los Términos de uso para crear la cuenta</string>
+    <string name="auth_registro_boton">Crear cuenta</string>
+    <string name="auth_registro_ya_tengo_cuenta">Ya tengo cuenta</string>
+
+    <!-- ===== Autenticación: Recuperar contraseña ===== -->
+    <string name="auth_recuperar_titulo">Recuperar contraseña</string>
+    <string name="auth_recuperar_instrucciones">Introduce el email de tu cuenta y recibirás un enlace para restablecer la contraseña.</string>
+    <string name="auth_recuperar_enviar">Enviar correo</string>
+    <string name="auth_recuperar_exito">Si el email existe, recibirás un enlace para restablecer tu contraseña</string>
+
+    <!-- ===== Autenticación: mensajes de validación y de Firebase ===== -->
+    <string name="auth_introduce_email">Introduce tu email</string>
+    <string name="auth_error_email_formato">El email no tiene un formato válido</string>
+    <string name="auth_error_contrasena_debil">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="auth_error_contrasenas_no_coinciden">Las contraseñas no coinciden</string>
+    <string name="auth_error_email_ya_existe">Ya existe una cuenta con este email</string>
+    <string name="auth_error_cuenta_no_existe">No existe una cuenta con este email</string>
+    <string name="auth_error_credenciales">Email o contraseña incorrectos</string>
+    <string name="auth_error_cuenta_desactivada">Esta cuenta está desactivada</string>
+    <string name="auth_error_usuario_sin_perfil">El usuario no tiene perfil en la base de datos</string>
+    <string name="auth_error_no_pertenece_a_app">Esta cuenta no pertenece a la app de clientes</string>
+    <string name="auth_error_no_crear_cuenta">No se pudo crear la cuenta</string>
+    <string name="auth_error_no_perfil_usuario">No se pudo crear el perfil del usuario: %1$s</string>
+    <string name="auth_error_no_iniciar_sesion">No se pudo iniciar sesión</string>
+    <string name="auth_error_no_leer_perfil">No se pudo leer el perfil del usuario: %1$s</string>
+    <string name="auth_error_inesperado">Error inesperado. Inténtalo de nuevo</string>
+    <string name="auth_error_sin_conexion">No hay conexión con Firebase. Comprueba tu conexión a Internet</string>
+    <string name="auth_error_no_enviar_correo">No se pudo enviar el correo. Inténtalo de nuevo</string>
+    <string name="auth_cuenta_creada_ok">Cuenta creada correctamente</string>
+    <string name="auth_sesion_iniciada_ok">Sesión iniciada correctamente</string>
+
+    <!-- ===== Incorporación: Elección inicial ===== -->
+    <string name="inicio_eleccion_titulo">¿Cómo quieres empezar?</string>
+    <string name="inicio_eleccion_centro_titulo">Tu centro ya tiene tus datos</string>
+    <string name="inicio_eleccion_centro_descripcion">Si tu centro ha registrado tus datos y tienes el código maestro, pulsa aquí.</string>
+    <string name="inicio_eleccion_registro_titulo">Tu centro aún no te ha registrado</string>
+    <string name="inicio_eleccion_registro_descripcion">Si tu centro no ha registrado tus datos, pulsa aquí.</string>
+    <string name="inicio_eleccion_nota">Si aún no tienes el código maestro, puedes registrarte primero y vincular tu cuenta a tu centro después.</string>
+
+    <!-- ===== Incorporación: Vinculación (código + DNI) ===== -->
+    <string name="vinculacion_titulo_accion">Vincularme al centro</string>
+    <string name="vinculacion_intro">Introduce el código maestro de tu centro y tu DNI para vincular tu cuenta.</string>
+    <string name="vinculacion_label_codigo_maestro">Código maestro</string>
+    <string name="vinculacion_label_dni">DNI</string>
+    <string name="vinculacion_accion_registrarse">Registrarme</string>
+    <string name="vinculacion_accion_continuar">Continuar</string>
+    <string name="vinculacion_accion_sin_vinculo">No tengo vinculación</string>
+    <string name="vinculacion_error_codigo_vacio">Introduce el código maestro</string>
+    <string name="vinculacion_error_generico">No se pudo completar la vinculación. Inténtalo de nuevo</string>
+    <string name="vinculacion_aviso_sin_ficha">No encontramos una ficha con este DNI. Comprueba con tu centro o regístrate primero.</string>
+    <string name="vinculacion_error_codigo_invalido">Código maestro no válido.</string>
+    <string name="vinculacion_error_centro_incoherente">El código maestro no es válido o la información del centro es incoherente. Contacta con tu centro.</string>
+    <string name="vinculacion_error_dni_vinculado">Ese DNI ya está vinculado a otra cuenta</string>
+    <string name="vinculacion_error_ficha_no_existe">La ficha ya no existe. Inténtalo de nuevo</string>
+    <string name="vinculacion_error_id_unico">No se pudo generar un identificador único. Inténtalo de nuevo</string>
+    <string name="vinculacion_error_crear_ficha">No se pudo crear la ficha. Inténtalo de nuevo</string>
+    <string name="vinculacion_error_sin_sesion">No hay ningún usuario autenticado</string>
+    <string name="vinculacion_error_permisos">No tienes permisos para esta operación. Revisa el código y el DNI</string>
+    <string name="vinculacion_error_sin_conexion">No hay conexión con el servidor. Comprueba tu conexión a Internet</string>
+    <string name="vinculacion_aviso_requiere_perfil">No encontramos una ficha con este DNI. Puedes registrarte ahora y después te vincularemos automáticamente a este centro.</string>
+    <string name="error_dni_formato">El DNI debe tener 8 dígitos y una letra</string>
+
+    <!-- ===== Incorporación: Completar perfil ===== -->
+    <string name="perfil_titulo_completar">Completa tu registro</string>
+    <string name="perfil_intro_temporal">Tus datos se guardarán temporalmente hasta que te vincules a un centro con su código maestro.</string>
+    <string name="perfil_aviso_campos_obligatorios">Los campos marcados con * son obligatorios.</string>
+    <string name="perfil_etiqueta_foto">Foto del rostro *</string>
+    <string name="perfil_foto_descripcion">Foto de perfil</string>
+    <string name="perfil_label_nombre">Nombre *</string>
+    <string name="perfil_label_apellidos">Apellidos *</string>
+    <string name="perfil_label_dni">DNI *</string>
+    <string name="perfil_label_telefono">Teléfono *</string>
+    <string name="perfil_label_email_opcional">Email (opcional)</string>
+    <string name="perfil_label_fecha_nacimiento">Fecha de nacimiento</string>
+    <string name="perfil_ayuda_fecha_opcional">Opcional. Toca para abrir el calendario</string>
+    <string name="perfil_accion_guardar">Guardar perfil</string>
+    <string name="perfil_error_sin_sesion">Sin sesión</string>
+    <string name="perfil_error_nombre_apellidos">Completa nombre y apellidos</string>
+    <string name="perfil_error_telefono_vacio">Completa el teléfono</string>
+    <string name="perfil_error_telefono_formato">El teléfono debe tener 9 dígitos empezando por 6, 7, 8 o 9</string>
+    <string name="perfil_error_fecha_futura">La fecha de nacimiento no puede ser futura</string>
+    <string name="perfil_error_foto_obligatoria">Añade una foto del rostro</string>
+    <string name="perfil_error_permisos">No tienes permisos para esta operación</string>
+
+    <!-- ===== Acciones y selector de foto (reutilizables) ===== -->
+    <string name="accion_aceptar">Aceptar</string>
+    <string name="accion_cancelar">Cancelar</string>
+    <string name="foto_elegir">Elegir foto</string>
+    <string name="foto_cambiar">Cambiar foto</string>
+    <string name="foto_elegir_galeria">Elegir de galería</string>
+    <string name="foto_hacer_foto">Hacer una foto</string>
+
+    <!-- ===== Mi perfil / Editar perfil ===== -->
+    <string name="perfil_mi_perfil">Mi perfil</string>
+    <string name="perfil_datos_personales">Datos personales</string>
+    <string name="perfil_sin_email">Sin email</string>
+    <string name="perfil_sin_especificar">Sin especificar</string>
+    <string name="perfil_campo_nombre">Nombre</string>
+    <string name="perfil_campo_apellidos">Apellidos</string>
+    <string name="perfil_campo_telefono">Teléfono</string>
+    <string name="perfil_campo_fecha_nacimiento_formato">Fecha de nacimiento (dd/MM/aaaa)</string>
+    <string name="perfil_accion_modificar_datos">Modificar mis datos</string>
+    <string name="perfil_accion_guardar_cambios">Guardar cambios</string>
+    <string name="perfil_aviso_editar_vinculado">Solo puedes modificar tus datos personales. El DNI y los datos de tu centro no se pueden cambiar desde aquí.</string>
+    <string name="perfil_aviso_editar_sin_vincular">Todavía no estás vinculado a un centro. Puedes modificar tus datos, incluido el DNI; al vincularlo, el DNI quedará bloqueado.</string>
+    <string name="perfil_error_sin_ficha_vinculada">Sin ficha vinculada</string>
+    <string name="perfil_error_terminos_foto">Debes aceptar los Términos de uso para cambiar tu foto</string>
+    <string name="perfil_pulsa_aqui_aceptar_terminos">Pulsa aquí para aceptarlos.</string>
+
+    <!-- ===== Mi perfil: estados ===== -->
+    <string name="estado_activo">Activo</string>
+    <string name="estado_moroso">Moroso</string>
+    <string name="estado_baja">Baja</string>
+    <string name="estado_archivado">Archivado</string>
+    <string name="estado_registrado">Registrado</string>
+
+    <!-- ===== Mi cuenta ===== -->
+    <string name="cuenta_titulo">Mi cuenta</string>
+    <string name="accion_volver">Volver</string>
+    <string name="cuenta_titulo_solicitar_baja">Solicitar baja</string>
+    <string name="cuenta_desc_solicitar_baja">Solicitar la baja del centro</string>
+    <string name="cuenta_desc_ya_dado_de_baja">Ya estás dado de baja</string>
+    <string name="cuenta_desc_baja_pendiente">Solicitud de baja pendiente de revisión</string>
+    <string name="cuenta_desc_baja_rechazada">Tu solicitud fue rechazada. Puedes volver a solicitarla.</string>
+    <string name="cuenta_titulo_cambiar_contrasena">Cambiar contraseña</string>
+    <string name="cuenta_desc_cambiar_contrasena">Actualizar contraseña de acceso</string>
+    <string name="cuenta_titulo_cerrar_sesion">Cerrar sesión</string>
+    <string name="cuenta_desc_cerrar_sesion">Salir de la aplicación</string>
+    <string name="cuenta_comprobando_solicitudes">Comprobando solicitudes...</string>
+    <string name="cuenta_snackbar_contrasena_actualizada">Contraseña actualizada correctamente.</string>
+    <string name="cuenta_dialogo_cerrar_pregunta">¿Seguro que quieres cerrar sesión?</string>
+    <string name="cuenta_dialogo_baja_pregunta">¿Seguro que quieres solicitar la baja del centro? La solicitud quedará pendiente de revisión por el administrador y seguirás activo hasta que se confirme.</string>
+    <string name="cuenta_dialogo_pendiente_titulo">Solicitud de baja pendiente</string>
+    <string name="cuenta_dialogo_pendiente_texto">Ya tienes una solicitud de baja pendiente de revisión. El administrador la aceptará o la rechazará. Mientras tanto sigues activo en el centro.</string>
+    <string name="cuenta_accion_entendido">Entendido</string>
+    <string name="cuenta_cambiando_contrasena">Cambiando la contraseña...</string>
+    <string name="cuenta_label_contrasena_actual">Contraseña actual</string>
+    <string name="cuenta_label_nueva_contrasena">Nueva contraseña</string>
+    <string name="cuenta_accion_cambiando">Cambiando...</string>
+    <string name="accion_guardar">Guardar</string>
+    <string name="cuenta_error_contrasena_actual_vacia">Introduce tu contraseña actual</string>
+    <string name="cuenta_error_nueva_corta">La nueva contraseña debe tener al menos 6 caracteres</string>
+    <string name="cuenta_error_nuevas_no_coinciden">Las contraseñas nuevas no coinciden</string>
+    <string name="cuenta_error_cambio_en_curso">Ya hay un cambio de contraseña en curso</string>
+    <string name="cuenta_error_sin_email_reautenticar">Esta cuenta no tiene un email asociado para reautenticar</string>
+    <string name="cuenta_error_contrasena_actual_incorrecta">La contraseña actual no es correcta</string>
+    <string name="cuenta_error_usuario_no_disponible">El usuario ya no existe o su cuenta ya no está disponible</string>
+    <string name="cuenta_error_sesion_antigua">Tu sesión es demasiado antigua. Vuelve a iniciar sesión e inténtalo de nuevo</string>
+    <string name="cuenta_error_cambio_fallido">No se pudo cambiar la contraseña. Inténtalo de nuevo</string>
+    <string name="cuenta_error_baja_pendiente">Ya tienes una solicitud de baja pendiente de revisión</string>
+    <string name="cuenta_error_permisos_baja">No tienes permisos para solicitar la baja</string>
+    <string name="cuenta_error_inesperado_baja">Error inesperado al solicitar la baja</string>
+    <string name="cuenta_error_cargar_solicitudes">No se pudieron cargar las solicitudes</string>
+    <string name="cuenta_baja_enviada_ok">Solicitud de baja enviada</string>
+    <string name="cuenta_error_sin_negocio">Sin negocio vinculado</string>
+
+    <!-- ===== Home / Inicio ===== -->
+    <string name="home_mas_opciones_centro">Más opciones del centro</string>
+    <string name="home_denunciar_centro">Denunciar el centro</string>
+    <string name="home_denunciar_titulo">Denunciar contenido del centro</string>
+    <string name="home_no_vinculado_titulo">No estás vinculado.</string>
+    <string name="home_no_vinculado_descripcion">Vincula tu cuenta para acceder a las funciones de tu centro.</string>
+    <string name="home_vincular_centro">Vincular centro</string>
+    <string name="home_card_actividades">Actividades</string>
+    <string name="home_card_actividades_descripcion">Consulta y reserva tus actividades</string>
+    <string name="home_card_rutinas">Rutinas</string>
+    <string name="home_card_rutinas_descripcion">Rutinas de entrenamiento</string>
+    <string name="home_card_ajustes">Ajustes</string>
+    <string name="home_card_ajustes_descripcion">Configuración general</string>
+    <string name="home_card_notificaciones">Notificaciones</string>
+    <string name="home_card_notificaciones_descripcion">Consulta tus avisos</string>
+    <string name="home_estado_pago_vencido">Pago vencido</string>
+    <string name="home_prefijo_hasta">Hasta el</string>
+    <string name="home_prefijo_vencio">Venció el</string>
+    <string name="home_prefijo_desde">Desde el</string>
+    <string name="home_aviso_morosidad_texto">Renueva la mensualidad o solicita la baja</string>
+    <string name="home_aviso_morosidad_enlace">aquí</string>
+
+    <!-- ===== Denuncias (diálogo compartido Home/Notificaciones) ===== -->
+    <string name="denuncia_enviada_exito">Denuncia enviada. Gracias por tu colaboración.</string>
+    <string name="denuncia_selecciona_motivo">Selecciona el motivo de la denuncia.</string>
+    <string name="denuncia_descripcion_opcional">Descripción (opcional)</string>
+    <string name="denuncia_error_selecciona_motivo">Selecciona un motivo</string>
+    <string name="denuncia_enviando">Enviando...</string>
+    <string name="denuncia_enviar">Enviar denuncia</string>
+    <string name="denuncia_motivo_inapropiado">Contenido inapropiado</string>
+    <string name="denuncia_motivo_acoso">Acoso o amenazas</string>
+    <string name="denuncia_motivo_ofensivo">Contenido ofensivo</string>
+    <string name="denuncia_motivo_suplantacion">Suplantación</string>
+    <string name="denuncia_motivo_otro">Otro</string>
+    <string name="denuncia_error_tipo_invalido">Este contenido no se puede denunciar</string>
+    <string name="denuncia_error_motivo_invalido">Selecciona un motivo válido</string>
+    <string name="denuncia_error_permisos">No tienes permisos para realizar esta denuncia</string>
+    <string name="denuncia_error_envio">No se pudo enviar la denuncia. Inténtalo de nuevo</string>
+
+    <!-- ===== Configuración ===== -->
+    <string name="config_titulo">Ajustes</string>
+    <string name="config_seccion_cuenta">CUENTA</string>
+    <string name="config_seccion_preferencias">PREFERENCIAS</string>
+    <string name="config_seccion_apariencia">APARIENCIA</string>
+    <string name="config_seccion_idioma">IDIOMA</string>
+    <string name="config_seccion_informacion">INFORMACIÓN</string>
+    <string name="config_mi_perfil_descripcion">Mis datos personales</string>
+    <string name="config_mi_cuenta_descripcion">Cuenta, solicitud de baja y sesión</string>
+    <string name="config_notificaciones_descripcion">Configura tus avisos</string>
+    <string name="config_tema_claro">Claro</string>
+    <string name="config_tema_claro_descripcion">Tema claro</string>
+    <string name="config_tema_oscuro">Oscuro</string>
+    <string name="config_tema_oscuro_descripcion">Tema oscuro</string>
+    <string name="config_tema_sistema">Seguir configuración del sistema</string>
+    <string name="config_tema_sistema_descripcion">Según el dispositivo</string>
+    <string name="config_idioma_es">Español</string>
+    <string name="config_idioma_en">English</string>
+    <string name="config_terminos_condiciones">Términos y condiciones</string>
+    <string name="config_eliminar_cuenta_descripcion">Borra permanentemente tu cuenta y tus datos</string>
+
+    <!-- ===== Eliminar cuenta ===== -->
+    <string name="eliminar_titulo">Eliminar mi cuenta</string>
+    <string name="eliminar_titulo_permanente">Eliminación permanente</string>
+    <string name="eliminar_confirmacion_texto">Se eliminará PERMANENTEMENTE tu cuenta de Firebase y tus datos asociados. Esta acción es irreversible. Introduce tu contraseña para continuar.</string>
+    <string name="eliminar_intro">Se borrará tu cuenta de Firebase, tu perfil y tus datos asociados. No podrás recuperarlos.</string>
+    <string name="eliminar_accion_eliminando">Eliminando…</string>
+    <string name="eliminar_error_contrasena_incorrecta">La contraseña no es correcta</string>
+    <string name="eliminar_error_generico">No se pudo eliminar la cuenta: %1$s</string>
+    <string name="eliminar_error_detalle_desconocido">error desconocido</string>
+
+    <!-- ===== Términos de uso (interfaz; el cuerpo legal queda fuera) ===== -->
+    <string name="terminos_titulo">Términos y condiciones de Trazys</string>
+    <string name="terminos_aceptados_estado">Términos aceptados — versión %1$s</string>
+    <string name="terminos_aceptados_info">Ya has aceptado la versión vigente de los Términos de uso.</string>
+    <string name="terminos_accion_aceptar">Aceptar los términos de uso</string>
+    <string name="terminos_nota_aceptacion">Al aceptar registras tu aceptación de la versión %1$s de estos términos para tu cuenta de Trazys.</string>
+
+    <!-- ===== Política de privacidad (interfaz; el cuerpo legal queda fuera) ===== -->
+    <string name="privacidad_titulo">Política de privacidad</string>
+    <string name="privacidad_titulo_documento">Política de privacidad de Trazys</string>
+
+    <!-- ===== Notificaciones (buzón y preferencias) ===== -->
+    <string name="notif_no_vinculado_titulo">No estás vinculado a un centro</string>
+    <string name="notif_no_vinculado_detalle">Vincula tu cuenta para recibir avisos.</string>
+    <string name="notif_vacia_titulo">No tienes notificaciones</string>
+    <string name="notif_vacia_detalle">Cuando recibas un aviso aparecerá aquí.</string>
+    <string name="notif_error_cargar">No se pudieron cargar las notificaciones</string>
+    <string name="notif_reintentar">Reintentar</string>
+    <string name="notif_mas_opciones">Más opciones</string>
+    <string name="notif_accion_denunciar">Denunciar</string>
+    <string name="notif_denunciar_titulo">Denunciar contenido</string>
+    <string name="notif_recibir_avisos_centro">Recibir avisos del centro</string>
 </resources>

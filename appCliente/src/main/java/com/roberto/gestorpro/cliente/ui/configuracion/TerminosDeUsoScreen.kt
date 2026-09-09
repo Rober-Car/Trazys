@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
@@ -43,6 +45,14 @@ fun TerminosDeUsoScreen(
 ) {
     var aceptado by remember { mutableStateOf<Boolean?>(null) }
 
+    val textoTerminosTitulo = stringResource(R.string.terminos_titulo)
+    val textoAceptadosEstado =
+        stringResource(R.string.terminos_aceptados_estado, TerminosDeUso.VERSION)
+    val textoAceptadosInfo = stringResource(R.string.terminos_aceptados_info)
+    val textoAccionAceptar = stringResource(R.string.terminos_accion_aceptar)
+    val textoNotaAceptacion =
+        stringResource(R.string.terminos_nota_aceptacion, TerminosDeUso.VERSION)
+
     LaunchedEffect(Unit) {
         aceptado = mainViewModel.terminosAceptados()
     }
@@ -60,7 +70,7 @@ fun TerminosDeUsoScreen(
             AppNavigationBackButton(onClick = { navController.popBackStack() })
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Términos y condiciones de Trazys",
+                text = textoTerminosTitulo,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -80,14 +90,14 @@ fun TerminosDeUsoScreen(
                 // Ya aceptó la versión vigente: no se vuelve a pedir.
                 true -> {
                     Text(
-                        text = "Términos aceptados — versión ${TerminosDeUso.VERSION}",
+                        text = textoAceptadosEstado,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Ya has aceptado la versión vigente de los Términos de uso.",
+                        text = textoAceptadosInfo,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -96,7 +106,7 @@ fun TerminosDeUsoScreen(
                 // No aceptó la versión vigente (o aceptó una anterior): se ofrece aceptar.
                 false -> {
                     AppPrimaryButton(
-                        text = "Aceptar los términos de uso",
+                        text = textoAccionAceptar,
                         onClick = {
                             mainViewModel.aceptarTerminos()
                             aceptado = true
@@ -104,8 +114,7 @@ fun TerminosDeUsoScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Al aceptar registras tu aceptación de la versión " +
-                            "${TerminosDeUso.VERSION} de estos términos para tu cuenta de Trazys.",
+                        text = textoNotaAceptacion,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

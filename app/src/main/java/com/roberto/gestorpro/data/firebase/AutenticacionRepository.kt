@@ -1,5 +1,7 @@
 package com.roberto.gestorpro.data.firebase
 
+import android.content.Context
+import androidx.annotation.StringRes
 import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
@@ -10,6 +12,9 @@ import com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestore
+import com.roberto.gestorpro.R
+import com.roberto.gestorpro.util.IdiomaAplicacion
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -43,6 +48,7 @@ data class ResultadoAutenticacion(
  */
 @Singleton
 class AutenticacionRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val auth: FirebaseAuth,
     private val db: FirebaseFirestore
 ) {
@@ -52,15 +58,18 @@ class AutenticacionRepository @Inject constructor(
         const val ROL_CLIENTE = "CLIENTE"
 
         private const val COLECCION_USUARIOS = "usuarios"
-
-        /**
-         * Mensaje de éxito genérico del correo de recuperación. Se muestra
-         * siempre, esté o no el email registrado, para no revelar qué cuentas
-         * existen en Firebase.
-         */
-        private const val MENSAJE_RECUPERACION_ENVIADO =
-            "Si el email existe, recibirás un enlace para restablecer tu contraseña"
     }
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(@StringRes recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
+
+    private fun texto(@StringRes recurso: Int, vararg argumentos: Any): String =
+        IdiomaAplicacion.textoDe(context, recurso, *argumentos)
 
     /**
      * haySesionActiva
@@ -189,7 +198,7 @@ class AutenticacionRepository @Inject constructor(
             val usuario = credencial.user
 
             if (usuario == null) {
-                ResultadoAutenticacion(false, "No se pudo crear la cuenta")
+                ResultadoAutenticacion(false, texto(R.string.auth_error_no_crear_cuenta))
             } else {
                 try {
                     db.collection(COLECCION_USUARIOS)
@@ -204,7 +213,7 @@ class AutenticacionRepository @Inject constructor(
                         )
                         .esperar()
 
-                    ResultadoAutenticacion(true, "Cuenta creada correctamente", rol)
+                    ResultadoAutenticacion(true, texto(R.string.auth_cuenta_creada_ok), rol)
                 } catch (e: Exception) {
                     try {
                         usuario.delete().esperar()
@@ -212,7 +221,7 @@ class AutenticacionRepository @Inject constructor(
                     }
                     ResultadoAutenticacion(
                         false,
-                        "No se pudo crear el perfil del usuario: ${mensajeDe(e, false)}"
+                        texto(R.string.auth_error_no_perfil_usuario, mensajeDe(e, false))
                     )
                 }
             }
@@ -240,7 +249,7 @@ class AutenticacionRepository @Inject constructor(
 
             if (usuario == null) {
                 cerrarSesion()
-                return ResultadoAutenticacion(false, "No se pudo iniciar sesión")
+                return ResultadoAutenticacion(false, texto(R.string.auth_error_no_iniciar_sesion))
             }
 
             try {
@@ -253,15 +262,15 @@ class AutenticacionRepository @Inject constructor(
                     cerrarSesion()
                     ResultadoAutenticacion(
                         false,
-                        "El usuario no tiene perfil en la base de datos"
+                        texto(R.string.auth_error_usuario_sin_perfil)
                     )
                 } else if (documento.getBoolean("activo") != true) {
                     cerrarSesion()
-                    ResultadoAutenticacion(false, "Esta cuenta está desactivada")
+                    ResultadoAutenticacion(false, texto(R.string.auth_error_cuenta_desactivada))
                 } else {
                     ResultadoAutenticacion(
                         true,
-                        "Sesión iniciada correctamente",
+                        texto(R.string.auth_sesion_iniciada_ok),
                         documento.getString("rol")
                     )
                 }
@@ -269,7 +278,7 @@ class AutenticacionRepository @Inject constructor(
                 cerrarSesion()
                 ResultadoAutenticacion(
                     false,
-                    "No se pudo leer el perfil del usuario: ${mensajeDe(e, true)}"
+                    texto(R.string.auth_error_no_leer_perfil, mensajeDe(e, true))
                 )
             }
         } catch (e: Exception) {
@@ -303,23 +312,23 @@ class AutenticacionRepository @Inject constructor(
     suspend fun enviarCorreoRecuperacion(email: String): ResultadoAutenticacion {
         return try {
             auth.sendPasswordResetEmail(email).esperar()
-            ResultadoAutenticacion(true, MENSAJE_RECUPERACION_ENVIADO)
+            ResultadoAutenticacion(true, texto(R.string.auth_recuperar_exito))
         } catch (e: Exception) {
             when (e) {
                 is FirebaseAuthInvalidUserException,
                 is FirebaseAuthInvalidCredentialsException,
                 is FirebaseAuthUserCollisionException,
                 is FirebaseAuthWeakPasswordException ->
-                    ResultadoAutenticacion(true, MENSAJE_RECUPERACION_ENVIADO)
+                    ResultadoAutenticacion(true, texto(R.string.auth_recuperar_exito))
                 is FirebaseNetworkException ->
                     ResultadoAutenticacion(
                         false,
-                        "No hay conexión con Firebase. Comprueba tu conexión a Internet"
+                        texto(R.string.auth_error_sin_conexion)
                     )
                 else ->
                     ResultadoAutenticacion(
                         false,
-                        "No se pudo enviar el correo. Inténtalo de nuevo"
+                        texto(R.string.auth_error_no_enviar_correo)
                     )
             }
         }
@@ -329,25 +338,25 @@ class AutenticacionRepository @Inject constructor(
      * mensajeDe
      * ---------
      * ✔ TIPO: método (fun) privado de Kotlin → String
-     * Traduce las excepciones de Firebase a mensajes comprensibles en español,
-     * distinguiendo entre inicio de sesión y registro.
+     * Traduce las excepciones de Firebase a mensajes comprensibles en el idioma
+     * de la app, distinguiendo entre inicio de sesión y registro.
      * Sirve para que la UI nunca muestre textos técnicos en inglés.
      */
     private fun mensajeDe(e: Exception, alIniciarSesion: Boolean): String {
         return when (e) {
             is FirebaseAuthUserCollisionException ->
-                "Ya existe una cuenta con este email"
+                texto(R.string.auth_error_email_ya_existe)
             is FirebaseAuthWeakPasswordException ->
-                "La contraseña debe tener al menos 6 caracteres"
+                texto(R.string.auth_error_contrasena_debil)
             is FirebaseAuthInvalidUserException ->
-                "No existe una cuenta con este email"
+                texto(R.string.auth_error_cuenta_no_existe)
             is FirebaseAuthInvalidCredentialsException ->
                 if (alIniciarSesion) {
-                    "Email o contraseña incorrectos"
+                    texto(R.string.auth_error_credenciales)
                 } else {
-                    "El email no tiene un formato válido"
+                    texto(R.string.auth_error_email_formato)
                 }
-            else -> e.message ?: "Error inesperado. Inténtalo de nuevo"
+            else -> e.message ?: texto(R.string.auth_error_inesperado)
         }
     }
 }

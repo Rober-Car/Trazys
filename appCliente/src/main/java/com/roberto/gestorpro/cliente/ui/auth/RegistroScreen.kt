@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.cliente.ui.components.AppTextLinkButton
@@ -77,6 +79,21 @@ fun RegistroScreen(
         contrasena.length >= 6 &&
         contrasena == contrasenaRepetida
 
+    // Textos localizados del bloque de autenticación.
+    val textoCrearCuenta = stringResource(R.string.auth_registro_titulo)
+    val textoPerfilCliente = stringResource(R.string.auth_registro_perfil_cliente)
+    val textoEmail = stringResource(R.string.auth_email)
+    val textoContrasenaMin = stringResource(R.string.auth_contrasena_min_caracteres)
+    val textoRepetirContrasena = stringResource(R.string.auth_repetir_contrasena)
+    val textoOcultarContrasena = stringResource(R.string.auth_ocultar_contrasena)
+    val textoMostrarContrasena = stringResource(R.string.auth_mostrar_contrasena)
+    val textoHeLeidoYAcepto = stringResource(R.string.auth_registro_acepta_terminos)
+    val textoVerTerminos = stringResource(R.string.auth_registro_ver_terminos)
+    val textoVerPrivacidad = stringResource(R.string.auth_registro_ver_privacidad)
+    val textoErrorTerminos = stringResource(R.string.auth_registro_error_terminos)
+    val textoBotonCrear = stringResource(R.string.auth_registro_boton)
+    val textoYaTengoCuenta = stringResource(R.string.auth_registro_ya_tengo_cuenta)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -86,7 +103,7 @@ fun RegistroScreen(
         Spacer(modifier = Modifier.height(80.dp))
 
         Text(
-            text = "Crear una cuenta",
+            text = textoCrearCuenta,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -95,7 +112,7 @@ fun RegistroScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Perfil: Cliente",
+            text = textoPerfilCliente,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -116,7 +133,7 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text(textoEmail) },
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = null, tint = azul)
                     },
@@ -135,7 +152,7 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = contrasena,
                     onValueChange = { contrasena = it },
-                    label = { Text("Contraseña (mínimo 6 caracteres)") },
+                    label = { Text(textoContrasenaMin) },
                     leadingIcon = {
                         Icon(Icons.Default.Lock, contentDescription = null, tint = azul)
                     },
@@ -150,9 +167,9 @@ fun RegistroScreen(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (contrasenaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = azul
                             )
@@ -178,7 +195,7 @@ fun RegistroScreen(
                 OutlinedTextField(
                     value = contrasenaRepetida,
                     onValueChange = { contrasenaRepetida = it },
-                    label = { Text("Repetir contraseña") },
+                    label = { Text(textoRepetirContrasena) },
                     leadingIcon = {
                         Icon(Icons.Default.Lock, contentDescription = null, tint = azul)
                     },
@@ -193,9 +210,9 @@ fun RegistroScreen(
                                     Icons.Default.Visibility
                                 },
                                 contentDescription = if (contrasenaRepetidaVisible) {
-                                    "Ocultar contraseña"
+                                    textoOcultarContrasena
                                 } else {
-                                    "Mostrar contraseña"
+                                    textoMostrarContrasena
                                 },
                                 tint = azul
                             )
@@ -243,12 +260,12 @@ fun RegistroScreen(
                     // el texto de aceptación y los dos enlaces empiezan igualados.
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "He leído y acepto los Términos de uso",
+                            text = textoHeLeidoYAcepto,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Ver Términos de uso",
+                            text = textoVerTerminos,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
@@ -256,7 +273,7 @@ fun RegistroScreen(
                                 .clickable { navController.navigate(Routes.TERMINOS_CONDICIONES) }
                         )
                         Text(
-                            text = "Ver Política de privacidad",
+                            text = textoVerPrivacidad,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
@@ -269,13 +286,12 @@ fun RegistroScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 AppPrimaryButton(
-                    text = "Crear cuenta",
+                    text = textoBotonCrear,
                     onClick = {
                         mensajeError = ""
                         scope.launch {
                             if (!aceptaTerminos) {
-                                mensajeError =
-                                    "Debes aceptar los Términos de uso para crear la cuenta"
+                                mensajeError = textoErrorTerminos
                                 return@launch
                             }
                             val error = mainViewModel.registrarse(
@@ -304,7 +320,7 @@ fun RegistroScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 AppTextLinkButton(
-                    text = "Ya tengo cuenta",
+                    text = textoYaTengoCuenta,
                     onClick = {
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(Routes.REGISTRO) { inclusive = true }

@@ -1,5 +1,24 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
+> **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-09, resumen para continuar):** tanda de **internacionalización
+> (i18n) ES/EN por bloques** en `:app` y `:appCliente`. Working tree SIN commit (NO revertir; estado
+> real en AGENTS.md y en git status). Resumen de lo cerrado en esta tanda (todo compilando y con tests OK):
+> 1. **`values-en/strings.xml` nuevo en ambos módulos** (`:app` 48 claves, `:appCliente` 237 claves;
+>    idénticas a `values/strings.xml`). Helpers `textoDe` en `util/IdiomaAplicacion` de ambos módulos para
+>    capas sin composición.
+> 2. **ADMIN:** bloque AUTENTICACIÓN internacionalizado (Login/Registro/Recuperar + `AutenticacionRepository`
+>    + validaciones visibles). Resto de ADMIN pendiente de bloques futuros.
+> 3. **CLIENTE:** AUTENTICACIÓN, INCORPORACIÓN, MI PERFIL/EDITAR PERFIL, MI CUENTA, HOME, CONFIGURACIÓN y
+>    NOTIFICACIONES internacionalizados (pantallas, componentes propios, diálogos, errores visibles de
+>    repos/ViewModels). Detalle por bloque y archivos en AGENTS.md (CHECKPOINT 2026-09-09 I18N).
+> 4. **Correcciones de acoplamiento:** color de estado por código remoto (no texto), `AvisoMorosidad` con
+>    anotación posicional (sin `indexOf("aquí")`), gate de Términos de EditarPerfil por flag del VM (sin
+>    `startsWith`), `validarCambioContrasena`/`validarDatosDenuncia`/`MotivosDenuncia.etiqueta` puras e
+>    intactas (tests pasan).
+> 5. **Pendiente de decisión:** commit agrupado del working tree; cuerpos legales de Privacidad/Términos
+>    (CLIENTE), `ClasesScreen`/Rutinas y resto de ADMIN para próximos bloques i18n; pendientes no i18n del
+>    proyecto siguen en los checkpoints inferiores de AGENTS.md.
+
 > **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-09, resumen para continuar):** tanda de FASE 1 de i18n +
 > organización visual y badges en las Home. Working tree SIN commit (NO revertir; estado real en
 > AGENTS.md y en git status). Resumen de lo cerrado en esta tanda (todo compilando y con tests OK):

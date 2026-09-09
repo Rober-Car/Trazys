@@ -1,7 +1,12 @@
 package com.roberto.gestorpro.cliente.data.firebase
 
+import android.content.Context
+import androidx.annotation.StringRes
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.roberto.gestorpro.cliente.R
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,8 +35,17 @@ data class PerfilPendiente(
  */
 @Singleton
 class PerfilPendienteRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val db: FirebaseFirestore
 ) {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(@StringRes recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     companion object {
         private const val COLECCION_PERFILES = "perfiles_pendientes"
@@ -145,8 +159,8 @@ class PerfilPendienteRepository @Inject constructor(
     private fun mensajeDe(e: Exception): String {
         return when {
             e.message?.contains("permission", ignoreCase = true) == true ->
-                "No tienes permisos para esta operación"
-            else -> e.message ?: "Error inesperado. Inténtalo de nuevo"
+                texto(R.string.perfil_error_permisos)
+            else -> e.message ?: texto(R.string.auth_error_inesperado)
         }
     }
 }

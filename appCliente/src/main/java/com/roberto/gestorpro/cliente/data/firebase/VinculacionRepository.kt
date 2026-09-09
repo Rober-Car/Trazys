@@ -1,10 +1,15 @@
 package com.roberto.gestorpro.cliente.data.firebase
 
+import android.content.Context
+import androidx.annotation.StringRes
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.storage.FirebaseStorage
+import com.roberto.gestorpro.cliente.R
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -55,12 +60,21 @@ sealed class ResultadoIndice {
  */
 @Singleton
 class VinculacionRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val auth: FirebaseAuth,
     private val db: FirebaseFirestore,
     private val perfilPendienteRepository: PerfilPendienteRepository,
     private val preferencesRepository: com.roberto.gestorpro.cliente.data.repository.PreferencesRepository,
     private val storage: FirebaseStorage
 ) {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(@StringRes recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     companion object {
         private const val COLECCION_CLIENTES = "clientes"
@@ -74,20 +88,19 @@ class VinculacionRepository @Inject constructor(
         private const val MAX_INTENTOS_ID = 5
         private const val ID_CLIENTE_MINIMO = 1_000_000_000
 
+        /**
+         * Factory puras usadas por los tests unitarios (VinculacionRepositoryTest).
+         * Mantienen los literales en español a propósito: los tests verifican la
+         * lógica de los resultados sin infraestructura Android. La UI nunca muestra
+         * estos mensajes directamente: la pantalla usa sus propios recursos o el
+         * mensaje localizado que construye el repositorio en runtime.
+         */
         internal fun resultadoCuandoIndiceNoExiste(): ResultadoVinculacion =
             ResultadoVinculacion(
                 false,
                 "No existe ningún cliente registrado con ese DNI."
             )
 
-        /**
-         * resultadoNoHayFichaParaRegistro
-         * -------------------------------
-         * Resultado del flujo guiado cuando NO existe la ficha del DNI y el
-         * usuario tampoco tiene un perfil pendiente completo. No es un error de
-         * la operación: la UI debe invitar al usuario a completar sus datos y,
-         * tras guardarlos, la vinculación continuará sola (VÍA 2).
-         */
         internal fun resultadoNoHayFichaParaRegistro(): ResultadoVinculacion =
             ResultadoVinculacion(
                 false,
@@ -150,7 +163,10 @@ class VinculacionRepository @Inject constructor(
     ): ResultadoVinculacion {
         return try {
             val usuario = auth.currentUser
-                ?: return ResultadoVinculacion(false, "No hay ningún usuario autenticado")
+                ?: return ResultadoVinculacion(
+                    false,
+                    texto(R.string.vinculacion_error_sin_sesion)
+                )
             val uid = usuario.uid
 
             // RESOLUCIÓN DEL NEGOCIO POR CÓDIGO MAESTRO (única y determinista).
@@ -164,11 +180,17 @@ class VinculacionRepository @Inject constructor(
                 .get()
                 .esperar()
             if (!codigoDoc.exists()) {
-                return ResultadoVinculacion(false, "Código maestro no válido.")
+                return ResultadoVinculacion(
+                    false,
+                    texto(R.string.vinculacion_error_codigo_invalido)
+                )
             }
             val negocioId = codigoDoc.getString("negocioId")
             if (negocioId.isNullOrBlank()) {
-                return ResultadoVinculacion(false, "Código maestro no válido.")
+                return ResultadoVinculacion(
+                    false,
+                    texto(R.string.vinculacion_error_codigo_invalido)
+                )
             }
 
             val negocioPublico = db.collection(COLECCION_NEGOCIOS_PUBLICOS)
@@ -180,8 +202,7 @@ class VinculacionRepository @Inject constructor(
             ) {
                 return ResultadoVinculacion(
                     false,
-                    "El código maestro no es válido o la información del centro " +
-                        "es incoherente. Contacta con tu centro."
+                    texto(R.string.vinculacion_error_centro_incoherente)
                 )
             }
 
@@ -223,7 +244,11 @@ class VinculacionRepository @Inject constructor(
                         }
                         resultado
                     } else {
-                        resultadoNoHayFichaParaRegistro()
+                        ResultadoVinculacion(
+                            false,
+                            texto(R.string.vinculacion_aviso_requiere_perfil),
+                            requiereCompletarPerfil = true
+                        )
                     }
                 }
             }
@@ -307,9 +332,15 @@ class VinculacionRepository @Inject constructor(
                 negocioId
             )
         } catch (e: DniYaVinculadoException) {
-            ResultadoVinculacion(false, "Ese DNI ya está vinculado a otra cuenta")
+            ResultadoVinculacion(
+                false,
+                texto(R.string.vinculacion_error_dni_vinculado)
+            )
         } catch (e: FichaInexistenteException) {
-            ResultadoVinculacion(false, "La ficha ya no existe. Inténtalo de nuevo")
+            ResultadoVinculacion(
+                false,
+                texto(R.string.vinculacion_error_ficha_no_existe)
+            )
         } catch (e: Exception) {
             ResultadoVinculacion(false, mensajeDe(e))
         }
@@ -448,18 +479,21 @@ class VinculacionRepository @Inject constructor(
                 } catch (e: DniYaVinculadoException) {
                     return ResultadoVinculacion(
                         false,
-                        "Ese DNI ya está vinculado a otra cuenta"
+                        texto(R.string.vinculacion_error_dni_vinculado)
                     )
                 } catch (e: ColisionIdClienteException) {
                     if (intento == MAX_INTENTOS_ID - 1) {
                         return ResultadoVinculacion(
                             false,
-                            "No se pudo generar un identificador único. Inténtalo de nuevo"
+                            texto(R.string.vinculacion_error_id_unico)
                         )
                     }
                 }
             }
-            ResultadoVinculacion(false, "No se pudo crear la ficha. Inténtalo de nuevo")
+            ResultadoVinculacion(
+                false,
+                texto(R.string.vinculacion_error_crear_ficha)
+            )
         } catch (e: Exception) {
             ResultadoVinculacion(false, mensajeDe(e))
         }
@@ -516,19 +550,19 @@ class VinculacionRepository @Inject constructor(
         return when (e) {
             is FirebaseFirestoreException -> when (e.code) {
                 FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                    "No tienes permisos para esta operación. Revisa el código y el DNI"
+                    texto(R.string.vinculacion_error_permisos)
 
                 FirebaseFirestoreException.Code.UNAVAILABLE,
                 FirebaseFirestoreException.Code.DEADLINE_EXCEEDED ->
-                    "No hay conexión con el servidor. Comprueba tu conexión a Internet"
+                    texto(R.string.vinculacion_error_sin_conexion)
 
-                else -> e.message ?: "Error inesperado. Inténtalo de nuevo"
+                else -> e.message ?: texto(R.string.auth_error_inesperado)
             }
 
             is FirebaseNetworkException ->
-                "No hay conexión con el servidor. Comprueba tu conexión a Internet"
+                texto(R.string.vinculacion_error_sin_conexion)
 
-            else -> e.message ?: "Error inesperado. Inténtalo de nuevo"
+            else -> e.message ?: texto(R.string.auth_error_inesperado)
         }
     }
 }

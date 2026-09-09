@@ -17,7 +17,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.roberto.gestorpro.cliente.R
 
 /**
  * BotonSelectorFoto
@@ -38,11 +40,16 @@ fun BotonSelectorFoto(
 ) {
     var menuAbierto by remember { mutableStateOf(false) }
 
+    val textoElegirFoto = stringResource(R.string.foto_elegir)
+    val textoCambiarFoto = stringResource(R.string.foto_cambiar)
+    val textoElegirGaleria = stringResource(R.string.foto_elegir_galeria)
+    val textoHacerFoto = stringResource(R.string.foto_hacer_foto)
+
     Box {
         OutlinedButton(
             onClick = { menuAbierto = true }
         ) {
-            Text(if (tieneFoto) "Cambiar foto" else "Elegir foto")
+            Text(if (tieneFoto) textoCambiarFoto else textoElegirFoto)
         }
 
         DropdownMenu(
@@ -52,7 +59,7 @@ fun BotonSelectorFoto(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             DropdownMenuItem(
-                text = { Text("Elegir de galería") },
+                text = { Text(textoElegirGaleria) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.PhotoLibrary,
@@ -66,7 +73,7 @@ fun BotonSelectorFoto(
                 }
             )
             DropdownMenuItem(
-                text = { Text("Hacer una foto") },
+                text = { Text(textoHacerFoto) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.PhotoCamera,

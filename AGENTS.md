@@ -2,6 +2,70 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-09 (I18N) — INTERNACIONALIZACIÓN ES/EN IMPLEMENTADA POR BLOQUES EN `:app` Y `:appCliente` (REANUDAR AQUÍ)
+>
+> Estado real al cierre de la tanda de i18n. **HEAD del desarrollador: `64de014` "Ignorar archivos Shelf
+> de Android Studio"** (sobre `9cd98bd`; nada nuestro commiteado). El **working tree conserva SIN commit**
+> TODO el trabajo de i18n de esta tanda (**NO revertir**; lista completa en `git status`). Sin push, sin
+> deploy, sin tocar Firebase/Firestore/Rules/Functions/Storage. La infraestructura de idioma
+> (`IdiomaAplicacion`, preferencia en DataStore, `attachBaseContext`+`recreate`) quedó commiteada por el
+> desarrollador en tandas previas; nosotros añadimos a `util/IdiomaAplicacion` (ambos módulos) los
+> helpers `textoDe(base, recurso[, vararg])` que resuelven recursos en el idioma elegido desde capas sin
+> composición (repositorios/ViewModels vía `@ApplicationContext`).
+>
+> ### Qué se ha implementado (todo compilando y con tests OK)
+> - **Recursos:** `:app` → `values/strings.xml` y `values-en/strings.xml` (48 y 48 claves, solo bloque
+>   AUTH de ADMIN); `:appCliente` → `values/strings.xml` y `values-en/strings.xml` (**237 y 237 claves**).
+>   Claves ES/EN idénticas en ambos módulos; prefijos por bloque (`auth_*`, `inicio_*`, `vinculacion_*`,
+>   `perfil_*`, `cuenta_*`, `estado_*`, `accion_*`, `foto_*`, `home_*`, `denuncia_*`, `config_*`,
+>   `eliminar_*`, `terminos_*`, `privacidad_*`, `notif_*`). `values-en/` es carpeta nueva en ambos módulos.
+> - **`:app` (ADMIN) — bloque AUTENTICACIÓN:** `LoginScreen`, `RegistroScreen`, `RecuperarPasswordScreen`
+>   (textos → `stringResource`), `AutenticacionRepository` (mensajes de login/registro/recuperación →
+>   recursos vía `textoDe`), `MainViewModel` (validaciones visibles → recursos). Se dejó intacto
+>   `validarCambioContrasena` (función pura testada) y los mensajes de `cambiarContrasena` (bloque Cuenta
+>   pendiente en ADMIN).
+> - **`:appCliente` (CLIENTE) — bloques completados:** AUTENTICACIÓN (Login/Registro/Recuperar),
+>   INCORPORACIÓN (`EleccionInicioScreen`, `InicioScreen`/código+DNI, `CompletarPerfilScreen`,
+>   `BotonSelectorFoto`), MI PERFIL (`MiPerfilScreen`, `EditarPerfilScreen`), MI CUENTA (`CuentaScreen` +
+>   `DialogoCambiarContrasena`), HOME (`HomeScreen` + `AvisoMorosidad` desacoplado de `indexOf("aquí")`),
+>   CONFIGURACIÓN (`ConfiguracionScreen`, `EliminarCuentaScreen`) y NOTIFICACIONES
+>   (`ListaNotificacionesScreen`, `NotificacionesScreen` preferencias de avisos).
+> - **Errores/validaciones visibles localizados** en repos/ViewModels del CLIENTE vía `@ApplicationContext`
+>   + `IdiomaAplicacion.textoDe`: `AutenticacionRepository`, `VinculacionRepository`,
+>   `PerfilPendienteRepository`, `ClienteRepository`, `SolicitudRepository`, `DenunciaRepository` (solo
+>   errores que llegan a pantallas), `MainViewModel` (cliente y admin) y `NotificacionesClienteViewModel`.
+> - **Acoplamientos corregidos:** `estadoTexto`/`estadoColor` de MiPerfil ahora dependen del **código
+>   remoto** (enum), no del texto traducido; `AvisoMorosidad` usa anotación posicional
+>   (`pushStringAnnotation`) en vez de `indexOf("aquí")`; `EditarPerfilScreen` detecta el gate de Términos
+>   por un flag del VM (`requiereTerminosParaFoto`), no por `startsWith`; `DenunciaRepository` conserva la
+>   función pura `validarDatosDenuncia` + `MotivosDenuncia.etiqueta` para tests y resuelve la traducción en
+>   la capa de UI/recursos (`recursoDeMotivo`) o replicando la semántica localizada.
+> - **Mantenidos intactos a propósito:** función pura `validarCambioContrasena` (+ sus tests
+>   `CambiarContrasenaTest` y `DenunciaReglasTest`), lógica/esManual/origen de notificaciones, contenido
+>   **remoto** `Notificacion.titulo/mensaje`, patrón de fechas `dd/MM/yyyy…`, orden de cards/badge del Home,
+>   navegación, Firestore/Firebase.
+> - **EXCLUIDO del alcance (documentado en auditorías):** cuerpo legal (contenido largo) de
+>   `PoliticaPrivacidadScreen` y `TerminosDeUsoScreen` (solo se tradujo la interfaz/cabeceras/versión);
+>   pantallas del ADMIN fuera de AUTH (Home, Configuración, Cuenta/cambio de contraseña, Perfil de cliente,
+>   Servicios/Actividades, Economía, Solicitudes, Gestión de notificaciones…); `ClasesScreen`/Actividades y
+>   Rutinas del CLIENTE; `InformacionLegalScreen` (sin ruta en AppNavigation); web `/terminos`/`/privacidad`.
+>
+> ### Verificación (última, working tree)
+> `:app:compileDebugKotlin`+`:app:assembleDebug` OK y `:appCliente:compileDebugKotlin`+`:app:assembleDebug`
+> OK; `:app:testDebugUnitTest` y `:appCliente:testDebugUnitTest` → BUILD SUCCESSFUL. Comprobación
+> automática ES/EN: claves idénticas, sin claves sin uso, todos los `R.string` usados presentes en ambos
+> idiomas. `git diff --check` limpio (solo avisos CRLF preexistentes). Sin commit/push/deploy.
+>
+> ### Para reanudar
+> 1. Revisar y decidir el **commit agrupado** de todo el working tree de i18n (no hay commit nuestro aún).
+> 2. Siguientes bloques i18n candidatos: ADMIN (resto de pantallas) y CLIENTE (Actividades/`ClasesScreen`,
+>    Rutinas, `TerminosDeUsoScreen`/`PoliticaPrivacidadScreen` cuerpos legales largos con decisión de
+>    granularidad, si se pide). Recordar que `EditarPerfilScreen` (fuera de alcance en su bloque) también
+>    se internacionalizó de pasada como dependencia directa del flujo de perfil.
+> 3. Pendientes del proyecto no i18n siguen vivos (ver checkpoints inferiores): prueba funcional de
+>    `notificacionInmediata`, Rules de `denuncias` sin desplegar, bucket de Storage, logs de diagnóstico,
+>    `fallbackToDestructiveMigration`, etc.
+
 > ## ⚠️ CHECKPOINT 2026-09-09 — DEPLOY FUNCTION NOTIFICACIÓN INMEDIATA + INDICADOR DE LECTURA ADMIN + HOME CLIENTE (REANUDAR AQUÍ)
 >
 > Estado real al cierre de la tanda. **HEAD del desarrollador: `a0bc03b` "correocioens"** (en

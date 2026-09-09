@@ -1,5 +1,6 @@
 package com.roberto.gestorpro.cliente.ui.auth
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -39,12 +40,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.PerfilPendiente
 import com.roberto.gestorpro.cliente.data.firebase.FotoClienteStorage
 import com.roberto.gestorpro.cliente.model.Cliente
@@ -94,6 +97,18 @@ fun MiPerfilScreen(
         perfilPendiente?.let { DatosPerfilMostrar.from(it) }
     }
 
+    // Textos localizados del bloque de perfil/cuenta.
+    val textoMiPerfil = stringResource(R.string.perfil_mi_perfil)
+    val textoDatosPersonales = stringResource(R.string.perfil_datos_personales)
+    val textoDni = stringResource(R.string.vinculacion_label_dni)
+    val textoTelefono = stringResource(R.string.perfil_campo_telefono)
+    val textoEmail = stringResource(R.string.auth_email)
+    val textoFechaNacimiento = stringResource(R.string.perfil_label_fecha_nacimiento)
+    val textoSinEmail = stringResource(R.string.perfil_sin_email)
+    val textoSinEspecificar = stringResource(R.string.perfil_sin_especificar)
+    val textoFotoPerfil = stringResource(R.string.perfil_foto_descripcion)
+    val textoModificarDatos = stringResource(R.string.perfil_accion_modificar_datos)
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
     ) { innerPadding ->
@@ -116,7 +131,7 @@ fun MiPerfilScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Mi perfil",
+                        text = textoMiPerfil,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -150,7 +165,7 @@ fun MiPerfilScreen(
                 if (modeloFotoPerfil != null) {
                     AsyncImage(
                         model = modeloFotoPerfil,
-                        contentDescription = "Foto de perfil",
+                        contentDescription = textoFotoPerfil,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(120.dp)
@@ -179,17 +194,19 @@ fun MiPerfilScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
 
-                if (datos.estadoTexto != null) {
+                val estadoRemoto = datos.estadoRemoto
+                if (estadoRemoto != null) {
                     Spacer(modifier = Modifier.height(4.dp))
 
+                    val colorEstado = estadoColor(estadoRemoto)
                     Surface(
                         shape = RoundedCornerShape(50),
-                        color = estadoColor(datos.estadoTexto).copy(alpha = 0.15f)
+                        color = colorEstado.copy(alpha = 0.15f)
                     ) {
                         Text(
-                            text = datos.estadoTexto,
+                            text = stringResource(estadoRecurso(estadoRemoto)),
                             style = MaterialTheme.typography.labelLarge,
-                            color = estadoColor(datos.estadoTexto),
+                            color = colorEstado,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
@@ -199,7 +216,7 @@ fun MiPerfilScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Datos personales",
+                text = textoDatosPersonales,
                 style = MaterialTheme.typography.titleMedium,
                 color = Color(0xFF2196F3)
             )
@@ -221,26 +238,26 @@ fun MiPerfilScreen(
                 ) {
                     FilaDatoPerfilCliente(
                         icono = Icons.Default.Badge,
-                        etiqueta = "DNI",
+                        etiqueta = textoDni,
                         valor = datos.dni,
                         color = Color(0xFF2196F3)
                     )
                     FilaDatoPerfilCliente(
                         icono = Icons.Default.Phone,
-                        etiqueta = "Teléfono",
+                        etiqueta = textoTelefono,
                         valor = datos.telefono,
                         color = Color(0xFF26A69A)
                     )
                     FilaDatoPerfilCliente(
                         icono = Icons.Default.Email,
-                        etiqueta = "Email",
-                        valor = datos.email ?: "Sin email",
+                        etiqueta = textoEmail,
+                        valor = datos.email ?: textoSinEmail,
                         color = Color(0xFF8E24AA)
                     )
                     FilaDatoPerfilCliente(
                         icono = Icons.Default.DateRange,
-                        etiqueta = "Fecha de nacimiento",
-                        valor = formatearFecha(datos.fechaNacimiento),
+                        etiqueta = textoFechaNacimiento,
+                        valor = formatearFecha(datos.fechaNacimiento, textoSinEspecificar),
                         color = Color(0xFFFB8C00)
                     )
                 }
@@ -249,7 +266,7 @@ fun MiPerfilScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             AppPrimaryButton(
-                text = "Modificar mis datos",
+                text = textoModificarDatos,
                 onClick = { navController.navigate(Routes.EDITAR_PERFIL) }
             )
         }
@@ -261,6 +278,8 @@ fun MiPerfilScreen(
  * ------------------
  * Datos mínimos del perfil para mostrar tanto desde clientes/{idCliente}
  * (vinculado) como desde perfiles_pendientes/{uid} (sin vincular).
+ * `estadoRemoto` es el código remoto del estado (p. ej. "ACTIVO"); el texto
+ * visible y el color se resuelven en la UI desde ese código, NO desde texto.
  */
 private data class DatosPerfilMostrar(
     val nombre: String,
@@ -270,7 +289,7 @@ private data class DatosPerfilMostrar(
     val email: String?,
     val foto: String,
     val fechaNacimiento: Long?,
-    val estadoTexto: String?
+    val estadoRemoto: String?
 ) {
     companion object {
         fun from(c: Cliente) = DatosPerfilMostrar(
@@ -281,7 +300,7 @@ private data class DatosPerfilMostrar(
             email = c.email,
             foto = c.foto,
             fechaNacimiento = c.fechaNacimiento,
-            estadoTexto = estadoTexto(c.estado.name)
+            estadoRemoto = c.estado.name
         )
 
         fun from(p: PerfilPendiente) = DatosPerfilMostrar(
@@ -292,18 +311,29 @@ private data class DatosPerfilMostrar(
             email = p.email,
             foto = p.foto,
             fechaNacimiento = p.fechaNacimiento,
-            estadoTexto = null
+            estadoRemoto = null
         )
+    }
+}
 
-        private fun estadoTexto(estado: String): String {
-            return when (estado) {
-                "ACTIVO" -> "Activo"
-                "MOROSO" -> "Moroso"
-                "BAJA" -> "Baja"
-                "ARCHIVADO" -> "Archivado"
-                else -> "Registrado"
-            }
-        }
+/** Recurso de texto correspondiente al estado remoto. */
+@StringRes
+private fun estadoRecurso(estadoRemoto: String): Int = when (estadoRemoto) {
+    "ACTIVO" -> R.string.estado_activo
+    "MOROSO" -> R.string.estado_moroso
+    "BAJA" -> R.string.estado_baja
+    "ARCHIVADO" -> R.string.estado_archivado
+    else -> R.string.estado_registrado
+}
+
+/** Color del estado derivado del código remoto (no del texto traducido). */
+private fun estadoColor(estadoRemoto: String): Color {
+    return when (estadoRemoto) {
+        "ACTIVO" -> Color(0xFF43A047)
+        "MOROSO" -> Color(0xFFE53935)
+        "BAJA" -> Color(0xFF78909C)
+        "ARCHIVADO" -> Color(0xFF78909C)
+        else -> Color(0xFF1E88E5)
     }
 }
 
@@ -336,25 +366,14 @@ private fun FilaDatoPerfilCliente(
     }
 }
 
-private fun formatearFecha(millis: Long?): String {
-    if (millis == null || millis <= 0L) return "Sin especificar"
+private fun formatearFecha(millis: Long?, textoVacio: String): String {
+    if (millis == null || millis <= 0L) return textoVacio
     return try {
         java.time.Instant.ofEpochMilli(millis)
             .atZone(java.time.ZoneId.systemDefault())
             .toLocalDate()
             .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
     } catch (_: Exception) {
-        "Sin especificar"
-    }
-}
-
-private fun estadoColor(texto: String?): Color {
-    return when (texto) {
-        "Activo" -> Color(0xFF43A047)
-        "Moroso" -> Color(0xFFE53935)
-        "Baja" -> Color(0xFF78909C)
-        "Archivado" -> Color(0xFF78909C)
-        "Registrado" -> Color(0xFF1E88E5)
-        else -> Color(0xFF1E88E5)
+        textoVacio
     }
 }

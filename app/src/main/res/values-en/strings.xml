@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">Trazys</string>
+
+    <!-- ===== Authentication: Login ===== -->
+    <string name="auth_login_titulo">Sign in</string>
+    <string name="auth_login_subtitulo_gestion">Client and fee management</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_contrasena">Password</string>
+    <string name="auth_mostrar_contrasena">Show password</string>
+    <string name="auth_ocultar_contrasena">Hide password</string>
+    <string name="auth_boton_entrar">Sign in</string>
+    <string name="auth_enlace_no_tienes_cuenta">No account yet? Create one</string>
+    <string name="auth_enlace_olvidaste_contrasena">Forgot your password?</string>
+    <string name="auth_copyright">© 2026 Trazys</string>
+    <string name="auth_logo_desc">Business logo</string>
+    <string name="auth_error_credenciales_generico">The email or password is incorrect.</string>
+
+    <!-- ===== Authentication: Registration ===== -->
+    <string name="auth_registro_titulo">Create an account</string>
+    <string name="auth_registro_perfil">Profile: %1$s</string>
+    <string name="auth_rol_administrador">Administrator</string>
+    <string name="auth_rol_cliente">Client</string>
+    <string name="auth_repetir_contrasena">Repeat password</string>
+    <string name="auth_registro_acepta_terminos">I have read and accept the Terms of Use</string>
+    <string name="auth_registro_ver_terminos">View Terms of Use</string>
+    <string name="auth_registro_ver_privacidad">View Privacy Policy</string>
+    <string name="auth_registro_error_terminos">You must accept the Terms of Use to create the account</string>
+    <string name="auth_registro_boton">Create account</string>
+    <string name="auth_registro_ya_tengo_cuenta">Already have an account. Sign in</string>
+
+    <!-- ===== Authentication: Reset password ===== -->
+    <string name="auth_recuperar_titulo">Reset password</string>
+    <string name="auth_recuperar_instrucciones">Enter your email and we will send you a link to reset it.</string>
+    <string name="auth_recuperar_enviar">Send email</string>
+    <string name="auth_recuperar_exito">If the email exists, you will receive a link to reset your password</string>
+    <string name="auth_recuperar_volver">Back to sign in</string>
+
+    <!-- ===== Authentication: validation and Firebase messages ===== -->
+    <string name="auth_introduce_email">Enter your email</string>
+    <string name="auth_error_email_formato">The email format is not valid</string>
+    <string name="auth_error_contrasena_debil">The password must be at least 6 characters</string>
+    <string name="auth_error_contrasenas_no_coinciden">The passwords do not match</string>
+    <string name="auth_error_email_ya_existe">An account with this email already exists</string>
+    <string name="auth_error_cuenta_no_existe">No account exists with this email</string>
+    <string name="auth_error_credenciales">Incorrect email or password</string>
+    <string name="auth_error_cuenta_desactivada">This account is disabled</string>
+    <string name="auth_error_usuario_sin_perfil">The user has no profile in the database</string>
+    <string name="auth_error_no_pertenece_a_app">This account does not belong to the client app</string>
+    <string name="auth_error_no_crear_cuenta">Could not create the account</string>
+    <string name="auth_error_no_perfil_usuario">Could not create the user profile: %1$s</string>
+    <string name="auth_error_no_iniciar_sesion">Could not sign in</string>
+    <string name="auth_error_no_leer_perfil">Could not read the user profile: %1$s</string>
+    <string name="auth_error_inesperado">Unexpected error. Try again</string>
+    <string name="auth_error_sin_conexion">No connection to Firebase. Check your Internet connection</string>
+    <string name="auth_error_no_enviar_correo">Could not send the email. Try again</string>
+    <string name="auth_cuenta_creada_ok">Account created successfully</string>
+    <string name="auth_sesion_iniciada_ok">Signed in successfully</string>
+</resources>

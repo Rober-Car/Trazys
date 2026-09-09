@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.compose.ui.res.stringResource
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
@@ -66,6 +68,32 @@ fun ConfiguracionScreen(
 ) {
     val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
     val idioma by mainViewModel.idioma.collectAsStateWithLifecycle()
+
+    // Textos localizados del bloque de configuración.
+    val textoAjustes = stringResource(R.string.config_titulo)
+    val textoSeccionCuenta = stringResource(R.string.config_seccion_cuenta)
+    val textoSeccionPreferencias = stringResource(R.string.config_seccion_preferencias)
+    val textoSeccionApariencia = stringResource(R.string.config_seccion_apariencia)
+    val textoSeccionIdioma = stringResource(R.string.config_seccion_idioma)
+    val textoSeccionInformacion = stringResource(R.string.config_seccion_informacion)
+    val textoMiPerfil = stringResource(R.string.perfil_mi_perfil)
+    val textoMiPerfilDesc = stringResource(R.string.config_mi_perfil_descripcion)
+    val textoMiCuenta = stringResource(R.string.cuenta_titulo)
+    val textoMiCuentaDesc = stringResource(R.string.config_mi_cuenta_descripcion)
+    val textoNotificaciones = stringResource(R.string.home_card_notificaciones)
+    val textoNotificacionesDesc = stringResource(R.string.config_notificaciones_descripcion)
+    val textoClaro = stringResource(R.string.config_tema_claro)
+    val textoClaroDesc = stringResource(R.string.config_tema_claro_descripcion)
+    val textoOscuro = stringResource(R.string.config_tema_oscuro)
+    val textoOscuroDesc = stringResource(R.string.config_tema_oscuro_descripcion)
+    val textoSistema = stringResource(R.string.config_tema_sistema)
+    val textoSistemaDesc = stringResource(R.string.config_tema_sistema_descripcion)
+    val textoEspanol = stringResource(R.string.config_idioma_es)
+    val textoEnglish = stringResource(R.string.config_idioma_en)
+    val textoPoliticaPrivacidad = stringResource(R.string.auth_enlace_politica_privacidad)
+    val textoTerminosCondiciones = stringResource(R.string.config_terminos_condiciones)
+    val textoEliminarMiCuenta = stringResource(R.string.eliminar_titulo)
+    val textoEliminarDesc = stringResource(R.string.config_eliminar_cuenta_descripcion)
 
     Scaffold { innerPadding ->
         Column(
@@ -87,7 +115,7 @@ fun ConfiguracionScreen(
                     AppNavigationBackButton(onClick = { navController.popBackStack() })
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Ajustes",
+                        text = textoAjustes,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -98,7 +126,7 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "CUENTA",
+                text = textoSeccionCuenta,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -117,16 +145,16 @@ fun ConfiguracionScreen(
             ) {
                 AjusteNavigationOption(
                     icon = Icons.Filled.Person,
-                    label = "Mi perfil",
-                    description = "Mis datos personales",
+                    label = textoMiPerfil,
+                    description = textoMiPerfilDesc,
                     tint = Color(0xFF2196F3),
                     onClick = { navController.navigate(Routes.MI_PERFIL) }
                 )
                 HorizontalDivider()
                 AjusteNavigationOption(
                     icon = Icons.Filled.AccountCircle,
-                    label = "Mi cuenta",
-                    description = "Cuenta, solicitud de baja y sesión",
+                    label = textoMiCuenta,
+                    description = textoMiCuentaDesc,
                     tint = Color(0xFF1E88E5),
                     onClick = { navController.navigate(Routes.CUENTA) }
                 )
@@ -135,7 +163,7 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "PREFERENCIAS",
+                text = textoSeccionPreferencias,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -154,8 +182,8 @@ fun ConfiguracionScreen(
             ) {
                 AjusteNavigationOption(
                     icon = Icons.Filled.Notifications,
-                    label = "Notificaciones",
-                    description = "Configura tus avisos",
+                    label = textoNotificaciones,
+                    description = textoNotificacionesDesc,
                     tint = Color(0xFF7E57C2),
                     onClick = {
                         navController.navigate(Routes.CONFIGURACION_NOTIFICACIONES)
@@ -166,7 +194,7 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "APARIENCIA",
+                text = textoSeccionApariencia,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -186,8 +214,8 @@ fun ConfiguracionScreen(
                 Column(modifier = Modifier.padding(4.dp)) {
                     TemaOption(
                         icon = Icons.Filled.LightMode,
-                        label = "Claro",
-                        description = "Tema claro",
+                        label = textoClaro,
+                        description = textoClaroDesc,
                         selected = themeMode == PreferencesRepository.THEME_CLARO,
                         onClick = { mainViewModel.setThemeMode(PreferencesRepository.THEME_CLARO) }
                     )
@@ -197,8 +225,8 @@ fun ConfiguracionScreen(
                     )
                     TemaOption(
                         icon = Icons.Filled.DarkMode,
-                        label = "Oscuro",
-                        description = "Tema oscuro",
+                        label = textoOscuro,
+                        description = textoOscuroDesc,
                         selected = themeMode == PreferencesRepository.THEME_OSCURO,
                         onClick = { mainViewModel.setThemeMode(PreferencesRepository.THEME_OSCURO) }
                     )
@@ -208,8 +236,8 @@ fun ConfiguracionScreen(
                     )
                     TemaOption(
                         icon = Icons.Filled.SettingsBrightness,
-                        label = "Seguir configuración del sistema",
-                        description = "Según el dispositivo",
+                        label = textoSistema,
+                        description = textoSistemaDesc,
                         selected = themeMode == PreferencesRepository.THEME_SISTEMA,
                         onClick = { mainViewModel.setThemeMode(PreferencesRepository.THEME_SISTEMA) }
                     )
@@ -219,7 +247,7 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "IDIOMA",
+                text = textoSeccionIdioma,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -238,7 +266,7 @@ fun ConfiguracionScreen(
             ) {
                 Column(modifier = Modifier.padding(4.dp)) {
                     IdiomaOption(
-                        nombre = "Español",
+                        nombre = textoEspanol,
                         selected = idioma == PreferencesRepository.IDIOMA_ES,
                         onClick = { mainViewModel.setIdioma(PreferencesRepository.IDIOMA_ES) }
                     )
@@ -247,7 +275,7 @@ fun ConfiguracionScreen(
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
                     IdiomaOption(
-                        nombre = "English",
+                        nombre = textoEnglish,
                         selected = idioma == PreferencesRepository.IDIOMA_EN,
                         onClick = { mainViewModel.setIdioma(PreferencesRepository.IDIOMA_EN) }
                     )
@@ -262,7 +290,7 @@ fun ConfiguracionScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "INFORMACIÓN",
+                text = textoSeccionInformacion,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -275,13 +303,13 @@ fun ConfiguracionScreen(
             ) {
                 AjusteInformacionOption(
                     icon = Icons.Filled.PrivacyTip,
-                    label = "Política de privacidad",
+                    label = textoPoliticaPrivacidad,
                     onClick = { navController.navigate(Routes.POLITICA_PRIVACIDAD) }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 AjusteInformacionOption(
                     icon = Icons.Filled.Description,
-                    label = "Términos y condiciones",
+                    label = textoTerminosCondiciones,
                     onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) }
                 )
             }
@@ -320,14 +348,14 @@ fun ConfiguracionScreen(
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Eliminar mi cuenta",
+                            text = textoEliminarMiCuenta,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Borra permanentemente tu cuenta y tus datos",
+                            text = textoEliminarDesc,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
