@@ -31,6 +31,7 @@ const {
 } = require("./lib/procesadores");
 
 const { eliminarMiCuenta } = require("./lib/eliminacion");
+const { reservar, cancelarReserva } = require("./lib/reservas");
 
 // Región cercana a España y límites razonables para los barridos.
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
@@ -57,3 +58,8 @@ exports.bajaConfirmada = onDocumentUpdated(
 // Eliminación completa de cuenta (CLIENTE) o cuenta+negocio (ADMIN).
 // El objetivo se deriva de context.auth.uid (nunca de parámetros de la app).
 exports.eliminarMiCuenta = onCall((request) => eliminarMiCuenta(request));
+
+// Backend de reservas del CLIENTE (FASE 1). La identidad se deriva de
+// context.auth.uid; `sesionId` es el único dato que envía la app.
+exports.reservar = onCall((request) => reservar(request));
+exports.cancelarReserva = onCall((request) => cancelarReserva(request));

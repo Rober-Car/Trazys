@@ -32,6 +32,23 @@ class SesionRepository @Inject constructor(
     companion object {
         private const val COLECCION_SERVICIOS = "servicios"
         private const val COLECCION_SESIONES = "sesiones"
+
+        /**
+         * asistentesDe
+         * ------------
+         * Convierte el campo remoto `asistentes` (map { clienteId: nombre }) en
+         * un mapa de Strings. Si el campo falta, no es un mapa o contiene valores
+         * no textuales se devuelve un mapa vacío (fail-open para no romper la
+         * lectura de sesiones).
+         */
+        internal fun asistentesDe(valor: Any?): Map<String, String> {
+            val mapa = valor as? Map<*, *> ?: return emptyMap()
+            return mapa.mapNotNull { (clave, nombre) ->
+                val c = clave?.toString()
+                val n = nombre?.toString()
+                if (c != null && n != null) c to n else null
+            }.toMap()
+        }
     }
 
     /**
@@ -54,7 +71,8 @@ class SesionRepository @Inject constructor(
                 negocioId = datos["negocioId"] as? String ?: "",
                 nombre = datos["nombre"] as? String ?: "",
                 descripcion = datos["descripcion"] as? String ?: "",
-                activo = datos["activo"] as? Boolean ?: false
+                activo = datos["activo"] as? Boolean ?: false,
+                permiteCombinarDia = datos["permiteCombinarDia"] as? Boolean ?: true
             )
             servicio.takeIf { it.negocioId == negocioId && it.activo }
         } catch (e: Exception) {
@@ -79,22 +97,67 @@ class SesionRepository @Inject constructor(
                 .get()
                 .esperar()
                 .documents.mapNotNull { documento ->
-                    val datos = documento.data ?: return@mapNotNull null
-                    val idSesion = (datos["idSesion"] as? Number)?.toInt() ?: return@mapNotNull null
-                    Sesion(
-                        idSesion = idSesion,
-                        negocioId = datos["negocioId"] as? String ?: "",
-                        idServicio = (datos["idServicio"] as? Number)?.toInt() ?: idServicio,
-                        fecha = (datos["fecha"] as? Number)?.toLong() ?: 0L,
-                        hora = datos["hora"] as? String ?: "",
-                        duracionMinutos = (datos["duracionMinutos"] as? Number)?.toInt() ?: 0,
-                        capacidad = (datos["capacidad"] as? Number)?.toInt() ?: 0,
-                        plazasDisponibles = (datos["plazasDisponibles"] as? Number)?.toInt() ?: 0,
-                        horaDesdeReserva = datos["horaDesdeReserva"] as? String
-                    )
+                    sesionDeDocumento(documento, idServicio, negocioId)
                 }
         } catch (e: Exception) {
             if (e.message?.contains("permission", ignoreCase = true) == true) emptyList() else throw e
         }
+    }
+
+    /**
+     * obtenerSesionPorId
+     * ------------------
+     * Lee una sesión concreta por su documentId (sesiones/{idSesion}). El
+     * CLIENTE solo puede leerla si cumple las Rules (servicio contratado y
+     * activo del propio negocio y estado ACTIVO). Se usa para mostrar los
+     * asistentes de una sesión que el cliente ya tiene reservada. Devuelve
+     * null si no existe, no es legible o no pertenece al negocio indicado.
+     */
+    suspend fun obtenerSesionPorId(idSesion: Int, negocioId: String): Sesion? {
+        return try {
+            val documento = db.collection(COLECCION_SESIONES)
+                .document(idSesion.toString())
+                .get()
+                .esperar()
+            if (!documento.exists()) return null
+            sesionDeDocumento(documento, null, negocioId)
+        } catch (e: Exception) {
+            if (e.message?.contains("permission", ignoreCase = true) == true) null else throw e
+        }
+    }
+
+    /**
+     * sesionDeDocumento
+     * -----------------
+     * Convierte un DocumentSnapshot de sesiones/{idSesion} en una Sesion.
+     * idServicio se toma del documento; si el documento no lo trae se usa el
+     * valor por defecto indicado. Devuelve null si la sesión no pertenece al
+     * negocio esperado.
+     */
+    private fun sesionDeDocumento(
+        documento: com.google.firebase.firestore.DocumentSnapshot,
+        idServicioPorDefecto: Int?,
+        negocioId: String
+    ): Sesion? {
+        val datos = documento.data ?: return null
+        if (datos["negocioId"] != negocioId) return null
+        val idSesion = (datos["idSesion"] as? Number)?.toInt()
+            ?: documento.id.toIntOrNull()
+            ?: return null
+        val idServicio = (datos["idServicio"] as? Number)?.toInt()
+            ?: idServicioPorDefecto
+            ?: return null
+        return Sesion(
+            idSesion = idSesion,
+            negocioId = datos["negocioId"] as? String ?: "",
+            idServicio = idServicio,
+            fecha = (datos["fecha"] as? Number)?.toLong() ?: 0L,
+            hora = datos["hora"] as? String ?: "",
+            duracionMinutos = (datos["duracionMinutos"] as? Number)?.toInt() ?: 0,
+            capacidad = (datos["capacidad"] as? Number)?.toInt() ?: 0,
+            plazasDisponibles = (datos["plazasDisponibles"] as? Number)?.toInt() ?: 0,
+            horaDesdeReserva = datos["horaDesdeReserva"] as? String,
+            asistentes = asistentesDe(datos["asistentes"])
+        )
     }
 }

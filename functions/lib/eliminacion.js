@@ -14,7 +14,7 @@
  * vuelve a ejecutarse de forma idempotente (borrar inexistentes es no-op).
  */
 
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { getStorage } = require("firebase-admin/storage");
 const { HttpsError } = require("firebase-functions/v2/https");
@@ -45,6 +45,42 @@ async function borrarPorIgualdad(coleccion, campo, valor) {
 /** Borra una subcolección completa (p. ej. dispositivos de un cliente). */
 async function borrarSubcoleccion(rutaColeccion) {
   await borrarConsulta(db().collection(rutaColeccion));
+}
+
+/**
+ * retirarAsistentesDeReservas
+ * ---------------------------
+ * Cuando un CLIENTE se da de baja o elimina su cuenta se borran sus reservas.
+ * Esta función retira su NOMBRE del mapa `asistentes` de cada sesión en la que
+ * tenía una reserva (las reservas de sesiones que siguen existiendo), para no
+ * dejar asistentes huérfanos apuntando a una cuenta/ficha que ya no usa el
+ * servicio. Idempotente y tolerante a sesiones ya eliminadas.
+ */
+async function retirarAsistentesDeReservas(clienteId, negocioId) {
+  const reservas = await db()
+    .collection(plan.RESERVAS)
+    .where("clienteId", "==", clienteId)
+    .where("negocioId", "==", negocioId)
+    .get();
+  for (const r of reservas.docs) {
+    const sesionId = r.get("sesionId");
+    if (!Number.isInteger(sesionId)) continue;
+    const sesionRef = db().collection(plan.SESIONES).doc(String(sesionId));
+    try {
+      const sesion = await sesionRef.get();
+      if (!sesion.exists) continue;
+      const asistentes = sesion.data() && sesion.data().asistentes
+        ? sesion.data().asistentes
+        : null;
+      if (!asistentes || !(String(clienteId) in asistentes)) continue;
+      await sesionRef.update({
+        [`asistentes.${clienteId}`]: FieldValue.delete(),
+      });
+    } catch (_) {
+      // Best-effort: si falla (red/permisos Admin SDK no aplica), se reintenta
+      // en una ejecución posterior porque el flujo de borrado es idempotente.
+    }
+  }
 }
 
 async function borrarStorage(rutas) {
@@ -90,6 +126,12 @@ async function borrarCliente(uid, clienteId, negocioId) {
 
   // Ámbito personal / actividad que ya no corresponde a la cuenta.
   await borrarSubcoleccion(plan.rutaDispositivos(plan.CLIENTES, clienteId));
+  // La agenda derivada del cliente (clientes/{clienteId}/agenda) también se
+  // borra con la cuenta.
+  await borrarSubcoleccion(plan.rutaAgenda(clienteId));
+  // Retirar a este cliente de los ASISTENTES de las sesiones donde tenía
+  // reservas (evita asistentes huérfanos al borrar las reservas después).
+  await retirarAsistentesDeReservas(clienteId, negocioId);
   await borrarPorIgualdad(plan.RESERVAS, "clienteId", clienteId);
   await borrarPorIgualdad(plan.SOLICITUDES, "idCliente", clienteId);
   await borrarPorIgualdad(plan.NOTIFICACIONES_BUZON, "clienteId", clienteId);
@@ -125,6 +167,8 @@ async function borrarNegocio(uid, negocioId) {
     const clienteId = c.id;
     const dni = datos.dni ? String(datos.dni).toUpperCase() : null;
     await borrarSubcoleccion(plan.rutaDispositivos(plan.CLIENTES, clienteId));
+    // La agenda derivada del cliente también es una subcolección del doc.
+    await borrarSubcoleccion(plan.rutaAgenda(clienteId));
     if (dni) await borrarDoc(plan.rutaIndice(negocioId, dni));
     await borrarDoc(`${plan.CLIENTES_PRIVADOS}/${clienteId}`);
     await c.ref.delete();

@@ -34,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,6 +43,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
+import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppDangerOutlinedButton
 import com.roberto.gestorpro.cliente.ui.components.AppDialogDangerConfirmButton
 import com.roberto.gestorpro.cliente.ui.components.AppDialogTextButton
@@ -51,9 +55,9 @@ import com.roberto.gestorpro.cliente.ui.viewmodel.SesionVisible
 import com.roberto.gestorpro.cliente.model.EstadoReserva
 import com.roberto.gestorpro.cliente.ui.viewmodel.ReservasClienteViewModel
 import com.roberto.gestorpro.cliente.ui.viewmodel.SesionesClienteViewModel
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * ClasesScreen
@@ -96,14 +100,26 @@ fun ClasesScreen(
         if (actualizacionReservas > 0) viewModel.cargar()
     }
 
-    val formateadorFecha = remember {
-        DateTimeFormatter.ofPattern("EEEE dd/MM/yyyy", Locale.forLanguageTag("es-ES"))
+    val localeActivo = IdiomaAplicacion.localeActual()
+    val formateadorFecha = remember(localeActivo) {
+        DateTimeFormatter.ofPattern("EEEE dd/MM/yyyy", localeActivo)
     }
-    val fechaHoy = remember {
+    val fechaHoy = remember(localeActivo) {
         LocalDate.now()
             .format(formateadorFecha)
-            .replaceFirstChar { it.titlecase(Locale.forLanguageTag("es-ES")) }
+            .replaceFirstChar { it.titlecase(localeActivo) }
     }
+
+    // Textos localizados del bloque de actividades.
+    val textoClasesTitulo = stringResource(R.string.clases_titulo)
+    val textoNoVinculado = stringResource(R.string.clases_no_vinculado)
+    val textoDadoDeBaja = stringResource(R.string.clases_dado_de_baja)
+    val textoCuentaNoActiva = stringResource(R.string.clases_estado_no_activo)
+    val textoSinServicios = stringResource(R.string.clases_sin_servicios)
+    val textoSinSesionesHoy = stringResource(R.string.clases_sin_sesiones_hoy)
+    val textoCancelarReserva = stringResource(R.string.clases_cancelar_reserva)
+    val textoConfirmarCancelar = stringResource(R.string.clases_confirmar_cancelar)
+    val textoVolver = stringResource(R.string.accion_volver)
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
@@ -127,7 +143,7 @@ fun ClasesScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Clases de hoy",
+                            text = textoClasesTitulo,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -156,8 +172,7 @@ fun ClasesScreen(
                 )
                 noVinculado -> MensajeClases(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    texto = "No estás vinculado con tu centro.\n" +
-                        "Debes vincularte para poder ver las clases."
+                    texto = textoNoVinculado
                 )
                 error != null -> ErrorClases(
                     modifier = Modifier.fillMaxWidth().weight(1f),
@@ -166,21 +181,19 @@ fun ClasesScreen(
                 )
                 dadoDeBaja -> MensajeClases(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    texto = "Has sido dado de baja del centro.\n" +
-                        "Ya no puedes reservar clases."
+                    texto = textoDadoDeBaja
                 )
                 estadoNoActivo -> MensajeClases(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    texto = "Tu cuenta aún no está activa.\n" +
-                        "Cuando el centro la active podrás ver y reservar actividades."
+                    texto = textoCuentaNoActiva
                 )
                 sinServicios -> MensajeClases(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    texto = "No tienes servicios contratados."
+                    texto = textoSinServicios
                 )
                 sinSesionesHoy -> MensajeClases(
                     modifier = Modifier.fillMaxWidth().weight(1f),
-                    texto = "No hay clases programadas para hoy."
+                    texto = textoSinSesionesHoy
                 )
                 else -> {
                     LazyColumn(
@@ -196,7 +209,14 @@ fun ClasesScreen(
                                 operando = reservasOperando,
                                 noVinculado = reservasNoVinculado,
                                 onReservar = { reservasViewModel.reservar(sesion.idSesion) },
-                                onCancelar = { sesionParaCancelar = sesion }
+                                onCancelar = { sesionParaCancelar = sesion },
+                                onVerAsistentes = {
+                                    navController.navigate(
+                                        Routes.ASISTENTES_SESION.replace(
+                                            "{idSesion}", sesion.idSesion.toString()
+                                        )
+                                    )
+                                }
                             )
                         }
                     }
@@ -208,11 +228,11 @@ fun ClasesScreen(
     sesionParaCancelar?.let { sesion ->
         AlertDialog(
             onDismissRequest = { sesionParaCancelar = null },
-            title = { Text("Cancelar reserva") },
-            text = { Text("¿Quieres cancelar esta reserva?") },
+            title = { Text(textoCancelarReserva) },
+            text = { Text(textoConfirmarCancelar) },
             confirmButton = {
                 AppDialogDangerConfirmButton(
-                    text = "Cancelar reserva",
+                    text = textoCancelarReserva,
                     onClick = {
                         if (!reservasOperando) {
                             reservasViewModel.cancelar(sesion.idSesion)
@@ -223,7 +243,7 @@ fun ClasesScreen(
             },
             dismissButton = {
                 AppDialogTextButton(
-                    text = "Volver",
+                    text = textoVolver,
                     onClick = { sesionParaCancelar = null }
                 )
             }
@@ -243,10 +263,33 @@ private fun TarjetaSesion(
     operando: Boolean,
     noVinculado: Boolean,
     onReservar: () -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    onVerAsistentes: () -> Unit
 ) {
     val estado = sesion.estadoReserva
     val plazas = maxOf(0, sesion.plazasDisponibles)
+
+    // Textos localizados de la tarjeta de sesión.
+    val textoHoraDuracion = stringResource(
+        R.string.clases_hora_duracion,
+        sesion.hora,
+        sesion.duracionMinutos
+    )
+    val textoPlazas = pluralStringResource(
+        R.plurals.clases_plazas_disponibles,
+        plazas,
+        plazas
+    )
+    val textoCompleta = stringResource(R.string.clases_completa)
+    val textoReservar = stringResource(R.string.clases_reservar)
+    val textoApertura = stringResource(
+        R.string.clases_reservas_abren_a,
+        sesion.horaDesdeReserva ?: ""
+    )
+    val textoReservada = stringResource(R.string.clases_reservada)
+    val textoCancelarReserva = stringResource(R.string.clases_cancelar_reserva)
+    val textoVerAsistentes = stringResource(R.string.clases_ver_asistentes)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -269,24 +312,20 @@ private fun TarjetaSesion(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "${sesion.hora} · ${sesion.duracionMinutos} min",
+                text = textoHoraDuracion,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (estado == EstadoReserva.COMPLETA) {
                 Text(
-                    text = "Completa",
+                    text = textoCompleta,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.error
                 )
             } else {
                 Text(
-                    text = if (plazas == 1) {
-                        "1 plaza disponible"
-                    } else {
-                        "$plazas plazas disponibles"
-                    },
+                    text = textoPlazas,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -296,7 +335,7 @@ private fun TarjetaSesion(
                 EstadoReserva.RESERVAR -> {
                     if (sesion.reservable) {
                         AppPrimaryButton(
-                            text = "Reservar",
+                            text = textoReservar,
                             onClick = onReservar,
                             enabled = !operando && !noVinculado
                         )
@@ -314,13 +353,13 @@ private fun TarjetaSesion(
                         }
                     } else {
                         Text(
-                            text = "Reservas abren a las ${sesion.horaDesdeReserva}",
+                            text = textoApertura,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         AppPrimaryButton(
-                            text = "Reservar",
+                            text = textoReservar,
                             onClick = onReservar,
                             enabled = false
                         )
@@ -329,13 +368,19 @@ private fun TarjetaSesion(
 
                 EstadoReserva.RESERVADA -> {
                     Text(
-                        text = "Reservada",
+                        text = textoReservada,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
+                    AppSecondaryButton(
+                        text = textoVerAsistentes,
+                        onClick = onVerAsistentes,
+                        enabled = !operando,
+                        fullWidth = true
+                    )
                     AppDangerOutlinedButton(
-                        text = "Cancelar reserva",
+                        text = textoCancelarReserva,
                         onClick = onCancelar,
                         enabled = !operando
                     )
@@ -432,7 +477,7 @@ private fun ErrorClases(
         )
         Spacer(modifier = Modifier.height(12.dp))
         AppSecondaryButton(
-            text = "Reintentar",
+            text = stringResource(R.string.notif_reintentar),
             onClick = onReintentar,
             fullWidth = false
         )

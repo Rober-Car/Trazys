@@ -101,3 +101,7 @@ test("coleccionesConNegocioId y Storage del cliente/logo", () => {
   assert.equal(plan.rutaStorageLogo(UID_ADMIN), `negocios/${UID_ADMIN}/logo.jpg`);
   assert.equal(plan.rutaDispositivos("clientes", 42), "clientes/42/dispositivos");
 });
+
+test("rutaAgenda apunta a la subcolección de agenda del cliente", () => {
+  assert.equal(plan.rutaAgenda(42), "clientes/42/agenda");
+});

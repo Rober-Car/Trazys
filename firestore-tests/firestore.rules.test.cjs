@@ -75,14 +75,14 @@ function servicioDoc(idServicio, negocioId, extra = {}) {
         idServicio,
         negocioId,
         nombre: extra.nombre ?? "Servicio de prueba",
-        descripcion: extra.descripcion ?? "Descripción de prueba",
+        descripcion: extra.descripcion ?? "DescripciÃ³n de prueba",
         activo: extra.activo ?? true,
         precio: extra.precio ?? 30,
         ...extra
     };
 }
 
-// Documento completo de una sesión (contrato de sesiones/{idSesion}).
+// Documento completo de una sesiÃ³n (contrato de sesiones/{idSesion}).
 function sesionDoc(idSesion, negocioId, idServicio, extra = {}) {
     return {
         idSesion,
@@ -130,7 +130,7 @@ before(async () => {
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
 
-        // CLIENTE sin vínculo (para pruebas de aislamiento).
+        // CLIENTE sin vÃ­nculo (para pruebas de aislamiento).
         await setDoc(doc(database, "usuarios", CLIENTE_UID), {
             rol: "CLIENTE",
             activo: true,
@@ -234,7 +234,7 @@ test("PRUEBA 3: un ADMIN solo puede leer datos de su negocio", async () => {
     );
 });
 
-test("PRUEBA 4: un CLIENTE no puede leer movimientos y un ADMIN sí", async () => {
+test("PRUEBA 4: un CLIENTE no puede leer movimientos y un ADMIN sÃ­", async () => {
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
 
@@ -470,7 +470,7 @@ test("PRUEBA 6: VIA 1 - un CLIENTE vincula una ficha creada por el ADMIN", async
         );
     });
 
-    // El CLIENTE declara su perfil pendiente con DNI + negocioId (VÍA 1) para
+    // El CLIENTE declara su perfil pendiente con DNI + negocioId (VÃA 1) para
     // poder consultar el indice y reclamar su ficha.
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
@@ -482,7 +482,7 @@ test("PRUEBA 6: VIA 1 - un CLIENTE vincula una ficha creada por el ADMIN", async
 
     const database = testEnvironment.authenticatedContext(clienteUid).firestore();
 
-    // Puede leer el indice de SU DNI + SU negocio (VÍA 1 declarado).
+    // Puede leer el indice de SU DNI + SU negocio (VÃA 1 declarado).
     await assertSucceeds(
         getDoc(doc(database, "indices_clientes", indiceId(negocioId, dni)))
     );
@@ -1391,7 +1391,7 @@ test("PRUEBA 18: VIA 1 - el CLIENTE no vinculado solo lee la ficha que declaro",
         );
     });
 
-    // CLIENTE sin vínculo con declaracion correcta.
+    // CLIENTE sin vÃ­nculo con declaracion correcta.
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         await setDoc(doc(context.firestore(), "perfiles_pendientes", clienteUid), {
             dni,
@@ -1572,8 +1572,8 @@ test("PRUEBA 19-STOR-FOTO-ADMIN: fotos de cliente - ADMIN propietario sube/reemp
     await assertFails(deleteObject(storageRef(storageAdminB, ruta)));
 });
 
-test("PRUEBA 19-STOR-FOTO-ALTA (doc-first): con la ficha EXISTENTE el ADMIN sube/lee/borra la foto; SIN ficha no hay autorización; CLIENTE y no-auth no pueden", async () => {
-    // negocioId del ADMIN = su UID (igual que producción).
+test("PRUEBA 19-STOR-FOTO-ALTA (doc-first): con la ficha EXISTENTE el ADMIN sube/lee/borra la foto; SIN ficha no hay autorizaciÃ³n; CLIENTE y no-auth no pueden", async () => {
+    // negocioId del ADMIN = su UID (igual que producciÃ³n).
     const uidA = "admin-foto-alta-a";
     const uidB = "admin-foto-alta-b";
     const negocioA = uidA;
@@ -1629,7 +1629,7 @@ test("PRUEBA 19-STOR-FOTO-ALTA (doc-first): con la ficha EXISTENTE el ADMIN sube
     await assertSucceeds(uploadBytes(storageRef(storageAdminA, ruta), bytes, mdImagen));
     await assertSucceeds(getBytes(storageRef(storageAdminA, ruta)));
 
-    // El ADMIN puede eliminar el objeto (compensación/reemplazo).
+    // El ADMIN puede eliminar el objeto (compensaciÃ³n/reemplazo).
     await assertSucceeds(deleteObject(storageRef(storageAdminA, ruta)));
     await assertSucceeds(uploadBytes(storageRef(storageAdminA, ruta), bytes, mdImagen));
 
@@ -1647,11 +1647,11 @@ test("PRUEBA 19-STOR-FOTO-ALTA (doc-first): con la ficha EXISTENTE el ADMIN sube
     await assertFails(uploadBytes(storageRef(storageAdminB, ruta), bytes, mdImagen));
     await assertFails(deleteObject(storageRef(storageAdminB, ruta)));
 
-    // adminB SÍ puede gestionar la foto de SU ficha (idNuevoB).
+    // adminB SÃ puede gestionar la foto de SU ficha (idNuevoB).
     await assertSucceeds(uploadBytes(storageRef(storageAdminB, rutaB), bytes, mdImagen));
     await assertSucceeds(getBytes(storageRef(storageAdminB, rutaB)));
 
-    // SIN ficha en Firestore: el ADMIN NO tiene autorización para subir
+    // SIN ficha en Firestore: el ADMIN NO tiene autorizaciÃ³n para subir
     // (el alta ya no depende de metadata ni de autorizaciones temporales).
     const rutaSinFicha = "clientes/cliente-foto-sin-ficha/foto.jpg";
     await assertFails(uploadBytes(storageRef(storageAdminA, rutaSinFicha), bytes, mdImagen));
@@ -1690,7 +1690,7 @@ test("PRUEBA 19-STOR-FOTO-CLIENTE: fotos de cliente - el CLIENTE propietario ges
         await setDoc(doc(database, "clientes", idPropia), {
             idCliente: parseInt(idPropia.replace(/\D/g, ""), 10),
             negocioId: negocioX, firebaseUid: duenioUid,
-            nombre: "Dueño", apellidos: "Foto", dni: "11111111D",
+            nombre: "DueÃ±o", apellidos: "Foto", dni: "11111111D",
             telefono: "600000000", email: "d@test.com", foto: "", estado: "ACTIVO",
             serviciosContratados: []
         });
@@ -1718,7 +1718,7 @@ test("PRUEBA 19-STOR-FOTO-CLIENTE: fotos de cliente - el CLIENTE propietario ges
     await assertFails(deleteObject(storageRef(storageOtro, ruta)));
 });
 
-test("PRUEBA 19-STOR-FOTO-VALIDACION: no autenticado, tamaño >10MB, no imagen y rutas fuera quedan bloqueadas", async () => {
+test("PRUEBA 19-STOR-FOTO-VALIDACION: no autenticado, tamaÃ±o >10MB, no imagen y rutas fuera quedan bloqueadas", async () => {
     const adminUid = "admin-foto-val";
     const negocioId = "negocio-foto-val";
     const idCliente = "cliente-foto-val";
@@ -1799,12 +1799,12 @@ test("PRUEBA 20: el ADMIN guarda el logo en negocios y negocios_publicos; el CLI
 
     const database = testEnvironment.authenticatedContext(adminUid).firestore();
 
-    // El ADMIN puede añadir el logo a negocios_publicos.
+    // El ADMIN puede aÃ±adir el logo a negocios_publicos.
     await assertSucceeds(
         updateDoc(doc(database, "negocios_publicos", negocioId), { logo: url })
     );
 
-    // El ADMIN puede añadir el logo a negocios.
+    // El ADMIN puede aÃ±adir el logo a negocios.
     await assertSucceeds(
         updateDoc(doc(database, "negocios", negocioId), { logo: url })
     );
@@ -1832,7 +1832,7 @@ test("PRUEBA 21: el ADMIN crea un servicio de su negocio -> ALLOW", async () => 
     );
 });
 
-test("PRUEBA 21B: el ADMIN crea un servicio con precio numérico -> ALLOW", async () => {
+test("PRUEBA 21B: el ADMIN crea un servicio con precio numÃ©rico -> ALLOW", async () => {
     const adminUid = "admin-servicios-a";
     const database = testEnvironment.authenticatedContext(adminUid).firestore();
     await assertSucceeds(
@@ -1840,7 +1840,7 @@ test("PRUEBA 21B: el ADMIN crea un servicio con precio numérico -> ALLOW", asyn
     );
 });
 
-test("PRUEBA 21C: el ADMIN no puede crear un servicio con precio no numérico -> DENY", async () => {
+test("PRUEBA 21C: el ADMIN no puede crear un servicio con precio no numÃ©rico -> DENY", async () => {
     const adminUid = "admin-servicios-a";
     const database = testEnvironment.authenticatedContext(adminUid).firestore();
     await assertFails(
@@ -1900,7 +1900,7 @@ test("PRUEBA 25B: el ADMIN actualiza el precio de su servicio -> ALLOW", async (
     );
 });
 
-test("PRUEBA 25C: el ADMIN no puede poner un precio no numérico al actualizar -> DENY", async () => {
+test("PRUEBA 25C: el ADMIN no puede poner un precio no numÃ©rico al actualizar -> DENY", async () => {
     const adminUid = "admin-servicios-a";
     const database = testEnvironment.authenticatedContext(adminUid).firestore();
     await assertFails(
@@ -2471,7 +2471,7 @@ test("PRUEBA 53: un CLIENTE vinculado a otro negocio no lee la sesion -> DENY", 
 //              608(A/2000,plazas 5)
 //  - reservas: 800_606 (negocio A), 802_602 (negocio B), 800_608 (negocio A)
 
-test("PRUEBA 54: el CLIENTE reserva una sesion de servicio contratado y activo -> ALLOW", async () => {
+test("PRUEBA 54: el CLIENTE lee la sesion pero ya NO puede crear la reserva directamente (callable) -> DENY", async () => {
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
         await setDoc(doc(database, "usuarios", "admin-reservas-a"), {
@@ -2524,7 +2524,13 @@ test("PRUEBA 54: el CLIENTE reserva una sesion de servicio contratado y activo -
     });
 
     const database = testEnvironment.authenticatedContext("cliente-reserva-a").firestore();
-    await assertSucceeds(
+
+    // Lectura de la sesión legítima.
+    await assertSucceeds(getDoc(doc(database, "sesiones", "600")));
+
+    // FASE 4: la creación directa de reservas por el CLIENTE queda cerrada
+    // (la reserva se hace mediante la Cloud Function `reservar`, Admin SDK).
+    await assertFails(
         runTransaction(database, async (tx) => {
             await tx.get(doc(database, "clientes", "800"));
             await tx.get(doc(database, "sesiones", "600"));
@@ -2622,14 +2628,21 @@ test("PRUEBA 62: usuario no autenticado no puede reservar -> DENY", async () => 
     );
 });
 
-test("PRUEBA 63: el CLIENTE cancela su reserva devolviendo la plaza -> ALLOW", async () => {
+test("PRUEBA 63: el CLIENTE lee su propia reserva pero ya NO puede cancelarla directamente (callable) -> DENY", async () => {
     const database = testEnvironment.authenticatedContext("cliente-reserva-a").firestore();
+
+    // Lectura de su propia reserva legítima.
     await assertSucceeds(
+        getDoc(doc(database, "reservas", "800_606"))
+    );
+
+    // FASE 4: cancelar reserva solo a través de la callable `cancelarReserva`.
+    await assertFails(
         runTransaction(database, async (tx) => {
-            await tx.get(doc(database, "reservas", "800_600"));
-            await tx.get(doc(database, "sesiones", "600"));
-            await tx.delete(doc(database, "reservas", "800_600"));
-            await tx.update(doc(database, "sesiones", "600"), { plazasDisponibles: 5 });
+            await tx.get(doc(database, "reservas", "800_606"));
+            await tx.get(doc(database, "sesiones", "606"));
+            await tx.delete(doc(database, "reservas", "800_606"));
+            await tx.update(doc(database, "sesiones", "606"), { plazasDisponibles: 5 });
         })
     );
 });
@@ -2912,7 +2925,7 @@ test("PRUEBA 81: la cancelacion normal del ADMIN (reserva + plazas+1, sin elimin
 // =========================================================
 // Sesiones con horaDesdeReserva = "HH:mm": el CLIENTE solo puede reservar a
 // partir de ese instante (request.time >= sesion.fecha + horaDesdeReserva).
-// null / ausente = reservas abiertas desde el inicio del día.
+// null / ausente = reservas abiertas desde el inicio del dÃ­a.
 
 test("PRUEBA 82: sesion create con horaDesdeReserva string -> ALLOW", async () => {
     const adminUid = "admin-apertura";
@@ -2961,7 +2974,7 @@ test("PRUEBA 85: sesion update modificando horaDesdeReserva -> ALLOW", async () 
     );
 });
 
-test("PRUEBA 86: reserva con horaDesdeReserva null (ausente) -> ALLOW", async () => {
+test("PRUEBA 86: la sesion sin horaDesdeReserva es legible por el CLIENTE, pero crear la reserva directa -> DENY (callable)", async () => {
     const clienteUid = "cliente-apertura";
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
@@ -2972,7 +2985,7 @@ test("PRUEBA 86: reserva con horaDesdeReserva null (ausente) -> ALLOW", async ()
             doc(database, "clientes", "910"),
             fichaCliente(910, NEGOCIO_A, clienteUid, "88888910X", { serviciosContratados: [1100] })
         );
-        // Sesión de hoy SIN horaDesdeReserva -> abierta desde el inicio del día.
+        // SesiÃ³n de hoy SIN horaDesdeReserva -> abierta desde el inicio del dÃ­a.
         await setDoc(
             doc(database, "sesiones", "9103"),
             sesionDoc(9103, NEGOCIO_A, 1100, {
@@ -2983,7 +2996,12 @@ test("PRUEBA 86: reserva con horaDesdeReserva null (ausente) -> ALLOW", async ()
         );
     });
     const database = testEnvironment.authenticatedContext(clienteUid).firestore();
-    await assertSucceeds(
+
+    // Lectura legítima de la sesión.
+    await assertSucceeds(getDoc(doc(database, "sesiones", "9103")));
+
+    // FASE 4: la creación directa queda cerrada (valida la callable `reservar`).
+    await assertFails(
         runTransaction(database, async (tx) => {
             await tx.get(doc(database, "clientes", "910"));
             await tx.get(doc(database, "sesiones", "9103"));
@@ -2995,7 +3013,7 @@ test("PRUEBA 86: reserva con horaDesdeReserva null (ausente) -> ALLOW", async ()
     );
 });
 
-test("PRUEBA 87: reserva con apertura ya pasada -> ALLOW", async () => {
+test("PRUEBA 87: la sesion con apertura ya pasada es legible, pero crear la reserva directa -> DENY (callable)", async () => {
     const clienteUid = "cliente-apertura";
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         await setDoc(
@@ -3009,7 +3027,11 @@ test("PRUEBA 87: reserva con apertura ya pasada -> ALLOW", async () => {
         );
     });
     const database = testEnvironment.authenticatedContext(clienteUid).firestore();
-    await assertSucceeds(
+
+    await assertSucceeds(getDoc(doc(database, "sesiones", "9104")));
+
+    // FASE 4: la creación directa queda cerrada (valida la callable `reservar`).
+    await assertFails(
         runTransaction(database, async (tx) => {
             await tx.get(doc(database, "clientes", "910"));
             await tx.get(doc(database, "sesiones", "9104"));
@@ -3533,7 +3555,7 @@ test("PRUEBA 107: el ADMIN no modifica una solicitud de otro negocio -> DENY", a
     );
 });
 
-test("PRUEBA 108: solicitudes con datos inválidos o cliente no apto -> DENY", async () => {
+test("PRUEBA 108: solicitudes con datos invÃ¡lidos o cliente no apto -> DENY", async () => {
     const clienteUid = "cliente-sol-108";
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
@@ -3554,7 +3576,7 @@ test("PRUEBA 108: solicitudes con datos inválidos o cliente no apto -> DENY", a
     await assertFails(
         setDoc(doc(database, "solicitudes", "bad-108-1"), solicitudDoc("bad-108-1", NEGOCIO_A, 1080, clienteUid, { estado: "ACEPTADA" }))
     );
-    // tipo inválido
+    // tipo invÃ¡lido
     await assertFails(
         setDoc(doc(database, "solicitudes", "bad-108-2"), solicitudDoc("bad-108-2", NEGOCIO_A, 1080, clienteUid, { tipo: "CANCELACION" }))
     );
@@ -3655,7 +3677,7 @@ test("PRUEBA 111: un CLIENTE en BAJA no puede crear una reserva -> DENY", async 
     );
 });
 
-test("PRUEBA 112: un CLIENTE ACTIVO sigue pudiendo leer sesiones y reservar -> ALLOW", async () => {
+test("PRUEBA 112: un CLIENTE ACTIVO lee sesiones (ALLOW) pero ya no reserva directamente -> DENY", async () => {
     const clienteUid = "cliente-activo-regresion-112";
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
@@ -3675,7 +3697,8 @@ test("PRUEBA 112: un CLIENTE ACTIVO sigue pudiendo leer sesiones y reservar -> A
     await assertSucceeds(
         getDoc(doc(database, "sesiones", "5032"))
     );
-    await assertSucceeds(
+    // FASE 4: la reserva se crea vía la callable `reservar`, nunca en Rules.
+    await assertFails(
         runTransaction(database, async (tx) => {
             await tx.get(doc(database, "clientes", "5030"));
             await tx.get(doc(database, "sesiones", "5032"));
@@ -3690,7 +3713,7 @@ test("PRUEBA 112: un CLIENTE ACTIVO sigue pudiendo leer sesiones y reservar -> A
 // =========================================================
 // SESIONES: REGRESIONES EXPLICITAS (PRUEBA 113-115)
 // =========================================================
-// La regresión real de producción era que el ADMIN intentaba generar sesiones
+// La regresiÃ³n real de producciÃ³n era que el ADMIN intentaba generar sesiones
 // de un servicio que NO estaba replicado en Firestore: la regla sesiones/create
 // (servicioValidoParaSesion) lo rechaza con PERMISSION_DENIED. Estas pruebas
 // fijan el contrato: el payload exacto de la app pasa, y la falta del servicio
@@ -3795,7 +3818,7 @@ test("PRUEBA 117: el ADMIN NO puede eliminar una solicitud PENDIENTE -> DENY", a
 // =========================================================
 // NOTIFICACION AL ADMIN POR SOLICITUD DE BAJA (PRUEBA 118-120)
 // =========================================================
-// La notificación SOLICITUD_BAJA la crea el ADMIN (único escritor permitido por
+// La notificaciÃ³n SOLICITUD_BAJA la crea el ADMIN (Ãºnico escritor permitido por
 // las Rules) cuando carga sus solicitudes PENDIENTES. El CLIENTE no puede
 // fabricar notificaciones en absoluto.
 
@@ -3961,7 +3984,7 @@ test("PRUEBA 123: un CLIENTE en estado REGISTRADO no puede crear una reserva -> 
     );
 });
 
-test("PRUEBA 124: un CLIENTE ACTIVO con deuda (moroso=true) lee sesiones y reserva -> ALLOW", async () => {
+test("PRUEBA 124: un CLIENTE ACTIVO con deuda (moroso=true) lee sesiones (ALLOW) pero ya no reserva directamente -> DENY", async () => {
     const clienteUid = "cliente-moroso-activo-124";
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
@@ -3984,7 +4007,9 @@ test("PRUEBA 124: un CLIENTE ACTIVO con deuda (moroso=true) lee sesiones y reser
     await assertSucceeds(
         getDoc(doc(database, "sesiones", "6032"))
     );
-    await assertSucceeds(
+    // FASE 4: la reserva se crea vía la callable `reservar`; el CLIENTE ACTIVO
+    // con deuda puede reservar en la callable, pero NO crear la reserva en Rules.
+    await assertFails(
         runTransaction(database, async (tx) => {
             await tx.get(doc(database, "clientes", "6030"));
             await tx.get(doc(database, "sesiones", "6032"));
@@ -4003,7 +4028,7 @@ test("PRUEBA 124: un CLIENTE ACTIVO con deuda (moroso=true) lee sesiones y reser
 // idempotente `notificaciones/vinculacion_{negocioId}_{clienteId}` con tipo
 // VINCULACION. No puede crear notificaciones de otro negocio, con otro tipo, ni
 // duplicar el aviso (si el documento ya existe, la escritura es un update y se
-// deniega). No se abre escritura genérica de notificaciones al cliente.
+// deniega). No se abre escritura genÃ©rica de notificaciones al cliente.
 
 function notificacionVinculacionDoc(negocioId, clienteId) {
     return {
@@ -4201,7 +4226,7 @@ test("PRUEBA 136: el CLIENTE NO puede modificar fechaFinActual -> DENY", async (
 });
 
 // ============================================================================
-// UNICIDAD GLOBAL DEL CÓDIGO MAESTRO (codigos_maestros/{codigo})
+// UNICIDAD GLOBAL DEL CÃ“DIGO MAESTRO (codigos_maestros/{codigo})
 // ============================================================================
 
 function docNegocio(adminUid, codigo) {
@@ -4249,7 +4274,7 @@ function batchCrearNegocioConCodigo(db, adminUid, codigo) {
     return batch.commit();
 }
 
-test("PRUEBA 137: crear negocio con código libre -> ALLOW", async () => {
+test("PRUEBA 137: crear negocio con cÃ³digo libre -> ALLOW", async () => {
     const admin = "admin-cod-137";
     const codigo = "C137";
     await sembrarAdminSinNegocio(admin);
@@ -4257,7 +4282,7 @@ test("PRUEBA 137: crear negocio con código libre -> ALLOW", async () => {
     await assertSucceeds(batchCrearNegocioConCodigo(db, admin, codigo));
 });
 
-test("PRUEBA 138: crear negocio con código ya existente -> DENY", async () => {
+test("PRUEBA 138: crear negocio con cÃ³digo ya existente -> DENY", async () => {
     const dueno = "admin-cod-138a";
     const admin = "admin-cod-138b";
     const codigo = "C138";
@@ -4267,7 +4292,7 @@ test("PRUEBA 138: crear negocio con código ya existente -> DENY", async () => {
     await assertFails(batchCrearNegocioConCodigo(db, admin, codigo));
 });
 
-test("PRUEBA 139: concurrencia - el segundo create sobre el mismo código falla", async () => {
+test("PRUEBA 139: concurrencia - el segundo create sobre el mismo cÃ³digo falla", async () => {
     const a = "admin-cod-139a";
     const b = "admin-cod-139b";
     const codigo = "C139";
@@ -4279,7 +4304,7 @@ test("PRUEBA 139: concurrencia - el segundo create sobre el mismo código falla"
     await assertFails(batchCrearNegocioConCodigo(dbB, b, codigo));
 });
 
-test("PRUEBA 140: cambiar a código libre libera el anterior y reserva el nuevo", async () => {
+test("PRUEBA 140: cambiar a cÃ³digo libre libera el anterior y reserva el nuevo", async () => {
     const admin = "admin-cod-140";
     const viejo = "C140V";
     const nuevo = "C140N";
@@ -4293,7 +4318,7 @@ test("PRUEBA 140: cambiar a código libre libera el anterior y reserva el nuevo"
     await assertSucceeds(batch.commit());
 });
 
-test("PRUEBA 141: cambiar a código ocupado por otro negocio -> DENY", async () => {
+test("PRUEBA 141: cambiar a cÃ³digo ocupado por otro negocio -> DENY", async () => {
     const dueno = "admin-cod-141a";
     const admin = "admin-cod-141b";
     const propio = "C141B";
@@ -4309,7 +4334,7 @@ test("PRUEBA 141: cambiar a código ocupado por otro negocio -> DENY", async () 
     await assertFails(batch.commit());
 });
 
-test("PRUEBA 142: mantener el mismo código (sin tocar codigos_maestros) -> ALLOW", async () => {
+test("PRUEBA 142: mantener el mismo cÃ³digo (sin tocar codigos_maestros) -> ALLOW", async () => {
     const admin = "admin-cod-142";
     const codigo = "C142";
     await sembrarAdminConNegocio(admin, codigo);
@@ -4338,7 +4363,7 @@ test("PRUEBA 143: solo el propio negocio puede liberar su reserva", async () => 
     await assertSucceeds(batch.commit());
 });
 
-test("PRUEBA 144: VÍA 1 - un autenticado puede leer la reserva de un código", async () => {
+test("PRUEBA 144: VÃA 1 - un autenticado puede leer la reserva de un cÃ³digo", async () => {
     const admin = "admin-cod-144";
     const codigo = "C144";
     await sembrarAdminConNegocio(admin, codigo);
@@ -4358,12 +4383,12 @@ test("PRUEBA 146: no se puede enumerar codigos_maestros (list -> DENY)", async (
     await assertFails(getDocs(query(collection(db, "codigos_maestros"))));
 });
 
-test("PRUEBA 147: un Admin no puede reservar un código para otro negocio", async () => {
+test("PRUEBA 147: un Admin no puede reservar un cÃ³digo para otro negocio", async () => {
     const admin = "admin-cod-147";
     const codigo = "C147";
     await sembrarAdminSinNegocio(admin);
     const db = testEnvironment.authenticatedContext(admin).firestore();
-    // La reserva apuntaría a otro negocio y no hay coherencia con negocios del uid.
+    // La reserva apuntarÃ­a a otro negocio y no hay coherencia con negocios del uid.
     await assertFails(
         setDoc(doc(db, "codigos_maestros", codigo), docCodigo("negocio-ajeno"))
     );
@@ -4379,7 +4404,7 @@ test("PRUEBA 148: un Admin no puede eliminar la reserva de otro negocio", async 
     await assertFails(deleteDoc(doc(db, "codigos_maestros", codigo)));
 });
 
-test("PRUEBA 149: actualizar negocios a un código reservado por otro negocio -> DENY", async () => {
+test("PRUEBA 149: actualizar negocios a un cÃ³digo reservado por otro negocio -> DENY", async () => {
     const dueno = "admin-cod-149a";
     const admin = "admin-cod-149b";
     const ocupado = "C149A";
@@ -4391,7 +4416,7 @@ test("PRUEBA 149: actualizar negocios a un código reservado por otro negocio ->
     );
 });
 
-test("PRUEBA 150: crear negocio SIN reservar el código en la misma operación -> DENY", async () => {
+test("PRUEBA 150: crear negocio SIN reservar el cÃ³digo en la misma operaciÃ³n -> DENY", async () => {
     const admin = "admin-cod-150";
     const codigo = "C150";
     await sembrarAdminSinNegocio(admin);
@@ -4431,7 +4456,7 @@ async function sembrarDenunciaDirecta(idDenuncia, datos) {
     });
 }
 
-test("PRUEBA 151: el ADMIN denuncia la foto de un CLIENTE sin vínculo (solo contenido) -> ALLOW", async () => {
+test("PRUEBA 151: el ADMIN denuncia la foto de un CLIENTE sin vÃ­nculo (solo contenido) -> ALLOW", async () => {
     const admin = "admin-den-151";
     await seedAdminNotif(admin, NEGOCIO_A);
     const datos = denunciaDoc(NEGOCIO_A, admin, {
@@ -4454,7 +4479,7 @@ test("PRUEBA 152: el ADMIN denuncia al usuario CLIENTE (foto con firebaseUid) ->
     await assertSucceeds(setDenunciaComo(admin, "denuncia-152", datos));
 });
 
-test("PRUEBA 153: el CLIENTE denuncia una notificación MANUAL y al ADMIN creador -> ALLOW", async () => {
+test("PRUEBA 153: el CLIENTE denuncia una notificaciÃ³n MANUAL y al ADMIN creador -> ALLOW", async () => {
     const cliente = "cliente-den-153";
     await seedClienteNotif(cliente, 15301, NEGOCIO_A);
     const datos = denunciaDoc(NEGOCIO_A, cliente, {
@@ -4565,7 +4590,7 @@ test("PRUEBA 161: el ADMIN marca REVISADA -> ALLOW; el CLIENTE no; cambiar otro 
     await assertFails(updateDoc(doc(dbCliente, "denuncias", "denuncia-161"), { estado: "REVISADA" }));
 });
 
-test("PRUEBA 162: autodenuncia y creación con estado distinto de PENDIENTE -> DENY", async () => {
+test("PRUEBA 162: autodenuncia y creaciÃ³n con estado distinto de PENDIENTE -> DENY", async () => {
     const cliente = "cliente-den-162";
     await seedClienteNotif(cliente, 16201, NEGOCIO_A);
     await assertFails(
@@ -4584,7 +4609,7 @@ test("PRUEBA 162: autodenuncia y creación con estado distinto de PENDIENTE -> D
     );
 });
 
-test("PRUEBA 163: tipo y motivo no permitidos (contenido no denunciable ni automático) -> DENY", async () => {
+test("PRUEBA 163: tipo y motivo no permitidos (contenido no denunciable ni automÃ¡tico) -> DENY", async () => {
     const cliente = "cliente-den-163";
     await seedClienteNotif(cliente, 16301, NEGOCIO_A);
     await assertFails(
@@ -4607,5 +4632,352 @@ test("PRUEBA 163: tipo y motivo no permitidos (contenido no denunciable ni autom
             "denuncia-163-motivo",
             denunciaDoc(NEGOCIO_A, cliente, { motivo: "SPAM" })
         )
+    );
+});
+
+// =========================================================
+// AGENDA DERIVADA DEL CLIENTE (PRUEBA 164+)
+// =========================================================
+// La agenda vive en clientes/{clienteId}/agenda/{fecha} con la estructura
+// { negocioId, fecha, sesiones: { [sesionId]: idServicio } }. Es un Ã­ndice
+// DERIVADO: el ADMIN de su negocio puede leerlo/crearlo/actualizarlo/borrarlo
+// (cascadas); el CLIENTE solo puede leer SU PROPIA agenda.
+
+function agendaDoc(fecha, negocioId, extra = {}) {
+    return {
+        negocioId,
+        fecha,
+        sesiones: { "7001": 3 },
+        ...extra
+    };
+}
+
+async function seedAgenda(clienteId, negocioId, fecha, datos) {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+            doc(context.firestore(), "clientes", String(clienteId)),
+            fichaCliente(clienteId, negocioId, `cliente-agenda-${clienteId}`, `77${clienteId}77A`)
+        );
+        await setDoc(
+            doc(context.firestore(), "clientes", String(clienteId), "agenda", String(fecha)),
+            agendaDoc(fecha, negocioId, datos)
+        );
+    });
+}
+
+test("PRUEBA 164: el ADMIN de SU negocio lee, crea y borra la agenda de un cliente -> ALLOW", async () => {
+    const admin = "admin-agenda-164";
+    await seedAdminNotif(admin, NEGOCIO_A);
+    await seedAgenda(16401, NEGOCIO_A, 1700000000000);
+
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    const ref = doc(db, "clientes", "16401", "agenda", "1700000000000");
+
+    await assertSucceeds(getDoc(ref));
+    await assertSucceeds(
+        setDoc(doc(db, "clientes", "16401", "agenda", "1700000000001"), agendaDoc(1700000000001, NEGOCIO_A))
+    );
+    await assertSucceeds(
+        updateDoc(ref, { sesiones: { "7002": 4 } })
+    );
+    await assertSucceeds(deleteDoc(ref));
+});
+
+test("PRUEBA 165: el ADMIN de OTRO negocio no accede a la agenda de un cliente ajeno -> DENY", async () => {
+    const adminB = "admin-agenda-165b";
+    await seedAdminNotif(adminB, NEGOCIO_B);
+    await seedAgenda(16501, NEGOCIO_A, 1700000000000);
+
+    const db = testEnvironment.authenticatedContext(adminB).firestore();
+    const ref = doc(db, "clientes", "16501", "agenda", "1700000000000");
+
+    await assertFails(getDoc(ref));
+    await assertFails(
+        updateDoc(ref, { sesiones: { "7002": 4 } })
+    );
+    await assertFails(deleteDoc(ref));
+});
+
+test("PRUEBA 166: el CLIENTE lee SU PROPIA agenda (un dÃ­a concreto) -> ALLOW", async () => {
+    const cliente = "cliente-agenda-166";
+    const clienteId = 16601;
+    await seedClienteNotif(cliente, clienteId, NEGOCIO_A);
+    await seedAgenda(clienteId, NEGOCIO_A, 1700000000000);
+
+    const db = testEnvironment.authenticatedContext(cliente).firestore();
+    const ref = doc(db, "clientes", String(clienteId), "agenda", "1700000000000");
+
+    await assertSucceeds(getDoc(ref));
+});
+
+test("PRUEBA 167: el CLIENTE NO puede crear, modificar ni borrar su propia agenda -> DENY", async () => {
+    const cliente = "cliente-agenda-167";
+    const clienteId = 16701;
+    await seedClienteNotif(cliente, clienteId, NEGOCIO_A);
+    await seedAgenda(clienteId, NEGOCIO_A, 1700000000000);
+
+    const db = testEnvironment.authenticatedContext(cliente).firestore();
+    const ref = doc(db, "clientes", String(clienteId), "agenda", "1700000000000");
+
+    await assertFails(
+        setDoc(doc(db, "clientes", String(clienteId), "agenda", "1700000000001"), agendaDoc(1700000000001, NEGOCIO_A))
+    );
+    await assertFails(
+        updateDoc(ref, { sesiones: { "7002": 4 } })
+    );
+    await assertFails(deleteDoc(ref));
+});
+
+test("PRUEBA 168: el CLIENTE NO puede leer la agenda de otro cliente -> DENY", async () => {
+    const cliente = "cliente-agenda-168";
+    const otroClienteId = 16899;
+    await seedClienteNotif(cliente, 16801, NEGOCIO_A);
+    await seedAgenda(otroClienteId, NEGOCIO_A, 1700000000000);
+
+    const db = testEnvironment.authenticatedContext(cliente).firestore();
+    const ref = doc(db, "clientes", String(otroClienteId), "agenda", "1700000000000");
+
+    await assertFails(getDoc(ref));
+    await assertFails(
+        getDocs(query(collection(db, "clientes", String(otroClienteId), "agenda")))
+    );
+});
+
+test("PRUEBA 169: usuario NO autenticado no accede a ninguna agenda -> DENY", async () => {
+    await seedAgenda(16901, NEGOCIO_A, 1700000000000);
+    const db = testEnvironment.unauthenticatedContext().firestore();
+    const ref = doc(db, "clientes", "16901", "agenda", "1700000000000");
+
+    await assertFails(getDoc(ref));
+    await assertFails(
+        setDoc(doc(db, "clientes", "16901", "agenda", "1700000000002"), agendaDoc(1700000000002, NEGOCIO_A))
+    );
+    await assertFails(deleteDoc(ref));
+});
+
+// =========================================================
+// FASE 4 — CIERRE DEL ACCESO DIRECTO DEL CLIENTE A RESERVAS
+// =========================================================
+// El CLIENTE ya NO crea/elimina reservas directamente ni modifica sesiones:
+// reservar y cancelarReserva viven en las Cloud Functions callable (Admin SDK),
+// que no pasan por estas Rules. Solo se mantiene la LECTURA de sus reservas y
+// sesiones/servicios legítimos. El ADMIN conserva la gestión.
+
+async function seedClienteFase4(clienteUid, clienteId, negocioId, servicios) {
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(doc(database, "usuarios", clienteUid), {
+            rol: "CLIENTE", activo: true, clienteId, negocioId
+        });
+        await setDoc(
+            doc(database, "clientes", String(clienteId)),
+            fichaCliente(clienteId, negocioId, clienteUid, `F4${clienteId}X`, { serviciosContratados: servicios })
+        );
+        for (const idServicio of servicios) {
+            await setDoc(doc(database, "servicios", String(idServicio)), servicioDoc(idServicio, negocioId));
+        }
+    });
+}
+
+test("PRUEBA 170: CLIENTE create reserva directa -> DENY (aunque tenga servicio contratado y ACTIVO)", async () => {
+    const cliente = "cliente-f4-170";
+    const clienteId = 17001;
+    const sesionId = 17002;
+    await seedClienteFase4(cliente, clienteId, NEGOCIO_A, [17003]);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+            doc(context.firestore(), "sesiones", String(sesionId)),
+            sesionDoc(sesionId, NEGOCIO_A, 17003)
+        );
+    });
+    const database = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(
+        setDoc(
+            doc(database, "reservas", `${clienteId}_${sesionId}`),
+            reservaDoc(clienteId, sesionId, NEGOCIO_A)
+        )
+    );
+});
+
+test("PRUEBA 171: CLIENTE delete reserva directa -> DENY (incluso la suya propia)", async () => {
+    const cliente = "cliente-f4-171";
+    const clienteId = 17101;
+    const sesionId = 17102;
+    await seedClienteFase4(cliente, clienteId, NEGOCIO_A, [17103]);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(
+            doc(database, "sesiones", String(sesionId)),
+            sesionDoc(sesionId, NEGOCIO_A, 17103)
+        );
+        await setDoc(
+            doc(database, "reservas", `${clienteId}_${sesionId}`),
+            reservaDoc(clienteId, sesionId, NEGOCIO_A)
+        );
+    });
+    const database = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(
+        deleteDoc(doc(database, "reservas", `${clienteId}_${sesionId}`))
+    );
+    // La lectura de su propia reserva sigue permitida.
+    await assertSucceeds(
+        getDoc(doc(database, "reservas", `${clienteId}_${sesionId}`))
+    );
+});
+
+test("PRUEBA 172: CLIENTE no puede modificar plazasDisponibles ni asistentes de una sesion -> DENY", async () => {
+    const cliente = "cliente-f4-172";
+    const clienteId = 17201;
+    const sesionId = 17202;
+    await seedClienteFase4(cliente, clienteId, NEGOCIO_A, [17203]);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(
+            doc(database, "sesiones", String(sesionId)),
+            sesionDoc(sesionId, NEGOCIO_A, 17203, { asistentes: { [String(clienteId)]: "Cliente" } })
+        );
+        await setDoc(
+            doc(database, "reservas", `${clienteId}_${sesionId}`),
+            reservaDoc(clienteId, sesionId, NEGOCIO_A)
+        );
+    });
+    const database = testEnvironment.authenticatedContext(cliente).firestore();
+    const sesionRef = doc(database, "sesiones", String(sesionId));
+    await assertFails(updateDoc(sesionRef, { plazasDisponibles: 4 }));
+    await assertFails(updateDoc(sesionRef, { [`asistentes.${clienteId}`]: "Otro" }));
+});
+
+test("PRUEBA 173: CLIENTE solo lee SU agenda (ALLOW) y no escribe la propia -> DENY (ya en 166/167, regresión)", async () => {
+    const cliente = "cliente-f4-173";
+    const clienteId = 17301;
+    await seedClienteNotif(cliente, clienteId, NEGOCIO_A);
+    await seedAgenda(clienteId, NEGOCIO_A, 1700000000000);
+    const database = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertSucceeds(
+        getDoc(doc(database, "clientes", String(clienteId), "agenda", "1700000000000"))
+    );
+    await assertFails(
+        updateDoc(doc(database, "clientes", String(clienteId), "agenda", "1700000000000"), {
+            sesiones: { "7": 9 }
+        })
+    );
+});
+
+test("PRUEBA 174: CLIENTE NO accede a agenda de otro cliente ni de otro negocio -> DENY", async () => {
+    const clienteA = "cliente-f4-174a";
+    await seedClienteNotif(clienteA, 17401, NEGOCIO_A);
+    await seedAgenda(17499, NEGOCIO_A, 1700000000000); // ficha de otro cliente del MISMO negocio
+    const database = testEnvironment.authenticatedContext(clienteA).firestore();
+    await assertFails(
+        getDoc(doc(database, "clientes", "17499", "agenda", "1700000000000"))
+    );
+    // Agenda de un cliente del negocio B (otro negocio): también DENY.
+    const adminB = "admin-f4-174b";
+    await seedAdminNotif(adminB, NEGOCIO_B);
+    const dbAdminB = testEnvironment.authenticatedContext(adminB).firestore();
+    await assertFails(
+        getDoc(doc(dbAdminB, "clientes", "17499", "agenda", "1700000000000"))
+    );
+});
+
+test("PRUEBA 175: ADMIN de SU negocio gestiona reservas, sesiones y agenda -> ALLOW", async () => {
+    const admin = "admin-f4-175";
+    await seedAdminNotif(admin, NEGOCIO_A);
+    await seedClienteFase4("cliente-f4-175", 17501, NEGOCIO_A, [17503]);
+    await seedAgenda(17501, NEGOCIO_A, 1700000000000);
+    const database = testEnvironment.authenticatedContext(admin).firestore();
+
+    const sesionId = 17502;
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+            doc(context.firestore(), "sesiones", String(sesionId)),
+            sesionDoc(sesionId, NEGOCIO_A, 17503)
+        );
+        await setDoc(
+            doc(context.firestore(), "reservas", "17501_17502"),
+            reservaDoc(17501, sesionId, NEGOCIO_A)
+        );
+    });
+
+    // Lectura de reserva, sesión y agenda.
+    await assertSucceeds(getDoc(doc(database, "reservas", "17501_17502")));
+    await assertSucceeds(getDoc(doc(database, "sesiones", String(sesionId))));
+    await assertSucceeds(
+        getDoc(doc(database, "clientes", "17501", "agenda", "1700000000000"))
+    );
+
+    // ADMIN puede retirar el asistente y limpiar la agenda en su gestión.
+    await assertSucceeds(
+        updateDoc(doc(database, "sesiones", String(sesionId)), {
+            asistentes: {}
+        })
+    );
+    await assertSucceeds(
+        updateDoc(doc(database, "clientes", "17501", "agenda", "1700000000000"), {
+            sesiones: {}
+        })
+    );
+    await assertSucceeds(
+        deleteDoc(doc(database, "clientes", "17501", "agenda", "1700000000000"))
+    );
+});
+
+test("PRUEBA 176: ADMIN de OTRO negocio no gestiona reservas/sesiones/agenda ajenas -> DENY", async () => {
+    const adminB = "admin-f4-176b";
+    await seedAdminNotif(adminB, NEGOCIO_B);
+    await seedAgenda(17601, NEGOCIO_A, 1700000000000); // cliente del negocio A
+    const dbB = testEnvironment.authenticatedContext(adminB).firestore();
+    await assertFails(
+        getDoc(doc(dbB, "clientes", "17601", "agenda", "1700000000000"))
+    );
+    await assertFails(
+        updateDoc(doc(dbB, "clientes", "17601", "agenda", "1700000000000"), { sesiones: {} })
+    );
+    await assertFails(
+        deleteDoc(doc(dbB, "clientes", "17601", "agenda", "1700000000000"))
+    );
+});
+
+test("PRUEBA 177: lectura normal de sesiones y servicios del CLIENTE sigue funcionando -> ALLOW", async () => {
+    const cliente = "cliente-f4-177";
+    const clienteId = 17701;
+    await seedClienteFase4(cliente, clienteId, NEGOCIO_A, [17703]);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+            doc(context.firestore(), "sesiones", "17702"),
+            sesionDoc(17702, NEGOCIO_A, 17703)
+        );
+    });
+    const database = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertSucceeds(getDoc(doc(database, "servicios", "17703")));
+    await assertSucceeds(getDoc(doc(database, "sesiones", "17702")));
+});
+
+test("PRUEBA 178: permiteCombinarDia del servicio solo lo modifica el ADMIN de SU negocio -> ALLOW; CLIENTE/otro negocio -> DENY", async () => {
+    const admin = "admin-f4-178";
+    await seedAdminNotif(admin, NEGOCIO_A);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "servicios", "17801"), servicioDoc(17801, NEGOCIO_A));
+    });
+    const dbAdmin = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        updateDoc(doc(dbAdmin, "servicios", "17801"), { permiteCombinarDia: false })
+    );
+    await assertSucceeds(
+        setDoc(doc(dbAdmin, "servicios", "17802"), servicioDoc(17802, NEGOCIO_A, { permiteCombinarDia: true }))
+    );
+
+    const adminB = "admin-f4-178b";
+    await seedAdminNotif(adminB, NEGOCIO_B);
+    const dbAdminB = testEnvironment.authenticatedContext(adminB).firestore();
+    await assertFails(
+        updateDoc(doc(dbAdminB, "servicios", "17801"), { permiteCombinarDia: false })
+    );
+
+    const cliente = "cliente-f4-178c";
+    await seedClienteFase4(cliente, 17899, NEGOCIO_A, [17801]);
+    const dbCliente = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(
+        updateDoc(doc(dbCliente, "servicios", "17801"), { permiteCombinarDia: false })
     );
 });

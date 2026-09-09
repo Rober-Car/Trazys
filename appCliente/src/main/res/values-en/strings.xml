@@ -192,6 +192,7 @@
     <string name="home_card_actividades_descripcion">View and book your activities</string>
     <string name="home_card_rutinas">Workouts</string>
     <string name="home_card_rutinas_descripcion">Training workouts</string>
+    <string name="rutinas_proximamente">Soon you will be able to view your training workouts.</string>
     <string name="home_card_ajustes">Settings</string>
     <string name="home_card_ajustes_descripcion">General settings</string>
     <string name="home_card_notificaciones">Notifications</string>
@@ -273,4 +274,61 @@
     <string name="notif_accion_denunciar">Report</string>
     <string name="notif_denunciar_titulo">Report content</string>
     <string name="notif_recibir_avisos_centro">Receive center alerts</string>
+
+    <!-- ===== Activities / Today's classes ===== -->
+    <string name="clases_titulo">Today\'s classes</string>
+    <string name="clases_no_vinculado">You are not linked to your center.\nYou must link your account to view classes.</string>
+    <string name="clases_dado_de_baja">You have been unsubscribed from the center.\nYou can no longer book classes.</string>
+    <string name="clases_estado_no_activo">Your account is not active yet.\nOnce the center activates it, you will be able to view and book activities.</string>
+    <string name="clases_sin_servicios">You have no contracted services.</string>
+    <string name="clases_sin_sesiones_hoy">There are no classes scheduled for today.</string>
+    <string name="clases_cancelar_reserva">Cancel booking</string>
+    <string name="clases_confirmar_cancelar">Do you want to cancel this booking?</string>
+    <string name="clases_completa">Full</string>
+    <string name="clases_reservar">Book</string>
+    <string name="clases_reservada">Booked</string>
+    <string name="clases_reservas_abren_a">Bookings open at %1$s</string>
+    <string name="clases_hora_duracion">%1$s · %2$d min</string>
+    <string name="clases_error_cargar">Could not load today\'s classes</string>
+    <string name="clases_error_identificar_centro">Could not identify your center</string>
+    <string name="clases_ver_asistentes">View attendees</string>
+    <string name="asistentes_titulo">Attendees</string>
+    <string name="asistentes_vacio">No confirmed attendees</string>
+    <string name="asistentes_no_reservada">You can only view the attendees of a session you have booked</string>
+    <plurals name="clases_plazas_disponibles">
+        <item quantity="one">%d place available</item>
+        <item quantity="other">%d places available</item>
+    </plurals>
+
+    <plurals name="asistentes_total">
+        <item quantity="one">%d attendee</item>
+        <item quantity="other">%d attendees</item>
+    </plurals>
+
+    <!-- ===== Bookings: visible errors ===== -->
+    <string name="reserva_error_cargar">Could not load your bookings</string>
+    <string name="reserva_error_cliente_no_existe">The client does not exist</string>
+    <string name="reserva_error_cliente_no_negocio">The client does not belong to your business</string>
+    <string name="reserva_error_cliente_cuenta">The client does not match this account</string>
+    <string name="reserva_error_dado_de_baja">You are unsubscribed and cannot book</string>
+    <string name="reserva_error_no_activa">Your account is not active for booking</string>
+    <string name="reserva_error_sesion_no_existe">The session does not exist</string>
+    <string name="reserva_error_sesion_no_negocio">The session does not belong to your business</string>
+    <string name="reserva_error_sesion_sin_servicio">The session has no service</string>
+    <string name="reserva_error_servicio_no_existe">The service does not exist</string>
+    <string name="reserva_error_servicio_no_negocio">The service does not belong to your business</string>
+    <string name="reserva_error_servicio_inactivo">The service is inactive</string>
+    <string name="reserva_error_no_contratado">You have not contracted this service</string>
+    <string name="reserva_error_ya_reservada">You already have a booking for this session</string>
+    <string name="reserva_error_sesion_sin_plazas">The session has no available places</string>
+    <string name="reserva_error_sin_plazas">There are no available places</string>
+    <string name="reserva_error_sesion_sin_fecha">The session has no date</string>
+    <string name="reserva_error_reservas_abren_a">Bookings open at %1$s</string>
+    <string name="reserva_error_no_existe">The booking does not exist</string>
+    <string name="reserva_error_reserva_cuenta">The booking does not match this account</string>
+    <string name="reserva_error_no_realizar">Could not make the booking</string>
+    <string name="reserva_error_no_cancelar">Could not cancel the booking</string>
+    <string name="reserva_error_no_quedan_plazas">There are no places left.</string>
+    <string name="reserva_error_no_combinable">You can\'t book this activity because you already have another booking the same day that cannot be combined with this activity</string>
+    <string name="reserva_error_sesion_cambio">The session has changed. Check the places and try again</string>
 </resources>

@@ -30,6 +30,7 @@ import com.roberto.gestorpro.cliente.ui.auth.LoginScreen
 import com.roberto.gestorpro.cliente.ui.auth.MiPerfilScreen
 import com.roberto.gestorpro.cliente.ui.auth.RecuperarPasswordScreen
 import com.roberto.gestorpro.cliente.ui.auth.RegistroScreen
+import com.roberto.gestorpro.cliente.ui.home.AsistentesSesionScreen
 import com.roberto.gestorpro.cliente.ui.home.ClasesScreen
 import com.roberto.gestorpro.cliente.ui.home.HomeScreen
 import com.roberto.gestorpro.cliente.ui.notificaciones.ListaNotificacionesScreen
@@ -100,6 +101,18 @@ fun AppNavigation() {
 
         composable(Routes.CLASES) {
             ClasesScreen(navController)
+        }
+
+        composable(Routes.ASISTENTES_SESION) { backStackEntry ->
+            val idSesion = backStackEntry.arguments
+                ?.getString("idSesion")
+                ?.toIntOrNull()
+            if (idSesion != null) {
+                AsistentesSesionScreen(
+                    navController = navController,
+                    idSesion = idSesion
+                )
+            }
         }
 
         composable(Routes.MI_PERFIL) {

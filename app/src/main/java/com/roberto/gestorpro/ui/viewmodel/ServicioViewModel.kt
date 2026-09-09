@@ -165,7 +165,12 @@ class ServicioViewModel @Inject constructor(
      * Valida que el nombre no esté vacío y que el precio no sea negativo, y
      * replica a Firestore (write-through).
      */
-    fun crearServicio(nombre: String, descripcion: String, precio: Double) {
+    fun crearServicio(
+        nombre: String,
+        descripcion: String,
+        precio: Double,
+        permiteCombinarDia: Boolean
+    ) {
         val nombreLimpio = nombre.trim()
         if (nombreLimpio.isBlank()) {
             _error.value = "El nombre del servicio es obligatorio"
@@ -183,7 +188,8 @@ class ServicioViewModel @Inject constructor(
                     nombre = nombreLimpio,
                     descripcion = descripcion.trim(),
                     activo = true,
-                    precio = precio
+                    precio = precio,
+                    permiteCombinarDia = permiteCombinarDia
                 )
             )
             val entidad = ServicioEntity(
@@ -192,7 +198,8 @@ class ServicioViewModel @Inject constructor(
                 nombre = nombreLimpio,
                 descripcion = descripcion.trim(),
                 activo = true,
-                precio = precio
+                precio = precio,
+                permiteCombinarDia = permiteCombinarDia
             )
             replicar(entidad, OperacionServicio.CREAR)
         }

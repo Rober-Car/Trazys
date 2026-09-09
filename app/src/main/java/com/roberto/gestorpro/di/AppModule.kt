@@ -399,6 +399,38 @@ object AppModule {
     }
 
     /**
+     * MIGRACION_18_19
+     * ---------------
+     * Servicio: nueva columna `permiteCombinarDia` (default true = 1).
+     * Añade la columna con recreación de tabla (SQLite no permite ALTER TABLE
+     * ADD COLUMN con NOT NULL sin DEFAULT constante de forma fiable en todas
+     * las versiones usadas; se sigue el patrón de recreación ya empleado en
+     * MIGRACION_13_14 para `precio`).
+     */
+    private val MIGRACION_18_19 = object : Migration(18, 19) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `servicio_nueva` (" +
+                    "`idServicio` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`negocioId` TEXT NOT NULL, " +
+                    "`nombre` TEXT NOT NULL, " +
+                    "`descripcion` TEXT NOT NULL, " +
+                    "`activo` INTEGER NOT NULL, " +
+                    "`precio` REAL NOT NULL, " +
+                    "`permiteCombinarDia` INTEGER NOT NULL)"
+            )
+            db.execSQL(
+                "INSERT INTO `servicio_nueva` " +
+                    "(`idServicio`, `negocioId`, `nombre`, `descripcion`, `activo`, `precio`, `permiteCombinarDia`) " +
+                    "SELECT `idServicio`, `negocioId`, `nombre`, `descripcion`, `activo`, `precio`, 1 " +
+                    "FROM `servicio`"
+            )
+            db.execSQL("DROP TABLE `servicio`")
+            db.execSQL("ALTER TABLE `servicio_nueva` RENAME TO `servicio`")
+        }
+    }
+
+    /**
      * provideFirebaseAuth
      * -------------------
      * ✔ TIPO: método (fun) de Hilt con anotación @Provides y @Singleton → FirebaseAuth
@@ -465,7 +497,8 @@ object AppModule {
                 MIGRACION_14_15,
                 MIGRACION_15_16,
                 MIGRACION_16_17,
-                MIGRACION_17_18
+                MIGRACION_17_18,
+                MIGRACION_18_19
             )
 
         return databaseBuilder.build()

@@ -18,6 +18,7 @@ const CODIGOS_MAESTROS = "codigos_maestros";
 const CONFIG_NOTIFICACIONES = "configuracion_notificaciones";
 const CLIENTES = "clientes";
 const CLIENTES_PRIVADOS = "clientes_privados";
+const AGENDA = "agenda";
 const INDICES_CLIENTES = "indices_clientes";
 const PERFILES_PENDIENTES = "perfiles_pendientes";
 const SERVICIOS = "servicios";
@@ -120,6 +121,11 @@ function rutaDispositivos(coleccion, clienteId) {
   return `${coleccion}/${clienteId}/${DISPOSITIVOS}`;
 }
 
+/** Ruta de la subcolección de AGENDA derivada de un cliente. */
+function rutaAgenda(clienteId) {
+  return `${CLIENTES}/${clienteId}/${AGENDA}`;
+}
+
 module.exports = {
   USUARIOS,
   NEGOCIOS,
@@ -128,6 +134,7 @@ module.exports = {
   CONFIG_NOTIFICACIONES,
   CLIENTES,
   CLIENTES_PRIVADOS,
+  AGENDA,
   INDICES_CLIENTES,
   PERFILES_PENDIENTES,
   SERVICIOS,
@@ -149,4 +156,5 @@ module.exports = {
   rutasStorageCliente,
   rutaStorageLogo,
   rutaDispositivos,
+  rutaAgenda,
 };

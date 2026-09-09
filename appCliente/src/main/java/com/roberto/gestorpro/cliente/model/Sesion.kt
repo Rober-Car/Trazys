@@ -13,6 +13,10 @@ package com.roberto.gestorpro.cliente.model
  * horaDesdeReserva (opcional): hora local del día de la sesión (formato
  * "HH:mm") a partir de la cual el CLIENTE puede reservar. null = reservas
  * abiertas desde el inicio del día.
+ *
+ * asistentes (opcional): mapa { clienteId: nombre } de las reservas CONFIRMADAS
+ * de la sesión. Lo mantiene la Cloud Function de reservas de forma atómica con
+ * la reserva; solo contiene nombres (sin apellidos, foto, teléfono ni email).
  */
 data class Sesion(
     val idSesion: Int,
@@ -23,5 +27,6 @@ data class Sesion(
     val duracionMinutos: Int,
     val capacidad: Int,
     val plazasDisponibles: Int,
-    val horaDesdeReserva: String? = null
+    val horaDesdeReserva: String? = null,
+    val asistentes: Map<String, String> = emptyMap()
 )

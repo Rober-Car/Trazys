@@ -55,6 +55,7 @@ fun EditarServicioScreen(
     var descripcion by remember { mutableStateOf("") }
     var precio by remember { mutableStateOf("") }
     var activo by remember { mutableStateOf(true) }
+    var permiteCombinarDia by remember { mutableStateOf(true) }
     var errorNombre by remember { mutableStateOf(false) }
     var errorPrecio by remember { mutableStateOf(false) }
     var cargado by remember { mutableStateOf(idServicio == null) }
@@ -71,6 +72,7 @@ fun EditarServicioScreen(
             descripcion = servicioSeleccionado!!.descripcion
             precio = precioParaCampo(servicioSeleccionado!!.precio)
             activo = servicioSeleccionado!!.activo
+            permiteCombinarDia = servicioSeleccionado!!.permiteCombinarDia
             cargado = true
         }
     }
@@ -169,6 +171,28 @@ fun EditarServicioScreen(
                 }
             }
 
+            // Permite a un CLIENTE reservar más de una actividad distinta el mismo
+            // día. Aparece SIEMPRE (alta y edición); default true en actividades
+            // nuevas. Se guarda en Room y se replica a Firestore.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Permitir combinar con otras actividades el mismo día",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = permiteCombinarDia,
+                    onCheckedChange = { permiteCombinarDia = it },
+                    colors = androidx.compose.material3.SwitchDefaults.colors(
+                        checkedThumbColor = androidx.compose.ui.graphics.Color.White,
+                        checkedTrackColor = androidx.compose.ui.graphics.Color(0xFF1E88E5)
+                    )
+                )
+            }
+
             AppPrimaryButton(
                 text = if (idServicio == null) "Crear servicio" else "Guardar cambios",
                 onClick = {
@@ -185,7 +209,9 @@ fun EditarServicioScreen(
                     }
 
                     if (idServicio == null) {
-                        viewModel.crearServicio(nombre, descripcion, precioValido!!)
+                        viewModel.crearServicio(
+                            nombre, descripcion, precioValido!!, permiteCombinarDia
+                        )
                     } else {
                         val original = servicioSeleccionado ?: return@AppPrimaryButton
                         viewModel.actualizarServicio(
@@ -193,7 +219,8 @@ fun EditarServicioScreen(
                                 nombre = nombre.trim(),
                                 descripcion = descripcion.trim(),
                                 precio = precioValido!!,
-                                activo = activo
+                                activo = activo,
+                                permiteCombinarDia = permiteCombinarDia
                             )
                         )
                     }

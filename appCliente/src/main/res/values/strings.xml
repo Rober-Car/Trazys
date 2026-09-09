@@ -192,6 +192,7 @@
     <string name="home_card_actividades_descripcion">Consulta y reserva tus actividades</string>
     <string name="home_card_rutinas">Rutinas</string>
     <string name="home_card_rutinas_descripcion">Rutinas de entrenamiento</string>
+    <string name="rutinas_proximamente">Próximamente podrás consultar tus rutinas de entrenamiento.</string>
     <string name="home_card_ajustes">Ajustes</string>
     <string name="home_card_ajustes_descripcion">Configuración general</string>
     <string name="home_card_notificaciones">Notificaciones</string>
@@ -273,4 +274,61 @@
     <string name="notif_accion_denunciar">Denunciar</string>
     <string name="notif_denunciar_titulo">Denunciar contenido</string>
     <string name="notif_recibir_avisos_centro">Recibir avisos del centro</string>
+
+    <!-- ===== Actividades / Clases de hoy ===== -->
+    <string name="clases_titulo">Clases de hoy</string>
+    <string name="clases_no_vinculado">No estás vinculado con tu centro.\nDebes vincularte para poder ver las clases.</string>
+    <string name="clases_dado_de_baja">Has sido dado de baja del centro.\nYa no puedes reservar clases.</string>
+    <string name="clases_estado_no_activo">Tu cuenta aún no está activa.\nCuando el centro la active podrás ver y reservar actividades.</string>
+    <string name="clases_sin_servicios">No tienes servicios contratados.</string>
+    <string name="clases_sin_sesiones_hoy">No hay clases programadas para hoy.</string>
+    <string name="clases_cancelar_reserva">Cancelar reserva</string>
+    <string name="clases_confirmar_cancelar">¿Quieres cancelar esta reserva?</string>
+    <string name="clases_completa">Completa</string>
+    <string name="clases_reservar">Reservar</string>
+    <string name="clases_reservada">Reservada</string>
+    <string name="clases_reservas_abren_a">Reservas abren a las %1$s</string>
+    <string name="clases_hora_duracion">%1$s · %2$d min</string>
+    <string name="clases_error_cargar">No se pudieron cargar tus clases de hoy</string>
+    <string name="clases_error_identificar_centro">No se pudo identificar tu centro</string>
+    <string name="clases_ver_asistentes">Ver asistentes</string>
+    <string name="asistentes_titulo">Asistentes</string>
+    <string name="asistentes_vacio">No hay asistentes confirmados</string>
+    <string name="asistentes_no_reservada">Solo puedes ver los asistentes de una sesión que tengas reservada</string>
+    <plurals name="clases_plazas_disponibles">
+        <item quantity="one">%d plaza disponible</item>
+        <item quantity="other">%d plazas disponibles</item>
+    </plurals>
+
+    <plurals name="asistentes_total">
+        <item quantity="one">%d asistente</item>
+        <item quantity="other">%d asistentes</item>
+    </plurals>
+
+    <!-- ===== Reservas: errores visibles ===== -->
+    <string name="reserva_error_cargar">No se pudieron cargar tus reservas</string>
+    <string name="reserva_error_cliente_no_existe">El cliente no existe</string>
+    <string name="reserva_error_cliente_no_negocio">El cliente no pertenece a tu negocio</string>
+    <string name="reserva_error_cliente_cuenta">El cliente no corresponde a esta cuenta</string>
+    <string name="reserva_error_dado_de_baja">Estás dado de baja y no puedes reservar</string>
+    <string name="reserva_error_no_activa">Tu cuenta no está activa para reservar</string>
+    <string name="reserva_error_sesion_no_existe">La sesión no existe</string>
+    <string name="reserva_error_sesion_no_negocio">La sesión no pertenece a tu negocio</string>
+    <string name="reserva_error_sesion_sin_servicio">La sesión no tiene servicio</string>
+    <string name="reserva_error_servicio_no_existe">El servicio no existe</string>
+    <string name="reserva_error_servicio_no_negocio">El servicio no pertenece a tu negocio</string>
+    <string name="reserva_error_servicio_inactivo">El servicio está inactivo</string>
+    <string name="reserva_error_no_contratado">No tienes contratado este servicio</string>
+    <string name="reserva_error_ya_reservada">Ya tienes una reserva para esta sesión</string>
+    <string name="reserva_error_sesion_sin_plazas">La sesión no tiene plazas disponibles</string>
+    <string name="reserva_error_sin_plazas">No hay plazas disponibles</string>
+    <string name="reserva_error_sesion_sin_fecha">La sesión no tiene fecha</string>
+    <string name="reserva_error_reservas_abren_a">Las reservas abren a las %1$s</string>
+    <string name="reserva_error_no_existe">No existe la reserva</string>
+    <string name="reserva_error_reserva_cuenta">La reserva no corresponde a esta cuenta</string>
+    <string name="reserva_error_no_realizar">No se pudo realizar la reserva</string>
+    <string name="reserva_error_no_cancelar">No se pudo cancelar la reserva</string>
+    <string name="reserva_error_no_quedan_plazas">No quedan plazas disponibles.</string>
+    <string name="reserva_error_no_combinable">No puedes reservar esta actividad porque ya tienes otra reserva el mismo día que no se puede combinar con esta actividad</string>
+    <string name="reserva_error_sesion_cambio">La sesión ha cambiado. Comprueba las plazas e inténtalo de nuevo</string>
 </resources>

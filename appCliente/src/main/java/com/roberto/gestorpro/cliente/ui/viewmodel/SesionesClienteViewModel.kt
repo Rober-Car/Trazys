@@ -1,15 +1,19 @@
 package com.roberto.gestorpro.cliente.ui.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.ClienteRepository
 import com.roberto.gestorpro.cliente.data.firebase.ReservaRepository
 import com.roberto.gestorpro.cliente.data.firebase.SesionRepository
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import com.roberto.gestorpro.cliente.model.EstadoCliente
 import com.roberto.gestorpro.cliente.model.EstadoReserva
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -37,11 +41,20 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class SesionesClienteViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesRepository: PreferencesRepository,
     private val clienteRepository: ClienteRepository,
     private val sesionRepository: SesionRepository,
     private val reservaRepository: ReservaRepository
 ) : ViewModel() {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     private val _cargando = MutableStateFlow(true)
     val cargando = _cargando.asStateFlow()
@@ -92,7 +105,7 @@ class SesionesClienteViewModel @Inject constructor(
                 // La ficha es la fuente de verdad de los servicios contratados.
                 val ficha = clienteRepository.leerFicha(idCliente)
                 if (ficha == null) {
-                    _error.value = "No se pudieron cargar tus clases de hoy"
+                    _error.value = texto(R.string.clases_error_cargar)
                     return@launch
                 }
 
@@ -118,7 +131,7 @@ class SesionesClienteViewModel @Inject constructor(
                 val negocioId = preferencesRepository.negocioId.first()
                     ?: ficha.negocioId.takeIf { it.isNotBlank() }
                     ?: run {
-                        _error.value = "No se pudo identificar tu centro"
+                        _error.value = texto(R.string.clases_error_identificar_centro)
                         return@launch
                     }
                 val sesionesReservadas = reservaRepository
@@ -168,7 +181,7 @@ class SesionesClienteViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 Log.e("SesionesClienteViewModel", "cargar fallo: ${e.message}", e)
-                _error.value = "No se pudieron cargar tus clases de hoy"
+                _error.value = texto(R.string.clases_error_cargar)
             } finally {
                 _cargando.value = false
             }

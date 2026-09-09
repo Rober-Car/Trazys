@@ -19,5 +19,6 @@ data class ServicioEntity(
     val nombre: String,
     val descripcion: String,
     val activo: Boolean = true,
-    val precio: Double = 0.0
+    val precio: Double = 0.0,
+    val permiteCombinarDia: Boolean = true
 )

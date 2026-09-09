@@ -28,9 +28,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.cliente.R
 
 /**
  * Placeholder visual del apartado de rutinas.
@@ -39,6 +41,11 @@ import androidx.navigation.NavHostController
 @Composable
 fun RutinasScreen(navController: NavHostController) {
     val turquesa = Color(0xFF26A69A)
+
+    // Textos localizados del bloque de rutinas.
+    val textoVolver = stringResource(R.string.accion_volver)
+    val textoRutinas = stringResource(R.string.home_card_rutinas)
+    val textoProximamente = stringResource(R.string.rutinas_proximamente)
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing
@@ -61,14 +68,14 @@ fun RutinasScreen(navController: NavHostController) {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
+                            contentDescription = textoVolver,
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Rutinas",
+                        text = textoRutinas,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -102,14 +109,14 @@ fun RutinasScreen(navController: NavHostController) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "Rutinas",
+                            text = textoRutinas,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Próximamente podrás consultar tus rutinas de entrenamiento.",
+                            text = textoProximamente,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

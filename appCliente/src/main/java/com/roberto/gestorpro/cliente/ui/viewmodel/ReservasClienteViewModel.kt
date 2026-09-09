@@ -1,7 +1,9 @@
 package com.roberto.gestorpro.cliente.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.ClienteRepository
 import com.roberto.gestorpro.cliente.data.firebase.ReservaRepository
 import com.roberto.gestorpro.cliente.data.firebase.ResultadoAutenticacion
@@ -9,7 +11,9 @@ import com.roberto.gestorpro.cliente.data.firebase.SesionRepository
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import com.roberto.gestorpro.cliente.model.Reserva
 import com.roberto.gestorpro.cliente.model.Sesion
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,11 +24,20 @@ import kotlinx.coroutines.launch
 /** ViewModel de la infraestructura de reservas del CLIENTE. */
 @HiltViewModel
 class ReservasClienteViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesRepository: PreferencesRepository,
     private val reservaRepository: ReservaRepository,
     private val clienteRepository: ClienteRepository,
     private val sesionRepository: SesionRepository
 ) : ViewModel() {
+
+    /**
+     * texto
+     * -----
+     * Resuelve un recurso string en el idioma elegido por el usuario.
+     */
+    private fun texto(recurso: Int): String =
+        IdiomaAplicacion.textoDe(context, recurso)
 
     private val _cargando = MutableStateFlow(false)
     val cargando = _cargando.asStateFlow()
@@ -70,17 +83,17 @@ class ReservasClienteViewModel @Inject constructor(
         }
     }
 
-    /** Solicita una reserva; plazas y duplicados se comprueban atomícamente. */
+    /** Solicita una reserva a través de la Cloud Function callable `reservar`. */
     fun reservar(sesionId: Int) {
-        operar { clienteId, negocioId ->
-            reservaRepository.crearReserva(clienteId, sesionId, negocioId)
+        operar {
+            reservaRepository.reservarConFuncion(sesionId)
         }
     }
 
-    /** Cancela una reserva propia y libera su plaza atomícamente. */
+    /** Cancela una reserva a través de la Cloud Function callable `cancelarReserva`. */
     fun cancelar(sesionId: Int) {
-        operar { clienteId, negocioId ->
-            reservaRepository.cancelarReserva(clienteId, sesionId, negocioId)
+        operar {
+            reservaRepository.cancelarReservaConFuncion(sesionId)
         }
     }
 
@@ -103,7 +116,7 @@ class ReservasClienteViewModel @Inject constructor(
     }
 
     private fun operar(
-        accion: suspend (clienteId: Int, negocioId: String) -> ResultadoAutenticacion
+        accion: suspend () -> ResultadoAutenticacion
     ) {
         viewModelScope.launch {
             _error.value = null
@@ -115,12 +128,12 @@ class ReservasClienteViewModel @Inject constructor(
 
             _operando.value = true
             try {
-                val resultado = accion(identidad.first, identidad.second)
+                val resultado = accion()
                 if (!resultado.exito) {
                     _error.value = resultado.mensaje
-                    // Aunque falle (p. ej. el segundo cliente pierde la carrera
-                    // por la última plaza), se refresca el estado real de la
-                    // sesión para que la pantalla deje de mostrar plazas obsoletas.
+                    // Aunque falle (p. ej. la callable rechaza por plazas agotadas
+                    // o por combinación), se refresca el estado real de la sesión
+                    // para que la pantalla deje de mostrar plazas obsoletas.
                     refrescarTrasOperacion(identidad.first, identidad.second)
                 } else {
                     refrescarTrasOperacion(identidad.first, identidad.second)
@@ -194,7 +207,7 @@ class ReservasClienteViewModel @Inject constructor(
     }
 
     private fun mensajeDe(e: Exception): String =
-        e.message ?: "No se pudieron cargar tus reservas"
+        e.message ?: texto(R.string.reserva_error_cargar)
 }
 
 /** Reserva enriquecida con los datos de la sesión para la pantalla de reservas. */

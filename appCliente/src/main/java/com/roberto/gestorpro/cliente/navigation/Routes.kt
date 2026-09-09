@@ -51,6 +51,15 @@ object Routes {
     const val CLASES = "clases"
 
     /**
+     * ASISTENTES_SESION
+     * -----------------
+     * Pantalla independiente con los asistentes confirmados de una sesión que el
+     * CLIENTE ya tiene reservada. Ruta con argumento: asistentes_sesion/{idSesion}.
+     * Solo nombres (sin apellidos, fotos, teléfonos ni emails).
+     */
+    const val ASISTENTES_SESION = "asistentes_sesion/{idSesion}"
+
+    /**
      * MI_PERFIL
      * ---------
      * Ver y editar los datos personales de la propia ficha.

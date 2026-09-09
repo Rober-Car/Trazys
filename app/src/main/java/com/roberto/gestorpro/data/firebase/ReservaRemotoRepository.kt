@@ -3,6 +3,7 @@ package com.roberto.gestorpro.data.firebase
 import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.roberto.gestorpro.data.entity.ReservaEntity
@@ -39,6 +40,7 @@ class ReservaRemotoRepository @Inject constructor(
         private const val COLECCION_SESIONES = "sesiones"
         private const val COLECCION_SERVICIOS = "servicios"
         private const val COLECCION_CLIENTES = "clientes"
+        private const val SUBCOLECCION_AGENDA = "agenda"
         private const val TAG = "ReservaRemotoRepository"
 
         /**
@@ -56,10 +58,82 @@ class ReservaRemotoRepository @Inject constructor(
         private const val MAX_RESERVAS_POR_SESION = 498
 
         /**
+         * Máximo de escrituras por WriteBatch al limpiar la AGENDA derivada de
+         * un cliente tras una cascada. Se usa ≤400 (por debajo del límite de 500
+         * operaciones de un WriteBatch) para dejar margen y mantener la operación
+         * dentro de los límites de Firestore.
+         */
+        private const val MAX_AGENDA_POR_BATCH = 400
+
+        /**
          * documentId de una reserva: {clienteId}_{sesionId}.
          */
         fun reservaId(clienteId: Int, sesionId: Int): String =
             "${clienteId}_${sesionId}"
+    }
+
+    /**
+     * rutaAgendaDelDia
+     * ----------------
+     * Ruta del documento AGENDA derivado del día de una sesión:
+     * clientes/{clienteId}/agenda/{fecha}, donde fecha es el epoch millis de la
+     * medianoche local del día (el mismo valor que guarda sesiones/{id}.fecha y
+     * el que usa la Cloud Function de reservas como documentId).
+     */
+    private fun rutaAgendaDelDia(clienteId: Int, fecha: Long): String =
+        "clientes/$clienteId/$SUBCOLECCION_AGENDA/$fecha"
+
+    private fun refAgenda(clienteId: Int, fecha: Long) =
+        db.document(rutaAgendaDelDia(clienteId, fecha))
+
+    /**
+     * limpiarAgendaDeSesionEliminada
+     * ------------------------------
+     * Tras eliminar una sesión (con sus reservas), retira la entrada de la
+     * sesión del mapa `sesiones` de la agenda derivada de cada cliente afectado
+     * en el día de esa sesión. Si el mapa queda vacío se borra el documento.
+     * Idempotente: si la agenda no existe o ya no contiene la sesión, no-op.
+     *
+     * La agenda es un dato DERIVADO (no fuente de verdad) y esta limpieza es
+     * BEST-EFFORT: nunca aborta la cascada principal si falla (se registra y el
+     * día se reconstruye bajo demanda contra las reservas reales).
+     */
+    private suspend fun limpiarAgendaDeSesionEliminada(
+        sesionId: Int,
+        fecha: Long,
+        clienteIds: List<Int>
+    ) {
+        if (fecha <= 0L || clienteIds.isEmpty()) return
+        try {
+            clienteIds.distinct().chunked(MAX_AGENDA_POR_BATCH).forEach { lote ->
+                val batch = db.batch()
+                var pendientes = 0
+                for (clienteId in lote) {
+                    val agendaRef = refAgenda(clienteId, fecha)
+                    val agendaSnap = agendaRef.get().esperar()
+                    if (!agendaSnap.exists()) continue
+                    val sesiones = agendaSnap.get("sesiones") as? Map<*, *>
+                    val sinSesion = sesiones
+                        ?.toMutableMap()
+                        ?.apply { remove(sesionId.toString()) }
+                        ?: emptyMap<String, Any?>()
+                    if (sinSesion.isEmpty()) {
+                        batch.delete(agendaRef)
+                    } else {
+                        batch.update(agendaRef, mapOf("sesiones" to sinSesion))
+                    }
+                    pendientes++
+                }
+                if (pendientes > 0) batch.commit().esperar()
+            }
+        } catch (e: Exception) {
+            Log.w(
+                TAG,
+                "limpiarAgendaDeSesionEliminada: no se pudo limpiar la agenda " +
+                    "de la sesión $sesionId (día $fecha): ${e.message}",
+                e
+            )
+        }
     }
 
     /**
@@ -205,6 +279,14 @@ class ReservaRemotoRepository @Inject constructor(
      * Cancela una reserva de forma ATÓMICA dentro de una Transaction:
      * comprueba que la reserva existe y que la sesión sigue existiendo, elimina
      * la reserva e incrementa plazasDisponibles (sin superar la capacidad).
+     *
+     * FASE 3: la misma Transaction retira el ASISTENTE del cliente de la sesión
+     * (sesiones/{id}.asistentes.{clienteId}) y limpia la entrada de la sesión en
+     * la AGENDA derivada del cliente para ese día (clientes/{clienteId}/agenda/
+     * {fecha}; borra el documento si el mapa queda vacío). Así una cancelación
+     * administrativa (p. ej. la baja de un cliente) no deja asistentes ni
+     * entradas de agenda huérfanas. Es idempotente: si la agenda no existe o no
+     * contiene la sesión, no hace nada.
      */
     suspend fun cancelarReservaRemota(
         clienteId: Int,
@@ -212,6 +294,7 @@ class ReservaRemotoRepository @Inject constructor(
     ): ResultadoAutenticacion {
         val uid = auth.currentUser?.uid
             ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
+        val negocioId = uid
 
         return try {
             db.runTransaction { transaction ->
@@ -232,11 +315,53 @@ class ReservaRemotoRepository @Inject constructor(
                     throw ReservaException("La sesión ya está completa")
                 }
 
+                // Leer TODAS las lecturas antes de escribir (agenda derivada del
+                // día). Si la agenda existe, se quita la entrada de la sesión o
+                // se borra el documento cuando el día queda vacío.
+                val fecha = sesion.getLong("fecha")
+                var agendaParaBorrar = false
+                var sesionesAgendaActualizado: Map<*, *>? = null
+                var agendaExiste = false
+                if (fecha != null) {
+                    val agendaRef = refAgenda(clienteId, fecha)
+                    val agenda = transaction.get(agendaRef)
+                    agendaExiste = agenda.exists()
+                    if (agendaExiste) {
+                        val sesiones = agenda.get("sesiones") as? Map<*, *>
+                        val sinSesion = sesiones
+                            ?.toMutableMap()
+                            ?.apply { remove(sesionId.toString()) }
+                            ?: emptyMap<String, Any?>()
+                        agendaParaBorrar = sinSesion.isEmpty()
+                        sesionesAgendaActualizado = sinSesion
+                    }
+                }
+
                 transaction.delete(reservaRef)
                 transaction.update(
                     sesionRef,
-                    mapOf("plazasDisponibles" to (plazas + 1))
+                    mapOf(
+                        "plazasDisponibles" to (plazas + 1),
+                        // Retirar al cliente de los asistentes confirmados.
+                        "asistentes.$clienteId" to FieldValue.delete()
+                    )
                 )
+
+                if (fecha != null && agendaExiste) {
+                    val agendaRef = refAgenda(clienteId, fecha)
+                    if (agendaParaBorrar) {
+                        transaction.delete(agendaRef)
+                    } else {
+                        transaction.set(
+                            agendaRef,
+                            mapOf(
+                                "negocioId" to negocioId,
+                                "fecha" to fecha,
+                                "sesiones" to (sesionesAgendaActualizado ?: emptyMap<String, Any?>())
+                            )
+                        )
+                    }
+                }
             }.esperar()
             ResultadoAutenticacion(true, "Reserva cancelada")
         } catch (e: ReservaException) {
@@ -339,18 +464,22 @@ class ReservaRemotoRepository @Inject constructor(
         while (true) {
             intentos++
 
-            val refsReservas = try {
+            val documentosReservas = try {
                 db.collection(COLECCION_RESERVAS)
                     .whereEqualTo("sesionId", sesionId)
                     .whereEqualTo("negocioId", negocioId)
                     .get()
                     .esperar()
-                    .documents.map { it.reference }
+                    .documents
             } catch (e: Exception) {
                 return resultadoDeError(
                     "Query de reservas para la sesión $sesionId",
                     e
                 )
+            }
+            val refsReservas = documentosReservas.map { it.reference }
+            val clienteIdsReservados = documentosReservas.mapNotNull {
+                it.getLong("clienteId")?.toInt()
             }
 
             if (refsReservas.size > MAX_RESERVAS_POR_SESION) {
@@ -362,6 +491,7 @@ class ReservaRemotoRepository @Inject constructor(
             }
 
             try {
+                var fechaDeLaSesion = 0L
                 db.runTransaction { transaction ->
                     val sesion = transaction.get(sesionRef)
                     if (!sesion.exists()) {
@@ -370,9 +500,15 @@ class ReservaRemotoRepository @Inject constructor(
                         }
                         return@runTransaction
                     }
+                    fechaDeLaSesion = sesion.getLong("fecha") ?: 0L
                     refsReservas.forEach { transaction.delete(it) }
                     transaction.delete(sesionRef)
                 }.esperar()
+
+                // Tras la transacción crítica: limpiar la AGENDA derivada del día
+                // de la sesión en cada cliente reservado (batches ≤400).
+                limpiarAgendaDeSesionEliminada(sesionId, fechaDeLaSesion, clienteIdsReservados)
+
                 return ResultadoAutenticacion(true, "Sesión y reservas eliminadas")
             } catch (e: FirebaseFirestoreException) {
                 if (e.code == FirebaseFirestoreException.Code.ABORTED && intentos <= MAX_REINTENTOS_CASCADA) {

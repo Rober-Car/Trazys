@@ -44,7 +44,8 @@ object HidratacionMapeadores {
             nombre = nombre,
             descripcion = datos["descripcion"] as? String ?: "",
             activo = datos["activo"] as? Boolean ?: true,
-            precio = comoDouble(datos["precio"]) ?: 0.0
+            precio = comoDouble(datos["precio"]) ?: 0.0,
+            permiteCombinarDia = datos["permiteCombinarDia"] as? Boolean ?: true
         )
     }
 
