@@ -3191,3 +3191,56 @@ Sin commit, sin push, sin deploy.
 3. Decidir despliegue de `firestore.rules` con `denuncias`; limpiar imágenes de build de GCF; planificar
    subida a Node 22/24 (deprecación 2026-10-31) y actualización de `firebase-functions`; commit agrupado
    del working tree (firebase.json, indicador lectura, Home Cliente).
+
+---
+
+---
+
+# ACTUALIZACION 2026-09-10 (SESION VI) — HORARIO MULTI-TRAMO, "DIAS ESPECIALES", HOME 6 CARDS Y RULES DESPLEGADAS
+
+> Estado vigente. Sustituye al bloque "SESION V" en lo relativo a horarios.
+
+## Horario (rediseno)
+
+- **Modelo multi-tramo** (`app/model/Horario.kt` y `appCliente/model/Horario.kt`):
+  - `TramoHorario(apertura, cierre)` (sin flag `cerrado`).
+  - `ExcepcionHorario(fecha, tramos)` -> lista vacia = cerrado. (Terminologia visible: "Dia especial".)
+  - `HorarioNegocio(centro: Map<DayOfWeek, List<TramoHorario>>, actividades, excepciones)`.
+  - Serializacion remota nueva: `horarioCentro` = dia -> lista de tramos; `horarioExcepciones` = [{fecha, tramos}].
+    El parseo (`HorarioSerializacion` admin / `HorarioParseo` cliente) admite el **formato antiguo** (un tramo
+    con `cerrado`) sin perdida de datos.
+- **ADMIN `HorarioCentroScreen`**: varios tramos por dia (anadir/editar/eliminar), validacion (apertura<cierre
+  y sin solapes), bloque global "Aplicar a toda la semana" (copia tramos a dias abiertos, mantiene cerrados),
+  y **"Dias especiales"** (crear/editar/eliminar) en lugar de "Excepciones".
+- **CLIENTE**: Home con **exactamente 6 cards** (3 filas de 2): Reservas, Rutinas, Horario del centro,
+  Actividades, Ajustes, Notificaciones. Dos pantallas separadas en `appCliente/ui/home/HorarioScreen.kt`:
+  - `HorarioCentroClienteScreen` (ruta `HORARIO_CENTRO`): selector horizontal de dias (activo en azul),
+    tramos en tarjeta, "Cerrado", y **prioridad de la fecha especial** mostrando directamente su resultado,
+    sin explicar que es una excepcion; debajo, lista "Horarios especiales".
+  - `ActividadesClienteScreen` (ruta `HORARIO_ACTIVIDADES`): selector de dias + tarjetas nombre+hora (sin imagenes).
+- **i18n**: nuevas cadenas ES/EN en `appCliente` (`home_card_horario`, `home_card_horario_actividades`,
+  `horario_titulo_centro`, `horario_titulo_actividades`, `horario_subtitulo_actividades`,
+  `horario_proximas_excepciones` = "Horarios especiales"/"Special hours", `horario_sin_excepciones`).
+  Eliminada `horario_excepcion_para`. La app ADMIN sigue con textos hardcoded en espanol (deuda preexistente).
+- **Sin cambios**: reservas, sesiones, asistentes, notificaciones, ni la logica de `CAMBIO_HORARIO`.
+
+## Rules + deploy
+
+- `firebase.json` incluye ya `"firestore": { "rules": "firestore.rules" }`.
+- Suite completa de Rules: **204/204**.
+- **Desplegado** en `gestorpro-50e83`: ruleset `078c7b83-528b-48e6-8183-ede6d4a5dc29`
+  (updateTime `2026-09-10T15:15:05Z`), verificado por API (SHA-256 remoto == local).
+- Warnings de compilacion de Rules (inofensivos): patron ternario null (L61) y funciones no usadas
+  `sesionDelNegocio` / `sesionAccesiblePorCliente`.
+
+## Verificacion
+
+- `:app`: assembleDebug + testDebugUnitTest -> OK (190 tests).
+- `:appCliente`: assembleDebug + testDebugUnitTest -> OK (33 tests).
+- `git diff --check`: limpio (unico hallazgo: trailing whitespace en `firestore-tests/firestore-debug.log`, generado).
+
+## Pendiente
+
+1. Probar en dispositivo el guardado real de horario (centro multi-tramo, dias especiales, actividades).
+2. Decidir commit agrupado del working tree (no hay commit nuestro).
+3. (Opcional) Anadir `firestore-tests/firestore-debug.log` a `.gitignore`.

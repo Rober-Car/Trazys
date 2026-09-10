@@ -1,6 +1,33 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
-> **🔴 ACTUALIZACIÓN 2026-09-10 — FUNCIONALIDAD HORARIO + FIX PERMISOS + DEPLOY PENDIENTE (estado vigente):**
+> **🟢 ACTUALIZACIÓN 2026-09-10 (II) — HORARIO MULTI-TRAMO + "DÍAS ESPECIALES" + RULES DESPLEGADAS (estado vigente):**
+> verificado contra el árbol real. **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** El working
+> tree conserva **SIN commit** los cambios (**NO revertir**; ver CHECKPOINT superior de AGENTS.md y `git status`).
+> Este bloque SUSTITUYE a la actualización 2026-09-10 (I), que queda como histórica.
+> - **HORARIO (independiente de sesiones):** en `negocios_publicos/{negocioId}` → `horarioCentro`
+>   (semanal con **varios tramos por día**; lista vacía = cerrado), `horarioActividades` (`idServicio`+hora) y
+>   `horarioExcepciones` (fechas concretas con **varios tramos**; prioridad sobre el semanal). No se guarda en `negocios`.
+>   El parseo admite también el formato antiguo (un tramo con `cerrado`), sin pérdida de datos.
+> - **ADMIN:** Ajustes → NEGOCIO agrupa "Mi negocio" + "Horario del centro" + "Horario de actividades"
+>   (rutas `HORARIO_CENTRO`/`HORARIO_ACTIVIDADES`). Centro: aplicar a toda la semana + edición por día
+>   (añadir/editar/eliminar tramos) + validación (apertura<cierre, sin solapes) + **"Días especiales"**
+>   (terminología visible; antes "Excepciones", funcionalidad idéntica). Actividades: día (scroll horizontal) +
+>   chips de actividades + hora + CRUD (guarda `idServicio`).
+> - **CLIENTE:** Home con **exactamente 6 cards** en 3 filas: Reservas, Rutinas, Horario del centro,
+>   Actividades, Ajustes, Notificaciones. Dos pantallas SEPARADAS: `HorarioCentroClienteScreen` y
+>   `ActividadesClienteScreen` (sin imágenes). En el centro, la configuración especial de la fecha se muestra
+>   directamente ("Cerrado" o tramos), sin mencionar "excepción". Card "Actividades" anterior → **"Reservas"** (solo texto).
+> - **Notificación `CAMBIO_HORARIO`:** switch en `configuracion_notificaciones`; al guardar el horario del
+>   CENTRO se crea `notificaciones` tipo `CAMBIO_HORARIO` (TODOS) si está activo. Actividades NO notifican.
+> - **Persistencia rotación** (`rememberSaveable` + savers) y **estilo azul corporativo** `#1E88E5`.
+> - **FIX permisos:** `guardarHorario` escribe **solo** en `negocios_publicos` (antes también `negocios`).
+> - **Rules locales 204/204**; `:app` (190 tests) y `:appCliente` (33 tests) compile/assemble/test OK;
+>   `git diff --check` limpio salvo el log del emulador.
+> - **✅ DEPLOY HECHO:** `firebase.json` ya incluye `"firestore": { "rules": "firestore.rules" }`; ruleset
+>   desplegado en `gestorpro-50e83` = `078c7b83-528b-48e6-8183-ede6d4a5dc29` (updateTime `2026-09-10T15:15:05Z`),
+>   verificado por API (SHA-256 remoto == local). Los bloques inferiores son históricos.
+
+> **🗄️ ACTUALIZACIÓN 2026-09-10 (I) — FUNCIONALIDAD HORARIO (modelo antiguo) + DEPLOY PENDIENTE (HISTÓRICO):**
 > verificado contra el árbol real. **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** El working
 > tree conserva **SIN commit** 25 cambios (**NO revertir**; ver CHECKPOINT superior de AGENTS.md y `git status`).
 > - **HORARIO (nuevo, independiente de sesiones):** en `negocios_publicos/{negocioId}` → `horarioCentro`

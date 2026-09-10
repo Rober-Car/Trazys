@@ -2,7 +2,40 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
-> ## ⚠️ CHECKPOINT 2026-09-10 — FUNCIONALIDAD "HORARIO" (ADMIN+CLIENTE+RULES) + FIX PERMISOS + DEPLOY PENDIENTE (REANUDAR AQUÍ)
+> ## ⚠️ CHECKPOINT 2026-09-10 (II) — HORARIO MULTI-TRAMO + "DÍAS ESPECIALES" + RULES DESPLEGADAS (REANUDAR AQUÍ)
+>
+> **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** Working tree **SIN commit** (NO revertir).
+> Este bloque SUSTITUYE al checkpoint 2026-09-10 (I), que queda como histórico.
+>
+> ### Estado verificado (compila; tests OK; Rules 204/204)
+> 1. **HORARIO (independiente de sesiones)** en `negocios_publicos/{negocioId}`:
+>    - `horarioCentro`: semanal con **VARIOS TRAMOS por día** (día → lista de `{apertura,cierre}`); lista vacía = cerrado.
+>    - `horarioActividades`: semanal (`idServicio`+hora).
+>    - `horarioExcepciones`: fechas concretas con **varios tramos** (`{fecha, tramos:[...]}`); lista vacía = cerrado; prioridad sobre el semanal.
+>    - El parseo (admin `HorarioSerializacion` y cliente `HorarioParseo`) **admite también el formato antiguo** (un tramo con `cerrado`) → sin pérdida de datos.
+> 2. **ADMIN:** Ajustes → NEGOCIO: "Mi negocio", "Horario del centro", "Horario de actividades".
+>    - Centro: "Aplicar a toda la semana" (tramos a los días abiertos; los cerrados se mantienen) + edición por día (añadir/editar/eliminar tramos) + validación (apertura < cierre, sin solapes) + **"Días especiales"** (terminología visible; antes "Excepciones"), con crear/editar/eliminar idéntico.
+>    - Actividades: selector de día + chips de actividades existentes + hora + CRUD (guarda `idServicio`).
+> 3. **CLIENTE:** Home con **exactamente 6 cards** en 3 filas de 2: **Reservas, Rutinas, Horario del centro, Actividades, Ajustes, Notificaciones**. Dos pantallas SEPARADAS: `HorarioCentroClienteScreen` y `ActividadesClienteScreen` (rutas `HORARIO_CENTRO` / `HORARIO_ACTIVIDADES`). En el horario del centro, si la fecha del día seleccionado tiene configuración propia, se muestra directamente su resultado ("Cerrado" o sus tramos), **sin mencionar "excepción"**. El card "Actividades" anterior se llama ahora "Reservas" (solo texto; navegación a `Routes.CLASES` intacta).
+> 4. **Notificación `CAMBIO_HORARIO`:** switch en `configuracion_notificaciones/{id}.cambioHorario.activa`; guardar el horario del **CENTRO** crea `notificaciones` tipo `CAMBIO_HORARIO` (TODOS) si está activo. El horario de **ACTIVIDADES NO notifica**.
+> 5. **Persistencia ante rotación** (`rememberSaveable` + savers propios) y estilo azul corporativo `#1E88E5`.
+> 6. **FIX de permisos:** `NegocioRepository.guardarHorario` escribe **solo** en `negocios_publicos/{id}` (antes también `negocios/{id}`, cuya regla exige `adminUid` → "No tienes permisos").
+>
+> ### Rules + DEPLOY (HECHO)
+> - `firebase.json` **ya incluye** `"firestore": { "rules": "firestore.rules" }` (además de `functions` y `hosting`).
+> - Suite completa de Rules **204/204** en emulador.
+> - **Desplegado** en `gestorpro-50e83`: ruleset `078c7b83-528b-48e6-8183-ede6d4a5dc29` (updateTime `2026-09-10T15:15:05Z`). Verificado por API: SHA-256 remoto == local.
+> - Warnings de compilación de Rules (inofensivos): patrón ternario null (L61) y funciones no usadas `sesionDelNegocio` / `sesionAccesiblePorCliente`.
+>
+> ### Verificación de la tanda
+> `:app` (**190 tests**) y `:appCliente` (**33 tests**): `assembleDebug` + `testDebugUnitTest` OK. Rules 204/204. `git diff --check` limpio (solo el log del emulador tiene trailing whitespace).
+>
+> ### Para reanudar
+> 1. Probar en dispositivo el guardado real de horario (centro multi-tramo, días especiales, actividades).
+> 2. Decidir commit agrupado del working tree (no hay commit nuestro).
+> 3. (Opcional) Añadir `firestore-tests/firestore-debug.log` a `.gitignore`.
+
+> ## 🗄️ CHECKPOINT 2026-09-10 (I) — HORARIO (modelo antiguo, un tramo) + DEPLOY PENDIENTE (HISTÓRICO)
 >
 > **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** El working tree conserva **SIN commit**
 > 25 cambios (**NO revertir**; lista en `git status`). Sin commit/push/deploy nuestros.

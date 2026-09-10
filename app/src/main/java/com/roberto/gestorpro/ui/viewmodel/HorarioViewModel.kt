@@ -81,7 +81,7 @@ class HorarioViewModel @Inject constructor(
 
     /** Guarda el horario del centro (semanal + excepciones) y, si procede, avisa. */
     fun guardarCentro(
-        centro: Map<DayOfWeek, TramoHorario>,
+        centro: Map<DayOfWeek, List<TramoHorario>>,
         excepciones: List<ExcepcionHorario>
     ) {
         guardar(

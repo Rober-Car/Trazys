@@ -31,9 +31,10 @@ import com.roberto.gestorpro.cliente.ui.auth.MiPerfilScreen
 import com.roberto.gestorpro.cliente.ui.auth.RecuperarPasswordScreen
 import com.roberto.gestorpro.cliente.ui.auth.RegistroScreen
 import com.roberto.gestorpro.cliente.ui.home.AsistentesSesionScreen
+import com.roberto.gestorpro.cliente.ui.home.ActividadesClienteScreen
 import com.roberto.gestorpro.cliente.ui.home.ClasesScreen
 import com.roberto.gestorpro.cliente.ui.home.HomeScreen
-import com.roberto.gestorpro.cliente.ui.home.HorarioScreen
+import com.roberto.gestorpro.cliente.ui.home.HorarioCentroClienteScreen
 import com.roberto.gestorpro.cliente.ui.notificaciones.ListaNotificacionesScreen
 import com.roberto.gestorpro.cliente.ui.rutinas.RutinasScreen
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
@@ -144,8 +145,12 @@ fun AppNavigation() {
             RutinasScreen(navController)
         }
 
-        composable(Routes.HORARIO) {
-            HorarioScreen(navController)
+        composable(Routes.HORARIO_CENTRO) {
+            HorarioCentroClienteScreen(navController)
+        }
+
+        composable(Routes.HORARIO_ACTIVIDADES) {
+            ActividadesClienteScreen(navController)
         }
 
         composable(Routes.POLITICA_PRIVACIDAD) {

@@ -91,7 +91,10 @@ class NegocioRepository @Inject constructor(
             if (!documento.exists()) return HorarioNegocio()
             HorarioNegocio(
                 centro = HorarioParseo.mapaACentro(documento.get("horarioCentro")),
-                actividades = HorarioParseo.mapaAActividades(documento.get("horarioActividades"))
+                actividades = HorarioParseo.mapaAActividades(documento.get("horarioActividades")),
+                excepciones = HorarioParseo.listaAExcepciones(
+                    documento.get("horarioExcepciones")
+                )
             )
         } catch (_: Exception) {
             HorarioNegocio()

@@ -22,6 +22,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -105,6 +106,9 @@ fun HomeScreen(
     val textoCardHorarioDesc = stringResource(R.string.home_card_horario_descripcion)
     val textoCardRutinas = stringResource(R.string.home_card_rutinas)
     val textoCardRutinasDesc = stringResource(R.string.home_card_rutinas_descripcion)
+    val textoCardActividadesHorario = stringResource(R.string.home_card_horario_actividades)
+    val textoCardActividadesHorarioDesc =
+        stringResource(R.string.home_card_horario_actividades_descripcion)
     val textoCardAjustes = stringResource(R.string.home_card_ajustes)
     val textoCardAjustesDesc = stringResource(R.string.home_card_ajustes_descripcion)
     val textoCardNotificaciones = stringResource(R.string.home_card_notificaciones)
@@ -292,30 +296,17 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                // Solo un cliente ACTIVO accede a las clases/actividades. La
-                // morosidad (PAGO_VENCIDO) es independiente: sigue siendo ACTIVO.
-                val puedeVerClases =
-                    estadoHome.estado == EstadoIndicadorCliente.ACTIVO ||
-                        estadoHome.estado == EstadoIndicadorCliente.PAGO_VENCIDO
-                if (puedeVerClases) {
-                    item {
-                        HomeClientMenuCard(
-                            titulo = textoCardActividades,
-                            descripcion = textoCardActividadesDesc,
-                            icono = Icons.Default.FitnessCenter,
-                            color = Color(0xFFFB8C00),
-                            onClick = { navController.navigate(Routes.CLASES) }
-                        )
-                    }
-                    item {
-                        HomeClientMenuCard(
-                            titulo = textoCardHorario,
-                            descripcion = textoCardHorarioDesc,
-                            icono = Icons.Default.Schedule,
-                            color = Color(0xFF1E88E5),
-                            onClick = { navController.navigate(Routes.HORARIO) }
-                        )
-                    }
+                // Home con exactamente 6 cards en 3 filas de 2:
+                // Reservas · Rutinas / Horario del centro · Actividades /
+                // Ajustes · Notificaciones.
+                item {
+                    HomeClientMenuCard(
+                        titulo = textoCardActividades,
+                        descripcion = textoCardActividadesDesc,
+                        icono = Icons.Default.FitnessCenter,
+                        color = Color(0xFFFB8C00),
+                        onClick = { navController.navigate(Routes.CLASES) }
+                    )
                 }
                 item {
                     HomeClientMenuCard(
@@ -324,6 +315,24 @@ fun HomeScreen(
                         icono = Icons.Default.FitnessCenter,
                         color = Color(0xFF26A69A),
                         onClick = { navController.navigate(Routes.RUTINAS) }
+                    )
+                }
+                item {
+                    HomeClientMenuCard(
+                        titulo = textoCardHorario,
+                        descripcion = textoCardHorarioDesc,
+                        icono = Icons.Default.Schedule,
+                        color = Color(0xFF1E88E5),
+                        onClick = { navController.navigate(Routes.HORARIO_CENTRO) }
+                    )
+                }
+                item {
+                    HomeClientMenuCard(
+                        titulo = textoCardActividadesHorario,
+                        descripcion = textoCardActividadesHorarioDesc,
+                        icono = Icons.Default.EventNote,
+                        color = Color(0xFF1E88E5),
+                        onClick = { navController.navigate(Routes.HORARIO_ACTIVIDADES) }
                     )
                 }
                 item {

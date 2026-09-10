@@ -5,11 +5,10 @@ import java.time.DayOfWeek
 /**
  * TramoHorario
  * ------------
- * Horario de un día para el centro: abierto/cerrado y, si está abierto, la
- * hora de apertura y de cierre en formato "HH:mm". Un único tramo por día.
+ * Un tramo de apertura/cierre del centro en formato "HH:mm". Un día puede tener
+ * 0, 1 o varios tramos (p. ej. 10:00-13:00 y 17:00-22:00).
  */
 data class TramoHorario(
-    val cerrado: Boolean = false,
     val apertura: String = "",
     val cierre: String = ""
 )
@@ -32,27 +31,28 @@ data class ActividadHorario(
  * Excepción para una FECHA concreta (festivo, cierre especial, horario
  * especial...). Tiene PRIORIDAD sobre el horario semanal del día que
  * corresponda. `fecha` es la medianoche local del día concreto en epoch millis.
- * Se guarda SEPARADA del horario semanal y NUNCA lo modifica.
+ * Admite varios tramos; una lista vacía significa CERRADO. Se guarda SEPARADA
+ * del horario semanal y NUNCA lo modifica.
  */
 data class ExcepcionHorario(
     val fecha: Long,
-    val cerrado: Boolean = false,
-    val apertura: String = "",
-    val cierre: String = ""
-)
+    val tramos: List<TramoHorario> = emptyList()
+) {
+    val cerrado: Boolean get() = tramos.isEmpty()
+}
 
 /**
  * HorarioNegocio
  * --------------
  * Horario configurable del negocio, INDEPENDIENTE de las sesiones:
- *  - centro: horario semanal general (un tramo por día);
+ *  - centro: horario semanal general (varios tramos por día; lista vacía = cerrado);
  *  - actividades: horario semanal de actividades (varias por día permitidas);
  *  - excepciones: días concretos con prioridad sobre el horario semanal.
  * Si no hay configuración, todo está vacío (compatibilidad con negocios
  * existentes).
  */
 data class HorarioNegocio(
-    val centro: Map<DayOfWeek, TramoHorario> = emptyMap(),
+    val centro: Map<DayOfWeek, List<TramoHorario>> = emptyMap(),
     val actividades: Map<DayOfWeek, List<ActividadHorario>> = emptyMap(),
     val excepciones: List<ExcepcionHorario> = emptyList()
 )
@@ -63,17 +63,20 @@ data class HorarioNegocio(
  * Conversión entre el modelo de horario y los mapas que se guardan en
  * Firestore (negocios/{id} y negocios_publicos/{id}). Las claves de día son el
  * nombre del enum (MONDAY..SUNDAY), estables e independientes del idioma.
+ *
+ * Formato nuevo (varios tramos):
+ *   horarioCentro: { "MONDAY": [ {apertura, cierre}, ... ], ... }  (lista vacía = cerrado)
+ *   horarioExcepciones: [ {fecha, tramos:[{apertura,cierre},...]}, ... ]
+ * Formato antiguo (un tramo): { "MONDAY": {cerrado, apertura, cierre}, ... } y
+ * excepciones {fecha, cerrado, apertura, cierre}. El parseo admite AMBOS para
+ * no perder datos existentes.
  */
 object HorarioSerializacion {
 
-    /** Convierte el horario del centro al mapa remoto. */
-    fun centroAMapa(centro: Map<DayOfWeek, TramoHorario>): Map<String, Any> =
-        centro.entries.associate { (dia, tramo) ->
-            dia.name to mapOf(
-                "cerrado" to tramo.cerrado,
-                "apertura" to tramo.apertura,
-                "cierre" to tramo.cierre
-            )
+    /** Convierte el horario del centro al mapa remoto (varios tramos por día). */
+    fun centroAMapa(centro: Map<DayOfWeek, List<TramoHorario>>): Map<String, Any> =
+        centro.entries.associate { (dia, tramos) ->
+            dia.name to tramos.map { tramoAMapa(it) }
         }
 
     /** Convierte el horario de actividades al mapa remoto. */
@@ -94,24 +97,17 @@ object HorarioSerializacion {
         excepciones.sortedBy { it.fecha }.map { excepcion ->
             mapOf(
                 "fecha" to excepcion.fecha,
-                "cerrado" to excepcion.cerrado,
-                "apertura" to excepcion.apertura,
-                "cierre" to excepcion.cierre
+                "tramos" to excepcion.tramos.map { tramoAMapa(it) }
             )
         }
 
     /** Reconstruye el horario del centro desde el valor remoto (fail-open). */
-    fun mapaACentro(valor: Any?): Map<DayOfWeek, TramoHorario> {
+    fun mapaACentro(valor: Any?): Map<DayOfWeek, List<TramoHorario>> {
         val mapa = valor as? Map<*, *> ?: return emptyMap()
-        val resultado = mutableMapOf<DayOfWeek, TramoHorario>()
-        mapa.forEach { (clave, tramo) ->
+        val resultado = mutableMapOf<DayOfWeek, List<TramoHorario>>()
+        mapa.forEach { (clave, tramos) ->
             val dia = diaDe(clave?.toString()) ?: return@forEach
-            val datos = tramo as? Map<*, *>
-            resultado[dia] = TramoHorario(
-                cerrado = (datos?.get("cerrado") as? Boolean) ?: false,
-                apertura = datos?.get("apertura") as? String ?: "",
-                cierre = datos?.get("cierre") as? String ?: ""
-            )
+            resultado[dia] = tramosDe(tramos)
         }
         return resultado
     }
@@ -143,13 +139,58 @@ object HorarioSerializacion {
         return lista.mapNotNull { entrada ->
             val datos = entrada as? Map<*, *> ?: return@mapNotNull null
             val fecha = (datos["fecha"] as? Number)?.toLong() ?: return@mapNotNull null
-            ExcepcionHorario(
-                fecha = fecha,
-                cerrado = (datos["cerrado"] as? Boolean) ?: false,
-                apertura = datos["apertura"] as? String ?: "",
-                cierre = datos["cierre"] as? String ?: ""
-            )
+            val tramos = if (datos.containsKey("tramos")) {
+                tramosDe(datos["tramos"])
+            } else {
+                // Formato antiguo: un único tramo o cerrado.
+                val cerrado = (datos["cerrado"] as? Boolean) ?: false
+                if (cerrado) {
+                    emptyList()
+                } else {
+                    listOf(
+                        TramoHorario(
+                            apertura = datos["apertura"] as? String ?: "",
+                            cierre = datos["cierre"] as? String ?: ""
+                        )
+                    )
+                }
+            }
+            ExcepcionHorario(fecha = fecha, tramos = tramos)
         }.sortedBy { it.fecha }
+    }
+
+    /** Convierte un tramo a su mapa remoto. */
+    private fun tramoAMapa(tramo: TramoHorario): Map<String, Any> =
+        mapOf("apertura" to tramo.apertura, "cierre" to tramo.cierre)
+
+    /**
+     * Interpreta un valor remoto de día como lista de tramos. Admite el formato
+     * nuevo (lista) y el antiguo (mapa cerrado/apertura/cierre).
+     */
+    private fun tramosDe(valor: Any?): List<TramoHorario> {
+        return when (valor) {
+            is List<*> -> valor.mapNotNull { entrada ->
+                val datos = entrada as? Map<*, *> ?: return@mapNotNull null
+                TramoHorario(
+                    apertura = datos["apertura"] as? String ?: "",
+                    cierre = datos["cierre"] as? String ?: ""
+                )
+            }
+            is Map<*, *> -> {
+                val cerrado = (valor["cerrado"] as? Boolean) ?: false
+                if (cerrado) {
+                    emptyList()
+                } else {
+                    listOf(
+                        TramoHorario(
+                            apertura = valor["apertura"] as? String ?: "",
+                            cierre = valor["cierre"] as? String ?: ""
+                        )
+                    )
+                }
+            }
+            else -> emptyList()
+        }
     }
 
     private fun diaDe(nombre: String?): DayOfWeek? =

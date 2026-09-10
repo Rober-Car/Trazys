@@ -109,11 +109,20 @@ object Routes {
     const val RUTINAS = "rutinas"
 
     /**
-     * HORARIO
-     * -------
-     * Horario del centro y de actividades (solo clientes vinculados y activos).
+     * HORARIO_CENTRO
+     * --------------
+     * Horario semanal de apertura/cierre del centro con sus excepciones
+     * (solo clientes vinculados y activos).
      */
-    const val HORARIO = "horario"
+    const val HORARIO_CENTRO = "horario_centro"
+
+    /**
+     * HORARIO_ACTIVIDADES
+     * -------------------
+     * Horario semanal de las actividades del centro (independiente de las
+     * sesiones; solo clientes vinculados y activos).
+     */
+    const val HORARIO_ACTIVIDADES = "horario_actividades"
 
     /** Destino visual provisional de la política de privacidad. */
     const val POLITICA_PRIVACIDAD = "politica_privacidad"

@@ -199,9 +199,16 @@
     <string name="home_card_notificaciones_descripcion">Consulta tus avisos</string>
 
     <!-- ===== Horario (centro y actividades) ===== -->
-    <string name="home_card_horario">Horario</string>
-    <string name="home_card_horario_descripcion">Horario del centro y actividades</string>
+    <string name="home_card_horario">Horario del centro</string>
+    <string name="home_card_horario_descripcion">Apertura y cierre del centro</string>
+    <string name="home_card_horario_actividades">Actividades</string>
+    <string name="home_card_horario_actividades_descripcion">Horarios habituales de las actividades del centro</string>
     <string name="horario_titulo">Horario</string>
+    <string name="horario_titulo_centro">Horario del centro</string>
+    <string name="horario_titulo_actividades">Actividades</string>
+    <string name="horario_subtitulo_actividades">Horarios habituales de las actividades del centro</string>
+    <string name="horario_proximas_excepciones">Horarios especiales</string>
+    <string name="horario_sin_excepciones">No hay horarios especiales programados.</string>
     <string name="horario_centro_titulo">HORARIO DEL CENTRO</string>
     <string name="horario_actividades_titulo">HORARIO DE ACTIVIDADES</string>
     <string name="horario_sin_configurar">El centro aún no ha configurado su horario.</string>

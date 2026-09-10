@@ -108,7 +108,7 @@ fun ConfiguracionScreen(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 AjusteAdminItem(
                     titulo = "Horario del centro",
-                    descripcion = "Días, apertura, cierre y excepciones",
+                    descripcion = "Días, apertura, cierre y días especiales",
                     icono = Icons.Default.Schedule,
                     colorAcento = Color(0xFF1E88E5),
                     onClick = { navController.navigate(Routes.HORARIO_CENTRO) }

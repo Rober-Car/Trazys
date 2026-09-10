@@ -69,11 +69,12 @@ private val AzulTrazys = Color(0xFF1E88E5)
 /**
  * HorarioCentroScreen
  * -------------------
- * Configuración del horario del centro:
- *  - aplicación rápida de un horario a TODA la semana (días abiertos);
- *  - horario semanal habitual (un tramo apertura/cierre por día, o cerrado);
+ * Configuración del horario del centro con VARIOS tramos por día:
+ *  - aplicación global de tramos a toda la semana (días abiertos);
+ *  - horario semanal habitual (0, 1 o varios tramos por día; sin tramos = cerrado);
  *  - excepciones para FECHAS concretas con prioridad sobre el semanal.
- * Todo el estado del formulario se conserva ante rotación.
+ * Valida que apertura < cierre y que no haya tramos solapados. Todo el estado
+ * del formulario se conserva ante rotación.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,35 +98,44 @@ fun HorarioCentroScreen(
         }
     }
 
-    // Estado del formulario (persistente ante cambios de configuración).
     var precargado by rememberSaveable { mutableStateOf(false) }
     var centro by rememberSaveable(stateSaver = SaverCentro) {
-        mutableStateOf(mapOf<DayOfWeek, TramoHorario>())
+        mutableStateOf(mapOf<DayOfWeek, List<TramoHorario>>())
     }
     var excepciones by rememberSaveable(stateSaver = SaverExcepciones) {
         mutableStateOf(listOf<ExcepcionHorario>())
     }
-    var aperturaGlobal by rememberSaveable { mutableStateOf("09:00") }
-    var cierreGlobal by rememberSaveable { mutableStateOf("21:00") }
+    var globalTramos by rememberSaveable(stateSaver = SaverTramos) {
+        mutableStateOf(listOf(TramoHorario("09:00", "21:00")))
+    }
+    var errorValidacion by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(cargado) {
         if (cargado && !precargado) {
-            centro = horario.centro
+            centro = if (horario.centro.isEmpty()) {
+                // Editor utilizable desde el primer momento: semana abierta por
+                // defecto. Solo se persiste si el ADMIN guarda.
+                diasSemana.associateWith { listOf(TramoHorario("09:00", "21:00")) }
+            } else {
+                horario.centro
+            }
             excepciones = horario.excepciones
             precargado = true
         }
     }
 
-    var seleccion by remember { mutableStateOf<Pair<DayOfWeek, Boolean>?>(null) }
-    var timePickerGlobal by remember { mutableStateOf<Boolean?>(null) }
+    // Selección de hora: día + índice de tramo + si es apertura.
+    var seleccion by remember { mutableStateOf<Triple<DayOfWeek, Int, Boolean>?>(null) }
+    // Selección de hora del bloque global: índice + si es apertura.
+    var seleccionGlobal by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+
+    // Estado del diálogo de excepción.
     var mostrarDatePickerExcepcion by remember { mutableStateOf(false) }
     var dialogoExcepcionAbierto by remember { mutableStateOf(false) }
     var indiceExcepcionEditando by remember { mutableStateOf<Int?>(null) }
     var excFecha by remember { mutableStateOf<Long?>(null) }
-    var excCerrado by remember { mutableStateOf(false) }
-    var excApertura by remember { mutableStateOf("09:00") }
-    var excCierre by remember { mutableStateOf("21:00") }
-    var timePickerExcepcion by remember { mutableStateOf<Boolean?>(null) }
+    var excTramos by remember { mutableStateOf(listOf<TramoHorario>()) }
+    var seleccionExcepcion by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
         Column(
@@ -144,19 +154,16 @@ fun HorarioCentroScreen(
                 AppNavigationBackButton(onClick = { navController.popBackStack() })
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
+                    Text("Horario del centro", style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = "Horario del centro",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = "Horario semanal y excepciones",
+                        "Horario semanal y días especiales",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
                 }
             }
 
-            // --- Aplicar a toda la semana ---
+            // --- Aplicar a toda la semana (configuración global separada) ---
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -167,71 +174,82 @@ fun HorarioCentroScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = "Aplicar horario a toda la semana",
+                        "Aplicar horario a toda la semana",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Aplica la misma apertura y cierre a todos los días " +
-                            "abiertos. Después puedes ajustar cada día.",
+                        "Define aquí los tramos una sola vez y aplícalos a todos los " +
+                            "días abiertos. Los días cerrados se mantienen cerrados.",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        CampoHora(
-                            etiqueta = "Apertura",
-                            valor = aperturaGlobal,
-                            onClick = { timePickerGlobal = true },
-                            modifier = Modifier.weight(1f)
-                        )
-                        CampoHora(
-                            etiqueta = "Cierre",
-                            valor = cierreGlobal,
-                            onClick = { timePickerGlobal = false },
-                            modifier = Modifier.weight(1f)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ListaTramosEditor(
+                        tramos = globalTramos,
+                        onEditar = { indice, esApertura -> seleccionGlobal = indice to esApertura },
+                        onEliminar = { indice ->
+                            globalTramos = globalTramos.toMutableList().also { it.removeAt(indice) }
+                        }
+                    )
+                    TextButton(onClick = {
+                        globalTramos = globalTramos + TramoHorario("09:00", "21:00")
+                    }) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = AzulTrazys)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Añadir tramo", color = AzulTrazys)
+                    }
+                    val errorGlobal = validarTramos(globalTramos)
+                    if (errorGlobal != null) {
+                        Text(
+                            errorGlobal,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    TextButton(onClick = {
-                        centro = centro.toMutableMap().also { mapa ->
-                            diasSemana.forEach { dia ->
-                                val tramo = mapa[dia] ?: TramoHorario()
-                                if (!tramo.cerrado) {
-                                    mapa[dia] = tramo.copy(
-                                        apertura = aperturaGlobal,
-                                        cierre = cierreGlobal
-                                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    AppPrimaryButton(
+                        text = "Aplicar a toda la semana",
+                        onClick = {
+                            val error = validarTramos(globalTramos)
+                            if (error != null) {
+                                errorValidacion = error
+                            } else {
+                                errorValidacion = null
+                                centro = centro.toMutableMap().also { mapa ->
+                                    diasSemana.forEach { dia ->
+                                        val abierto = (mapa[dia]?.isNotEmpty() == true)
+                                        if (abierto) {
+                                            mapa[dia] = globalTramos.map { it.copy() }
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }) {
-                        Text("Aplicar a toda la semana")
-                    }
+                        },
+                        fullWidth = true
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Horario habitual",
+                "Horario habitual",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AzulTrazys
             )
             Text(
-                text = "Configura para cada día si el centro está abierto y su hora " +
-                    "de apertura y cierre.",
+                "Configura para cada día si el centro está abierto y sus tramos. " +
+                    "Puedes añadir varios tramos por día.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
             diasSemana.forEach { dia ->
-                val tramo = centro[dia] ?: TramoHorario()
+                val tramos = centro[dia] ?: emptyList()
+                val abierto = tramos.isNotEmpty()
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -243,21 +261,25 @@ fun HorarioCentroScreen(
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = nombreDia(dia),
+                                nombreDia(dia),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
-                                text = if (tramo.cerrado) "Cerrado" else "Abierto",
+                                if (abierto) "Abierto" else "Cerrado",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.Gray
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Switch(
-                                checked = !tramo.cerrado,
-                                onCheckedChange = { abierto ->
-                                    centro = centro + (dia to tramo.copy(cerrado = !abierto))
+                                checked = abierto,
+                                onCheckedChange = { activar ->
+                                    centro = centro + (dia to if (activar) {
+                                        listOf(TramoHorario("09:00", "21:00"))
+                                    } else {
+                                        emptyList()
+                                    })
                                 },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
@@ -265,24 +287,35 @@ fun HorarioCentroScreen(
                                 )
                             )
                         }
-                        if (!tramo.cerrado) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                CampoHora(
-                                    etiqueta = "Apertura",
-                                    valor = tramo.apertura,
-                                    onClick = { seleccion = dia to true },
-                                    modifier = Modifier.weight(1f)
+                        if (abierto) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            ListaTramosEditor(
+                                tramos = tramos,
+                                onEditar = { indice, esApertura ->
+                                    seleccion = Triple(dia, indice, esApertura)
+                                },
+                                onEliminar = { indice ->
+                                    val nueva = tramos.toMutableList().also { it.removeAt(indice) }
+                                    centro = centro + (dia to nueva)
+                                }
+                            )
+                            TextButton(onClick = {
+                                centro = centro + (dia to (tramos + TramoHorario("09:00", "21:00")))
+                            }) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = AzulTrazys
                                 )
-                                CampoHora(
-                                    etiqueta = "Cierre",
-                                    valor = tramo.cierre,
-                                    onClick = { seleccion = dia to false },
-                                    modifier = Modifier.weight(1f)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Añadir tramo", color = AzulTrazys)
+                            }
+                            val errorDia = validarTramos(tramos)
+                            if (errorDia != null) {
+                                Text(
+                                    errorDia,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
                                 )
                             }
                         }
@@ -293,13 +326,13 @@ fun HorarioCentroScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Excepciones (días concretos)",
+                "Días especiales",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = AzulTrazys
             )
             Text(
-                text = "Festivos, cierres u horarios especiales para una fecha concreta. " +
+                "Festivos, cierres u horarios especiales para una fecha concreta. " +
                     "Tienen prioridad sobre el horario habitual de ese día.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
@@ -308,7 +341,7 @@ fun HorarioCentroScreen(
 
             if (excepciones.isEmpty()) {
                 Text(
-                    text = "No hay excepciones configuradas.",
+                    "No hay días especiales configurados.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -331,16 +364,12 @@ fun HorarioCentroScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = formatearFecha(excepcion.fecha),
+                                    formatearFecha(excepcion.fecha),
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = if (excepcion.cerrado) {
-                                        "Cerrado"
-                                    } else {
-                                        "${excepcion.apertura} - ${excepcion.cierre}"
-                                    },
+                                    resumenTramos(excepcion.tramos),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.Gray
                                 )
@@ -348,14 +377,12 @@ fun HorarioCentroScreen(
                             IconButton(onClick = {
                                 indiceExcepcionEditando = indice
                                 excFecha = excepcion.fecha
-                                excCerrado = excepcion.cerrado
-                                excApertura = excepcion.apertura.ifBlank { "09:00" }
-                                excCierre = excepcion.cierre.ifBlank { "21:00" }
+                                excTramos = excepcion.tramos
                                 dialogoExcepcionAbierto = true
                             }) {
                                 Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Editar excepción",
+                                    Icons.Default.Edit,
+                                    contentDescription = "Editar día especial",
                                     tint = AzulTrazys
                                 )
                             }
@@ -365,8 +392,8 @@ fun HorarioCentroScreen(
                                 }
                             }) {
                                 Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar excepción",
+                                    Icons.Default.Delete,
+                                    contentDescription = "Eliminar día especial",
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -380,20 +407,18 @@ fun HorarioCentroScreen(
             TextButton(onClick = {
                 indiceExcepcionEditando = null
                 excFecha = null
-                excCerrado = false
-                excApertura = "09:00"
-                excCierre = "21:00"
+                excTramos = listOf(TramoHorario("09:00", "21:00"))
                 mostrarDatePickerExcepcion = true
             }) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = AzulTrazys)
+                Icon(Icons.Default.Add, contentDescription = null, tint = AzulTrazys)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Añadir excepción", color = AzulTrazys)
+                Text("Añadir día especial", color = AzulTrazys)
             }
 
-            error?.let {
+            (errorValidacion ?: error)?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = it,
+                    it,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -403,7 +428,24 @@ fun HorarioCentroScreen(
 
             AppPrimaryButton(
                 text = if (guardando) "Guardando..." else "Guardar horario",
-                onClick = { viewModel.guardarCentro(centro, excepciones) },
+                onClick = {
+                    val errorDia = centro.entries
+                        .mapNotNull { (dia, tramos) -> validarTramos(tramos)?.let { "$dia" } }
+                        .firstOrNull()
+                    val errorExc = excepciones
+                        .mapNotNull { validarTramos(it.tramos) }
+                        .firstOrNull()
+                    if (errorDia != null || errorExc != null) {
+                        errorValidacion = "Revisa los tramos: la apertura debe ser anterior " +
+                            "al cierre y no puede haber solapes."
+                    } else {
+                        errorValidacion = null
+                        viewModel.guardarCentro(
+                            centro.filterValues { it.isNotEmpty() },
+                            excepciones
+                        )
+                    }
+                },
                 enabled = !guardando,
                 fullWidth = false,
                 modifier = Modifier
@@ -415,83 +457,69 @@ fun HorarioCentroScreen(
         }
     }
 
-    // --- Diálogo de hora del horario semanal ---
-    val actual = seleccion
-    if (actual != null) {
-        val (dia, esApertura) = actual
-        val tramo = centro[dia] ?: TramoHorario()
-        val valor = if (esApertura) tramo.apertura else tramo.cierre
-        val partes = valor.split(":")
-        val timePickerState = rememberTimePickerState(
-            initialHour = partes.getOrNull(0)?.toIntOrNull() ?: if (esApertura) 9 else 21,
-            initialMinute = partes.getOrNull(1)?.toIntOrNull() ?: 0,
-            is24Hour = true
-        )
-        AlertDialog(
-            onDismissRequest = { seleccion = null },
-            confirmButton = {
-                TextButton(onClick = {
-                    val h = timePickerState.hour.toString().padStart(2, '0')
-                    val m = timePickerState.minute.toString().padStart(2, '0')
-                    val hora = "$h:$m"
-                    val base = centro[dia] ?: TramoHorario()
-                    centro = centro + (dia to if (esApertura) {
-                        base.copy(apertura = hora)
+    // --- Selector de hora de un tramo diario ---
+    seleccion?.let { (dia, indice, esApertura) ->
+        val tramos = centro[dia] ?: emptyList()
+        val tramo = tramos.getOrNull(indice) ?: TramoHorario()
+        DialogoHora(
+            titulo = "${if (esApertura) "Apertura" else "Cierre"} · ${nombreDia(dia)}",
+            valorInicial = if (esApertura) tramo.apertura else tramo.cierre,
+            onDismiss = { seleccion = null },
+            onConfirm = { hora ->
+                val nueva = tramos.toMutableList()
+                if (indice < nueva.size) {
+                    nueva[indice] = if (esApertura) {
+                        nueva[indice].copy(apertura = hora)
                     } else {
-                        base.copy(cierre = hora)
-                    })
-                    seleccion = null
-                }) { Text("Aceptar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { seleccion = null }) { Text("Cancelar") }
-            },
-            title = {
-                Text("${if (esApertura) "Apertura" else "Cierre"} · ${nombreDia(dia)}")
-            },
-            text = {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TimePicker(state = timePickerState)
+                        nueva[indice].copy(cierre = hora)
+                    }
+                    centro = centro + (dia to nueva)
                 }
+                seleccion = null
             }
         )
     }
 
-    // --- Diálogo de hora global ---
-    val global = timePickerGlobal
-    if (global != null) {
-        val valor = if (global) aperturaGlobal else cierreGlobal
-        val partes = valor.split(":")
-        val timePickerState = rememberTimePickerState(
-            initialHour = partes.getOrNull(0)?.toIntOrNull() ?: if (global) 9 else 21,
-            initialMinute = partes.getOrNull(1)?.toIntOrNull() ?: 0,
-            is24Hour = true
-        )
-        AlertDialog(
-            onDismissRequest = { timePickerGlobal = null },
-            confirmButton = {
-                TextButton(onClick = {
-                    val h = timePickerState.hour.toString().padStart(2, '0')
-                    val m = timePickerState.minute.toString().padStart(2, '0')
-                    val hora = "$h:$m"
-                    if (global) aperturaGlobal = hora else cierreGlobal = hora
-                    timePickerGlobal = null
-                }) { Text("Aceptar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { timePickerGlobal = null }) { Text("Cancelar") }
-            },
-            title = { Text(if (global) "Apertura (toda la semana)" else "Cierre (toda la semana)") },
-            text = {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TimePicker(state = timePickerState)
+    // --- Selector de hora del bloque global ---
+    seleccionGlobal?.let { (indice, esApertura) ->
+        val tramo = globalTramos.getOrNull(indice) ?: TramoHorario()
+        DialogoHora(
+            titulo = if (esApertura) "Apertura (toda la semana)" else "Cierre (toda la semana)",
+            valorInicial = if (esApertura) tramo.apertura else tramo.cierre,
+            onDismiss = { seleccionGlobal = null },
+            onConfirm = { hora ->
+                val nueva = globalTramos.toMutableList()
+                if (indice < nueva.size) {
+                    nueva[indice] = if (esApertura) {
+                        nueva[indice].copy(apertura = hora)
+                    } else {
+                        nueva[indice].copy(cierre = hora)
+                    }
+                    globalTramos = nueva
                 }
+                seleccionGlobal = null
+            }
+        )
+    }
+
+    // --- Selector de hora de un tramo de excepción ---
+    seleccionExcepcion?.let { (indice, esApertura) ->
+        val tramo = excTramos.getOrNull(indice) ?: TramoHorario()
+        DialogoHora(
+            titulo = if (esApertura) "Apertura" else "Cierre",
+            valorInicial = if (esApertura) tramo.apertura else tramo.cierre,
+            onDismiss = { seleccionExcepcion = null },
+            onConfirm = { hora ->
+                val nueva = excTramos.toMutableList()
+                if (indice < nueva.size) {
+                    nueva[indice] = if (esApertura) {
+                        nueva[indice].copy(apertura = hora)
+                    } else {
+                        nueva[indice].copy(cierre = hora)
+                    }
+                    excTramos = nueva
+                }
+                seleccionExcepcion = null
             }
         )
     }
@@ -505,18 +533,14 @@ fun HorarioCentroScreen(
                 TextButton(
                     enabled = state.selectedDateMillis != null,
                     onClick = {
-                        state.selectedDateMillis?.let {
-                            excFecha = normalizarFechaLocal(it)
-                        }
+                        state.selectedDateMillis?.let { excFecha = normalizarFechaLocal(it) }
                         mostrarDatePickerExcepcion = false
                         dialogoExcepcionAbierto = true
                     }
                 ) { Text("Aceptar") }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarDatePickerExcepcion = false }) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { mostrarDatePickerExcepcion = false }) { Text("Cancelar") }
             }
         ) {
             DatePicker(state = state)
@@ -525,37 +549,30 @@ fun HorarioCentroScreen(
 
     // --- Detalle de la excepción ---
     if (dialogoExcepcionAbierto) {
+        val cerrado = excTramos.isEmpty()
         AlertDialog(
             onDismissRequest = { dialogoExcepcionAbierto = false },
             confirmButton = {
                 TextButton(
-                    enabled = excFecha != null,
+                    enabled = excFecha != null && validarTramos(excTramos) == null,
                     onClick = {
                         val fecha = excFecha ?: return@TextButton
-                        val nueva = ExcepcionHorario(
-                            fecha = fecha,
-                            cerrado = excCerrado,
-                            apertura = if (excCerrado) "" else excApertura,
-                            cierre = if (excCerrado) "" else excCierre
-                        )
+                        val nueva = ExcepcionHorario(fecha = fecha, tramos = excTramos)
                         val indice = indiceExcepcionEditando
-                        val lista = if (indice == null) {
+                        excepciones = if (indice == null) {
                             excepciones + nueva
                         } else {
                             excepciones.toMutableList().also { it[indice] = nueva }
-                        }
-                        excepciones = lista.sortedBy { it.fecha }
+                        }.sortedBy { it.fecha }
                         dialogoExcepcionAbierto = false
                     }
                 ) { Text("Guardar") }
             },
             dismissButton = {
-                TextButton(onClick = { dialogoExcepcionAbierto = false }) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { dialogoExcepcionAbierto = false }) { Text("Cancelar") }
             },
             title = {
-                Text(if (indiceExcepcionEditando == null) "Nueva excepción" else "Editar excepción")
+                Text(if (indiceExcepcionEditando == null) "Nuevo día especial" else "Editar día especial")
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -577,35 +594,48 @@ fun HorarioCentroScreen(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Cerrado",
+                            "Cerrado",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.weight(1f)
                         )
                         Switch(
-                            checked = excCerrado,
-                            onCheckedChange = { excCerrado = it },
+                            checked = cerrado,
+                            onCheckedChange = { marcarCerrado ->
+                                excTramos = if (marcarCerrado) {
+                                    emptyList()
+                                } else {
+                                    listOf(TramoHorario("09:00", "21:00"))
+                                }
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = AzulTrazys
                             )
                         )
                     }
-                    if (!excCerrado) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            CampoHora(
-                                etiqueta = "Apertura",
-                                valor = excApertura,
-                                onClick = { timePickerExcepcion = true },
-                                modifier = Modifier.weight(1f)
-                            )
-                            CampoHora(
-                                etiqueta = "Cierre",
-                                valor = excCierre,
-                                onClick = { timePickerExcepcion = false },
-                                modifier = Modifier.weight(1f)
+                    if (!cerrado) {
+                        ListaTramosEditor(
+                            tramos = excTramos,
+                            onEditar = { indice, esApertura ->
+                                seleccionExcepcion = indice to esApertura
+                            },
+                            onEliminar = { indice ->
+                                excTramos = excTramos.toMutableList().also { it.removeAt(indice) }
+                            }
+                        )
+                        TextButton(onClick = {
+                            excTramos = excTramos + TramoHorario("09:00", "21:00")
+                        }) {
+                            Icon(Icons.Default.Add, contentDescription = null, tint = AzulTrazys)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Añadir tramo", color = AzulTrazys)
+                        }
+                        val errorExc = validarTramos(excTramos)
+                        if (errorExc != null) {
+                            Text(
+                                errorExc,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
                     }
@@ -613,83 +643,181 @@ fun HorarioCentroScreen(
             }
         )
     }
+}
 
-    // --- Hora de una excepción ---
-    val excTime = timePickerExcepcion
-    if (excTime != null) {
-        val valor = if (excTime) excApertura else excCierre
-        val partes = valor.split(":")
-        val timePickerState = rememberTimePickerState(
-            initialHour = partes.getOrNull(0)?.toIntOrNull() ?: if (excTime) 9 else 21,
-            initialMinute = partes.getOrNull(1)?.toIntOrNull() ?: 0,
-            is24Hour = true
+/** Lista editable de tramos: cada fila muestra "apertura - cierre" con editar/eliminar. */
+@Composable
+private fun ListaTramosEditor(
+    tramos: List<TramoHorario>,
+    onEditar: (Int, Boolean) -> Unit,
+    onEliminar: (Int) -> Unit
+) {
+    if (tramos.isEmpty()) {
+        Text(
+            "Cerrado",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray,
+            modifier = Modifier.padding(vertical = 4.dp)
         )
-        AlertDialog(
-            onDismissRequest = { timePickerExcepcion = null },
-            confirmButton = {
-                TextButton(onClick = {
-                    val h = timePickerState.hour.toString().padStart(2, '0')
-                    val m = timePickerState.minute.toString().padStart(2, '0')
-                    val hora = "$h:$m"
-                    if (excTime) excApertura = hora else excCierre = hora
-                    timePickerExcepcion = null
-                }) { Text("Aceptar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { timePickerExcepcion = null }) { Text("Cancelar") }
-            },
-            title = { Text(if (excTime) "Apertura" else "Cierre") },
-            text = {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    TimePicker(state = timePickerState)
-                }
+        return
+    }
+    tramos.forEachIndexed { indice, tramo ->
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "${tramo.apertura.ifBlank { "--:--" }} - ${tramo.cierre.ifBlank { "--:--" }}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = { onEditar(indice, true) }) {
+                Icon(Icons.Default.Edit, contentDescription = "Editar apertura", tint = AzulTrazys)
             }
-        )
+            IconButton(onClick = { onEditar(indice, false) }) {
+                Icon(Icons.Default.Edit, contentDescription = "Editar cierre", tint = AzulTrazys)
+            }
+            IconButton(onClick = { onEliminar(indice) }) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Eliminar tramo",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
     }
 }
 
-/** Saver del horario semanal (mapa por día) para cambios de configuración. */
-private val SaverCentro = listSaver<Map<DayOfWeek, TramoHorario>, String>(
-    save = { mapa -> mapa.map { (dia, t) -> "${dia.name}|${t.cerrado}|${t.apertura}|${t.cierre}" } },
+/** Diálogo de selección de hora (TimePicker) reutilizable. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DialogoHora(
+    titulo: String,
+    valorInicial: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    val partes = valorInicial.split(":")
+    val state = rememberTimePickerState(
+        initialHour = partes.getOrNull(0)?.toIntOrNull() ?: 9,
+        initialMinute = partes.getOrNull(1)?.toIntOrNull() ?: 0,
+        is24Hour = true
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                val h = state.hour.toString().padStart(2, '0')
+                val m = state.minute.toString().padStart(2, '0')
+                onConfirm("$h:$m")
+            }) { Text("Aceptar") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        title = { Text(titulo) },
+        text = {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TimePicker(state = state)
+            }
+        }
+    )
+}
+
+/** "HH:mm" → minutos desde medianoche, o null si no es válido. */
+private fun horaAMinutos(hora: String): Int? {
+    val partes = hora.split(":")
+    val h = partes.getOrNull(0)?.toIntOrNull() ?: return null
+    val m = partes.getOrNull(1)?.toIntOrNull() ?: return null
+    if (h !in 0..23 || m !in 0..59) return null
+    return h * 60 + m
+}
+
+/**
+ * Valida una lista de tramos: cada apertura < cierre y sin solapes. Devuelve el
+ * mensaje de error o null si es correcta.
+ */
+private fun validarTramos(tramos: List<TramoHorario>): String? {
+    val rangos = mutableListOf<Pair<Int, Int>>()
+    tramos.forEach { tramo ->
+        val apertura = horaAMinutos(tramo.apertura)
+        val cierre = horaAMinutos(tramo.cierre)
+        if (apertura == null || cierre == null) {
+            return "Indica una hora de apertura y cierre válidas."
+        }
+        if (apertura >= cierre) {
+            return "La apertura debe ser anterior al cierre."
+        }
+        rangos += apertura to cierre
+    }
+    val ordenados = rangos.sortedBy { it.first }
+    for (i in 0 until ordenados.size - 1) {
+        if (ordenados[i].second > ordenados[i + 1].first) {
+            return "Hay tramos que se solapan."
+        }
+    }
+    return null
+}
+
+/** Resumen legible de los tramos de una excepción. */
+private fun resumenTramos(tramos: List<TramoHorario>): String {
+    if (tramos.isEmpty()) return "Cerrado"
+    return tramos.joinToString(" · ") { "${it.apertura} - ${it.cierre}" }
+}
+
+/** Saver del horario semanal (varios tramos por día) para cambios de configuración. */
+private val SaverCentro = listSaver<Map<DayOfWeek, List<TramoHorario>>, String>(
+    save = { mapa ->
+        mapa.flatMap { (dia, tramos) ->
+            tramos.map { "${dia.name}|${it.apertura}|${it.cierre}" }
+        }
+    },
     restore = { lista ->
         lista.mapNotNull { fila ->
             val partes = fila.split("|")
-            if (partes.size == 4) {
+            if (partes.size == 3) {
                 runCatching { DayOfWeek.valueOf(partes[0]) }.getOrNull()?.let { dia ->
-                    dia to TramoHorario(
-                        cerrado = partes[1].toBoolean(),
-                        apertura = partes[2],
-                        cierre = partes[3]
-                    )
+                    dia to TramoHorario(partes[1], partes[2])
                 }
             } else {
                 null
             }
-        }.toMap()
+        }.groupBy({ it.first }, { it.second })
     }
 )
 
-/** Saver de las excepciones para cambios de configuración. */
-private val SaverExcepciones = listSaver<List<ExcepcionHorario>, String>(
-    save = { lista -> lista.map { "${it.fecha}|${it.cerrado}|${it.apertura}|${it.cierre}" } },
-    restore = { lista ->
-        lista.mapNotNull { fila ->
+/** Saver de la lista global de tramos. */
+private val SaverTramos = listSaver<List<TramoHorario>, String>(
+    save = { tramos -> tramos.map { "${it.apertura}|${it.cierre}" } },
+    restore = { filas ->
+        filas.mapNotNull { fila ->
             val partes = fila.split("|")
-            if (partes.size == 4) {
-                partes[0].toLongOrNull()?.let { fecha ->
-                    ExcepcionHorario(
-                        fecha = fecha,
-                        cerrado = partes[1].toBoolean(),
-                        apertura = partes[2],
-                        cierre = partes[3]
-                    )
-                }
-            } else {
-                null
-            }
+            if (partes.size == 2) TramoHorario(partes[0], partes[1]) else null
+        }
+    }
+)
+
+/** Saver de las excepciones (fecha + varios tramos) para cambios de configuración. */
+private val SaverExcepciones = listSaver<List<ExcepcionHorario>, String>(
+    save = { lista ->
+        lista.map { excepcion ->
+            val tramos = excepcion.tramos.joinToString(",") { "${it.apertura}|${it.cierre}" }
+            "${excepcion.fecha};$tramos"
+        }
+    },
+    restore = { filas ->
+        filas.mapNotNull { fila ->
+            val partes = fila.split(";")
+            val fecha = partes.getOrNull(0)?.toLongOrNull() ?: return@mapNotNull null
+            val tramos = partes.getOrNull(1)
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.mapNotNull { tramo ->
+                    val p = tramo.split("|")
+                    if (p.size == 2) TramoHorario(p[0], p[1]) else null
+                } ?: emptyList()
+            ExcepcionHorario(fecha, tramos)
         }
     }
 )
@@ -725,26 +853,3 @@ private fun normalizarFechaLocal(utcMillis: Long): Long {
 private fun formatearFecha(millis: Long): String =
     Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
         .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-
-@Composable
-private fun CampoHora(
-    etiqueta: String,
-    valor: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = valor.ifBlank { "--:--" },
-        onValueChange = { },
-        readOnly = true,
-        enabled = false,
-        label = { Text(etiqueta) },
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = MaterialTheme.colorScheme.onSurface,
-            disabledContainerColor = Color.Transparent,
-            disabledBorderColor = MaterialTheme.colorScheme.outline,
-            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-        ),
-        modifier = modifier.clickable { onClick() }
-    )
-}
