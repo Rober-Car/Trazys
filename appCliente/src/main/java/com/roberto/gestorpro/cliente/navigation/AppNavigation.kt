@@ -33,6 +33,7 @@ import com.roberto.gestorpro.cliente.ui.auth.RegistroScreen
 import com.roberto.gestorpro.cliente.ui.home.AsistentesSesionScreen
 import com.roberto.gestorpro.cliente.ui.home.ClasesScreen
 import com.roberto.gestorpro.cliente.ui.home.HomeScreen
+import com.roberto.gestorpro.cliente.ui.home.HorarioScreen
 import com.roberto.gestorpro.cliente.ui.notificaciones.ListaNotificacionesScreen
 import com.roberto.gestorpro.cliente.ui.rutinas.RutinasScreen
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
@@ -141,6 +142,10 @@ fun AppNavigation() {
 
         composable(Routes.RUTINAS) {
             RutinasScreen(navController)
+        }
+
+        composable(Routes.HORARIO) {
+            HorarioScreen(navController)
         }
 
         composable(Routes.POLITICA_PRIVACIDAD) {

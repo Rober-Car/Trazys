@@ -40,12 +40,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,18 +126,24 @@ fun ProgramarSesionesScreen(
         }
     }
 
-    var desde by remember { mutableStateOf<Long?>(null) }
-    var hasta by remember { mutableStateOf<Long?>(null) }
-    var diasSeleccionados by remember { mutableStateOf(setOf<DayOfWeek>()) }
-    var horasPorDia by remember { mutableStateOf(mapOf<DayOfWeek, String>()) }
-    var aperturaReservas by remember { mutableStateOf<String?>(null) }
-    var duracion by remember { mutableStateOf("60") }
-    var capacidad by remember { mutableStateOf("20") }
+    var desde by rememberSaveable { mutableStateOf<Long?>(null) }
+    var hasta by rememberSaveable { mutableStateOf<Long?>(null) }
+    var diasSeleccionados by rememberSaveable(stateSaver = SaverDiasSeleccionados) {
+        mutableStateOf(setOf<DayOfWeek>())
+    }
+    var horasPorDia by rememberSaveable(stateSaver = SaverHorasPorDia) {
+        mutableStateOf(mapOf<DayOfWeek, String>())
+    }
+    var aperturaReservas by rememberSaveable { mutableStateOf<String?>(null) }
+    var duracion by rememberSaveable { mutableStateOf("60") }
+    var capacidad by rememberSaveable { mutableStateOf("20") }
+    var horaGlobal by rememberSaveable { mutableStateOf<String?>(null) }
 
     var mostrarDatePickerInicio by remember { mutableStateOf(false) }
     var mostrarDatePickerFin by remember { mutableStateOf(false) }
     var diaConTimePicker by remember { mutableStateOf<DayOfWeek?>(null) }
     var mostrarSelectorApertura by remember { mutableStateOf(false) }
+    var mostrarHoraGlobal by remember { mutableStateOf(false) }
 
     var errorDesde by remember { mutableStateOf(false) }
     var errorHasta by remember { mutableStateOf(false) }
@@ -287,6 +296,31 @@ fun ProgramarSesionesScreen(
                 color = if (errorDias) MaterialTheme.colorScheme.error else Color.Gray
             )
 
+            OutlinedTextField(
+                value = horaGlobal?.let { "Todos los días a las $it" } ?: "Sin hora común",
+                onValueChange = { },
+                readOnly = true,
+                enabled = false,
+                label = { Text("Hora para todos los días") },
+                supportingText = {
+                    Text("Aplica la misma hora a todos los días seleccionados")
+                },
+                trailingIcon = {
+                    Icon(Icons.Default.Schedule, contentDescription = null)
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContainerColor = Color.Transparent,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { mostrarHoraGlobal = true }
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             diasSemana.forEachIndexed { index, (dia, letra) ->
@@ -309,7 +343,9 @@ fun ProgramarSesionesScreen(
                                     diasSeleccionados + dia
                                 }
                                 if (!seleccionado && hora == null) {
-                                    horasPorDia = horasPorDia + (dia to "18:00")
+                                    // Si ya se definió una hora común, el día nuevo
+                                    // nace con esa hora; si no, se mantiene el 18:00.
+                                    horasPorDia = horasPorDia + (dia to (horaGlobal ?: "18:00"))
                                 }
                                 errorDias = false
                             },
@@ -646,6 +682,62 @@ fun ProgramarSesionesScreen(
         )
     }
 
+    if (mostrarHoraGlobal) {
+        val horaActual = horaGlobal ?: "18:00"
+        val partes = horaActual.split(":")
+        val initialHour = partes.getOrNull(0)?.toIntOrNull() ?: 18
+        val initialMinute = partes.getOrNull(1)?.toIntOrNull() ?: 0
+        // rememberTimePickerState conserva la hora elegida en el diálogo
+        // (construir TimePickerState directamente la reinicia al recomponer).
+        val timePickerState = rememberTimePickerState(
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            is24Hour = true
+        )
+
+        AlertDialog(
+            onDismissRequest = { mostrarHoraGlobal = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    val h = timePickerState.hour.toString().padStart(2, '0')
+                    val m = timePickerState.minute.toString().padStart(2, '0')
+                    val hora = "$h:$m"
+                    horaGlobal = hora
+                    if (diasSeleccionados.isNotEmpty()) {
+                        horasPorDia = horasPorDia + diasSeleccionados.associateWith { hora }
+                    }
+                    mostrarHoraGlobal = false
+                }) {
+                    Text("Aplicar a todos")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarHoraGlobal = false }) { Text("Cancelar") }
+            },
+            title = {
+                Text(
+                    text = "Hora para todos los días",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Se aplicará a todos los días seleccionados. " +
+                            "Después puedes ajustar cada día de forma individual.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    TimePicker(state = timePickerState)
+                }
+            }
+        )
+    }
+
     if (mostrarSelectorApertura) {
         val aperturaActual = aperturaReservas ?: "00:00"
         val partes = aperturaActual.split(":")
@@ -702,3 +794,37 @@ fun ProgramarSesionesScreen(
         )
     }
 }
+
+/**
+ * Saver para conservar los días seleccionados tras un cambio de configuración
+ * (por ejemplo, una rotación). Se guardan por nombre del enum, que es estable
+ * y almacenable en el estado guardado.
+ */
+private val SaverDiasSeleccionados = listSaver<Set<DayOfWeek>, String>(
+    save = { dias -> dias.map { it.name } },
+    restore = { nombres ->
+        nombres.mapNotNull { nombre ->
+            runCatching { DayOfWeek.valueOf(nombre) }.getOrNull()
+        }.toSet()
+    }
+)
+
+/**
+ * Saver para conservar la hora asignada a cada día tras un cambio de
+ * configuración (por ejemplo, una rotación). Cada entrada se guarda como
+ * "DIA=HH:MM".
+ */
+private val SaverHorasPorDia = listSaver<Map<DayOfWeek, String>, String>(
+    save = { mapa -> mapa.map { (dia, hora) -> "${dia.name}=$hora" } },
+    restore = { entradas ->
+        entradas.mapNotNull { entrada ->
+            val partes = entrada.split("=", limit = 2)
+            if (partes.size == 2) {
+                runCatching { DayOfWeek.valueOf(partes[0]) }.getOrNull()
+                    ?.let { dia -> dia to partes[1] }
+            } else {
+                null
+            }
+        }.toMap()
+    }
+)

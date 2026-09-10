@@ -236,6 +236,20 @@ object Routes {
     const val CONFIG_NOTIFICACIONES = "config_notificaciones"
 
     /**
+     * HORARIO_CENTRO
+     * --------------
+     * Ruta de la configuración del horario semanal general del centro.
+     */
+    const val HORARIO_CENTRO = "horario_centro"
+
+    /**
+     * HORARIO_ACTIVIDADES
+     * -------------------
+     * Ruta de la configuración del horario semanal de actividades.
+     */
+    const val HORARIO_ACTIVIDADES = "horario_actividades"
+
+    /**
      * SELECCIONAR_CLIENTES
      * --------------------
      * Ruta de la pantalla de selección de clientes para una notificación GRUPAL.

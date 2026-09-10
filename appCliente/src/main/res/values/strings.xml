@@ -188,8 +188,8 @@
     <string name="home_no_vinculado_titulo">No estás vinculado.</string>
     <string name="home_no_vinculado_descripcion">Vincula tu cuenta para acceder a las funciones de tu centro.</string>
     <string name="home_vincular_centro">Vincular centro</string>
-    <string name="home_card_actividades">Actividades</string>
-    <string name="home_card_actividades_descripcion">Consulta y reserva tus actividades</string>
+    <string name="home_card_actividades">Reservas</string>
+    <string name="home_card_actividades_descripcion">Consulta y reserva tus clases</string>
     <string name="home_card_rutinas">Rutinas</string>
     <string name="home_card_rutinas_descripcion">Rutinas de entrenamiento</string>
     <string name="rutinas_proximamente">Próximamente podrás consultar tus rutinas de entrenamiento.</string>
@@ -197,12 +197,41 @@
     <string name="home_card_ajustes_descripcion">Configuración general</string>
     <string name="home_card_notificaciones">Notificaciones</string>
     <string name="home_card_notificaciones_descripcion">Consulta tus avisos</string>
+
+    <!-- ===== Horario (centro y actividades) ===== -->
+    <string name="home_card_horario">Horario</string>
+    <string name="home_card_horario_descripcion">Horario del centro y actividades</string>
+    <string name="horario_titulo">Horario</string>
+    <string name="horario_centro_titulo">HORARIO DEL CENTRO</string>
+    <string name="horario_actividades_titulo">HORARIO DE ACTIVIDADES</string>
+    <string name="horario_sin_configurar">El centro aún no ha configurado su horario.</string>
+    <string name="horario_sin_actividades">No hay actividades programadas este día.</string>
+    <string name="horario_cerrado">Cerrado</string>
+    <string name="horario_no_vinculado">No estás vinculado con tu centro.</string>
+    <string name="horario_no_activo">Tu cuenta aún no está activa. Cuando el centro la active podrás consultar el horario.</string>
+    <string name="horario_error_cargar">No se pudo cargar el horario</string>
+    <string name="horario_error_centro">No se pudo identificar tu centro</string>
+    <string name="horario_actividad_generica">Actividad</string>
+    <string name="horario_dia_lunes">Lunes</string>
+    <string name="horario_dia_martes">Martes</string>
+    <string name="horario_dia_miercoles">Miércoles</string>
+    <string name="horario_dia_jueves">Jueves</string>
+    <string name="horario_dia_viernes">Viernes</string>
+    <string name="horario_dia_sabado">Sábado</string>
+    <string name="horario_dia_domingo">Domingo</string>
+    <string name="horario_dia_corto_lun">Lun</string>
+    <string name="horario_dia_corto_mar">Mar</string>
+    <string name="horario_dia_corto_mie">Mié</string>
+    <string name="horario_dia_corto_jue">Jue</string>
+    <string name="horario_dia_corto_vie">Vie</string>
+    <string name="horario_dia_corto_sab">Sáb</string>
+    <string name="horario_dia_corto_dom">Dom</string>
     <string name="home_estado_pago_vencido">Pago vencido</string>
     <string name="home_prefijo_hasta">Hasta el</string>
     <string name="home_prefijo_vencio">Venció el</string>
     <string name="home_prefijo_desde">Desde el</string>
-    <string name="home_aviso_morosidad_texto">Renueva la mensualidad o solicita la baja</string>
-    <string name="home_aviso_morosidad_enlace">aquí</string>
+    <string name="home_aviso_renovacion_contacto">Para renovar, contacta con tu centro.</string>
+    <string name="home_aviso_solicitar_baja">Solicitar la baja aquí</string>
 
     <!-- ===== Denuncias (diálogo compartido Home/Notificaciones) ===== -->
     <string name="denuncia_enviada_exito">Denuncia enviada. Gracias por tu colaboración.</string>

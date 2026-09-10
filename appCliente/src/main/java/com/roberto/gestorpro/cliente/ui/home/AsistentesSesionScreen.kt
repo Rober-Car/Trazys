@@ -1,9 +1,9 @@
 package com.roberto.gestorpro.cliente.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -145,17 +149,31 @@ fun AsistentesSesionScreen(
                     )
                 }
 
-                else -> LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                else -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
                 ) {
-                    itemsIndexed(asistentes) { indice, nombre ->
-                        FilaAsistente(nombre = nombre)
-                        if (indice < asistentes.lastIndex) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 48.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant
-                            )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                            asistentes.forEachIndexed { indice, nombre ->
+                                FilaAsistente(nombre = nombre)
+                                if (indice < asistentes.lastIndex) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 64.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -176,13 +194,13 @@ private fun FilaAsistente(nombre: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Filled.Person,
             contentDescription = contenidoIcono,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = colorAsistente(nombre),
             modifier = Modifier.size(28.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -194,4 +212,29 @@ private fun FilaAsistente(nombre: String) {
             modifier = Modifier.weight(1f)
         )
     }
+}
+
+/**
+ * Paleta de colores para el icono de cada asistente. El color se deriva de
+ * forma determinista del nombre: es estable durante las recomposiciones y al
+ * volver a abrir la pantalla (mismo nombre -> mismo color), pero varía entre
+ * asistentes para dar un aspecto aleatorio.
+ */
+private val coloresAsistente = listOf(
+    Color(0xFF1E88E5),
+    Color(0xFF43A047),
+    Color(0xFF8E24AA),
+    Color(0xFFF4511E),
+    Color(0xFF00897B),
+    Color(0xFFD81B60),
+    Color(0xFF6D4C41),
+    Color(0xFF3949AB),
+    Color(0xFF00838F),
+    Color(0xFF7CB342)
+)
+
+private fun colorAsistente(nombre: String): Color {
+    val tam = coloresAsistente.size
+    val indice = ((nombre.hashCode() % tam) + tam) % tam
+    return coloresAsistente[indice]
 }

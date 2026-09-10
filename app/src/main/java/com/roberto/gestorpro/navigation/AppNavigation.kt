@@ -42,6 +42,8 @@ import com.roberto.gestorpro.ui.configuracion.PoliticaPrivacidadScreen
 import com.roberto.gestorpro.ui.configuracion.EliminarCuentaScreen
 import com.roberto.gestorpro.ui.configuracion.TerminosDeUsoScreen
 import com.roberto.gestorpro.ui.configuracion.GestionDenunciasScreen
+import com.roberto.gestorpro.ui.configuracion.HorarioActividadesScreen
+import com.roberto.gestorpro.ui.configuracion.HorarioCentroScreen
 import com.roberto.gestorpro.ui.economia.EconomiaScreen
 import com.roberto.gestorpro.ui.home.HomeScreen
 import com.roberto.gestorpro.ui.notificaciones.ConfigNotificacionesScreen
@@ -375,6 +377,14 @@ fun AppNavigation() {
 
         composable(Routes.SOLICITUDES) {
             SolicitudesScreen(navController)
+        }
+
+        composable(Routes.HORARIO_CENTRO) {
+            HorarioCentroScreen(navController)
+        }
+
+        composable(Routes.HORARIO_ACTIVIDADES) {
+            HorarioActividadesScreen(navController)
         }
 
     }

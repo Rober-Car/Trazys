@@ -188,8 +188,8 @@
     <string name="home_no_vinculado_titulo">You are not linked.</string>
     <string name="home_no_vinculado_descripcion">Link your account to access your center\'s features.</string>
     <string name="home_vincular_centro">Link center</string>
-    <string name="home_card_actividades">Activities</string>
-    <string name="home_card_actividades_descripcion">View and book your activities</string>
+    <string name="home_card_actividades">Bookings</string>
+    <string name="home_card_actividades_descripcion">View and book your classes</string>
     <string name="home_card_rutinas">Workouts</string>
     <string name="home_card_rutinas_descripcion">Training workouts</string>
     <string name="rutinas_proximamente">Soon you will be able to view your training workouts.</string>
@@ -197,12 +197,41 @@
     <string name="home_card_ajustes_descripcion">General settings</string>
     <string name="home_card_notificaciones">Notifications</string>
     <string name="home_card_notificaciones_descripcion">View your alerts</string>
+
+    <!-- ===== Schedule (centre and activities) ===== -->
+    <string name="home_card_horario">Schedule</string>
+    <string name="home_card_horario_descripcion">Centre and activity schedule</string>
+    <string name="horario_titulo">Schedule</string>
+    <string name="horario_centro_titulo">CENTRE SCHEDULE</string>
+    <string name="horario_actividades_titulo">ACTIVITY SCHEDULE</string>
+    <string name="horario_sin_configurar">The centre hasn\'t set up its schedule yet.</string>
+    <string name="horario_sin_actividades">No activities scheduled for this day.</string>
+    <string name="horario_cerrado">Closed</string>
+    <string name="horario_no_vinculado">You are not linked to your centre.</string>
+    <string name="horario_no_activo">Your account is not active yet. Once the centre activates it you can view the schedule.</string>
+    <string name="horario_error_cargar">Could not load the schedule</string>
+    <string name="horario_error_centro">Could not identify your centre</string>
+    <string name="horario_actividad_generica">Activity</string>
+    <string name="horario_dia_lunes">Monday</string>
+    <string name="horario_dia_martes">Tuesday</string>
+    <string name="horario_dia_miercoles">Wednesday</string>
+    <string name="horario_dia_jueves">Thursday</string>
+    <string name="horario_dia_viernes">Friday</string>
+    <string name="horario_dia_sabado">Saturday</string>
+    <string name="horario_dia_domingo">Sunday</string>
+    <string name="horario_dia_corto_lun">Mon</string>
+    <string name="horario_dia_corto_mar">Tue</string>
+    <string name="horario_dia_corto_mie">Wed</string>
+    <string name="horario_dia_corto_jue">Thu</string>
+    <string name="horario_dia_corto_vie">Fri</string>
+    <string name="horario_dia_corto_sab">Sat</string>
+    <string name="horario_dia_corto_dom">Sun</string>
     <string name="home_estado_pago_vencido">Payment overdue</string>
     <string name="home_prefijo_hasta">Until</string>
     <string name="home_prefijo_vencio">Ended on</string>
     <string name="home_prefijo_desde">Since</string>
-    <string name="home_aviso_morosidad_texto">Renew your membership or request cancellation</string>
-    <string name="home_aviso_morosidad_enlace">here</string>
+    <string name="home_aviso_renovacion_contacto">To renew, contact your center.</string>
+    <string name="home_aviso_solicitar_baja">Request cancellation here</string>
 
     <!-- ===== Reports (shared dialog Home/Notifications) ===== -->
     <string name="denuncia_enviada_exito">Report sent. Thank you for your cooperation.</string>

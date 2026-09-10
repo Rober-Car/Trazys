@@ -1,6 +1,8 @@
 package com.roberto.gestorpro.cliente.data.firebase
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.roberto.gestorpro.cliente.model.HorarioNegocio
+import com.roberto.gestorpro.cliente.model.HorarioParseo
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -70,6 +72,29 @@ class NegocioRepository @Inject constructor(
             )
         } catch (_: Exception) {
             null
+        }
+    }
+
+    /**
+     * obtenerHorarioNegocio
+     * ---------------------
+     * Lee el horario configurable (centro + actividades) de
+     * negocios_publicos/{negocioId}. Devuelve un HorarioNegocio vacío si el
+     * documento o los campos no existen (negocios sin horario configurado).
+     */
+    suspend fun obtenerHorarioNegocio(negocioId: String): HorarioNegocio {
+        return try {
+            val documento = db.collection(COLECCION_NEGOCIOS_PUBLICOS)
+                .document(negocioId)
+                .get()
+                .esperar()
+            if (!documento.exists()) return HorarioNegocio()
+            HorarioNegocio(
+                centro = HorarioParseo.mapaACentro(documento.get("horarioCentro")),
+                actividades = HorarioParseo.mapaAActividades(documento.get("horarioActividades"))
+            )
+        } catch (_: Exception) {
+            HorarioNegocio()
         }
     }
 

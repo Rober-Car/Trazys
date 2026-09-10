@@ -2,6 +2,64 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-10 — FUNCIONALIDAD "HORARIO" (ADMIN+CLIENTE+RULES) + FIX PERMISOS + DEPLOY PENDIENTE (REANUDAR AQUÍ)
+>
+> **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** El working tree conserva **SIN commit**
+> 25 cambios (**NO revertir**; lista en `git status`). Sin commit/push/deploy nuestros.
+>
+> ### Qué se cerró en esta tanda (compila; tests unitarios OK; Rules 204/204)
+> 1. **HORARIO (nuevo, INDEPENDIENTE de sesiones).** Se guarda en `negocios_publicos/{negocioId}` (NO en
+>    `negocios`): `horarioCentro` (semanal, un tramo por día), `horarioActividades` (semanal, `idServicio`+hora)
+>    y `horarioExcepciones` (fechas concretas, SEPARADAS del semanal y con PRIORIDAD sobre él).
+> 2. **ADMIN:** Ajustes → sección **NEGOCIO** agrupa "Mi negocio", "Horario del centro" y
+>    "Horario de actividades" (rutas `HORARIO_CENTRO`/`HORARIO_ACTIVIDADES`).
+>    - **Horario del centro:** "Aplicar horario a toda la semana" (apertura/cierre a los 7 días abiertos;
+>      los cerrados siguen cerrados) + edición individual + excepciones (crear/editar/eliminar).
+>    - **Horario de actividades:** selector de día (scroll horizontal), chips de actividades existentes
+>      (seleccionables), hora, añadir/editar/eliminar; guarda `idServicio` (no el nombre).
+> 3. **CLIENTE:** card **"Horario"** en Home (solo vinculados+activos) → `HorarioScreen` con "HORARIO DEL
+>    CENTRO" y "HORARIO DE ACTIVIDADES" (días scroll horizontal + tarjetas nombre/hora, sin imágenes).
+>    El card "Actividades" del CLIENTE se renombró a **"Reservas"** (solo texto; rutas/clases internas intactas).
+> 4. **Notificación CAMBIO_HORARIO:** switch propio en `configuracion_notificaciones/{id}.cambioHorario.activa`;
+>    al guardar el horario del CENTRO se crea `notificaciones` tipo `CAMBIO_HORARIO` (TODOS) si está activo.
+>    El horario de ACTIVIDADES NO notifica.
+> 5. **Persistencia ante rotación:** `rememberSaveable` + savers propios (centro, excepciones, actividades,
+>    día, servicio) + flag `precargado` (señal `cargado` del `HorarioViewModel`) para no sobrescribir ediciones.
+> 6. **Estilo:** azul corporativo `#1E88E5` (títulos, chips, switches, acentos); eliminado el verde/teal.
+> 7. **FIX de permisos al guardar:** `NegocioRepository.guardarHorario` escribía en `negocios/{id}` **y**
+>    `negocios_publicos/{id}` en un batch; la regla de `negocios` exige `adminUid`, produciendo
+>    "No tienes permisos". Ahora escribe **solo** en `negocios_publicos/{id}` (fuente que lee `leerHorario`/CLIENTE).
+> 8. **Otras correcciones de la conversación (mismo working tree):** `AsistentesSesionScreen` (recuadro tipo
+>    perfil + color de icono estable/aleatorio por nombre); `DetalleServicioScreen` (card de sesión con color
+>    distinto); `ProgramarSesionesScreen` (hora global para todos los días + persistencia ante rotación).
+>
+> ### Rules (`firestore.rules` local — 204/204 en emulador)
+> - `negocios_publicos` create/update: `hasOnly([...,"horarioCentro","horarioActividades","horarioExcepciones"])`;
+>   update solo `esAdmin() && usuarioActual().negocioId == negocioId` (propietario); `get/list` autenticado;
+>   `delete:false`. Otro ADMIN (negocioId distinto) y CLIENTE → denegado.
+> - `configuracion_notificaciones` create/update: `hasOnly([...,"cambioHorario"])` + `cambioHorario.activa is bool`.
+> - `notificaciones` (create ADMIN) y `notificaciones_por_destinatario` (create): `tipo` incluye `CAMBIO_HORARIO`.
+>
+> ### ⚠️ ESTADO DE DEPLOY (CRÍTICO — HORARIO aún NO funciona en producción)
+> - Ruleset **desplegado** `17c46034-e079-4223-b26d-3a72ee3832cc` (updateTime 2026-09-09T17:51Z) **NO**
+>   incluye horario → guardar horario da "No tienes permisos".
+> - **`firebase.json` NO tiene sección `firestore`** (solo `functions` y `hosting`). Por eso
+>   `firebase deploy --only firestore:rules` falla: "No targets in firebase.json match '--only firestore:rules'".
+>   **Antes de desplegar** hay que añadir `"firestore": { "rules": "firestore.rules" }`.
+> - El diff local↔desplegado es **SOLO** lo relativo a HORARIO (aditivo) → es seguro desplegar únicamente rules.
+>
+> ### Verificación de la tanda
+> `:app` y `:appCliente`: `compileDebugKotlin`, `assembleDebug` y `testDebugUnitTest` OK. Rules **204/204**.
+> `git diff --check` limpio (solo avisos CRLF preexistentes).
+>
+> ### Para reanudar
+> 1. Añadir `"firestore": { "rules": "firestore.rules" }` a `firebase.json`.
+> 2. `npm --prefix firestore-tests test` → 204/204.
+> 3. `& ".\firestore-tests\node_modules\.bin\firebase.cmd" deploy --only firestore:rules`.
+> 4. Verificar el nuevo `rulesetName`/`updateTime`.
+> 5. Probar en dispositivo el guardado real de horario (centro, excepciones, actividades).
+> 6. Decidir commit agrupado del working tree (no hay commit nuestro).
+
 > ## ⚠️ CHECKPOINT 2026-09-09 — SISTEMA DE RESERVAS (FASES 1–4) + CORRECCIONES + DEPLOYS (REANUDAR AQUÍ)
 >
 > Estado real al cierre de la tanda. **HEAD del desarrollador: `e31e701` "Internacionalizacion ES/EN por

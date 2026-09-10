@@ -16,15 +16,16 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,13 +47,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
@@ -103,6 +101,8 @@ fun HomeScreen(
     val textoVincularCentro = stringResource(R.string.home_vincular_centro)
     val textoCardActividades = stringResource(R.string.home_card_actividades)
     val textoCardActividadesDesc = stringResource(R.string.home_card_actividades_descripcion)
+    val textoCardHorario = stringResource(R.string.home_card_horario)
+    val textoCardHorarioDesc = stringResource(R.string.home_card_horario_descripcion)
     val textoCardRutinas = stringResource(R.string.home_card_rutinas)
     val textoCardRutinasDesc = stringResource(R.string.home_card_rutinas_descripcion)
     val textoCardAjustes = stringResource(R.string.home_card_ajustes)
@@ -110,6 +110,8 @@ fun HomeScreen(
     val textoCardNotificaciones = stringResource(R.string.home_card_notificaciones)
     val textoCardNotificacionesDesc =
         stringResource(R.string.home_card_notificaciones_descripcion)
+    val textoAvisoRenovacion = stringResource(R.string.home_aviso_renovacion_contacto)
+    val textoAvisoSolicitarBaja = stringResource(R.string.home_aviso_solicitar_baja)
 
     if (mostrarDenunciaLogo) {
         DialogoDenuncia(
@@ -273,6 +275,11 @@ fun HomeScreen(
                     // real. Si no hay período (fechaFinActual nula) no se inventa
                     // texto "Fecha no disponible": se muestra únicamente el estado.
                     fecha = estadoHome.fechaRelevante?.let(::formatearFecha),
+                    // El aviso de renovación y el enlace de baja solo se pintan
+                    // dentro del indicador cuando el estado es PAGO_VENCIDO.
+                    textoRenovacion = textoAvisoRenovacion,
+                    textoEnlaceBaja = textoAvisoSolicitarBaja,
+                    onSolicitarBaja = { navController.navigate(Routes.CUENTA) },
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -298,6 +305,15 @@ fun HomeScreen(
                             icono = Icons.Default.FitnessCenter,
                             color = Color(0xFFFB8C00),
                             onClick = { navController.navigate(Routes.CLASES) }
+                        )
+                    }
+                    item {
+                        HomeClientMenuCard(
+                            titulo = textoCardHorario,
+                            descripcion = textoCardHorarioDesc,
+                            icono = Icons.Default.Schedule,
+                            color = Color(0xFF1E88E5),
+                            onClick = { navController.navigate(Routes.HORARIO) }
                         )
                     }
                 }
@@ -330,79 +346,9 @@ fun HomeScreen(
                     )
                 }
             }
-
-            // Aviso de morosidad: solo cuando el cliente sigue ACTIVO pero su
-            // período está vencido (PAGO_VENCIDO). Debajo de todas las cards,
-            // con poco espacio superior y un margen inferior razonable.
-            if (vinculado && estadoHome.estado == EstadoIndicadorCliente.PAGO_VENCIDO) {
-                AvisoMorosidad(
-                    onRenovar = { navController.navigate(Routes.CUENTA) },
-                    modifier = Modifier.padding(
-                        start = 20.dp,
-                        end = 20.dp,
-                        top = 4.dp,
-                        bottom = 16.dp
-                    )
-                )
-            }
         }
     }
 }
-
-/**
- * AvisoMorosidad
- * --------------
- * Aviso de texto integrado en el Home cuando el cliente sigue ACTIVO pero con
- * el período vencido (PAGO_VENCIDO). Es una advertencia contextual sin fondo
- * rojo: todo el texto va en el color de error del tema y la palabra enlazada se
- * distingue como enlace (color primario, negrita y subrayada). Solo el enlace es
- * clicable y navega a la cuenta del cliente para renovar o solicitar la baja.
- *
- * El enlace se construye con recursos (texto + palabra enlazada) y una anotación
- * posicional: no depende de buscar la palabra en un literal concreto, por lo que
- * funciona igual en ES y EN.
- */
-@Composable
-private fun AvisoMorosidad(
-    onRenovar: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val texto = stringResource(R.string.home_aviso_morosidad_texto)
-    val enlace = stringResource(R.string.home_aviso_morosidad_enlace)
-    val enlaceColor = MaterialTheme.colorScheme.primary
-
-    val annotated = buildAnnotatedString {
-        append(texto)
-        append(" ")
-        pushStringAnnotation(ETIQUETA_ANOTACION, ETIQUETA_ANOTACION)
-        withStyle(
-            SpanStyle(
-                color = enlaceColor,
-                fontWeight = FontWeight.Bold,
-                textDecoration = TextDecoration.Underline
-            )
-        ) {
-            append(enlace)
-        }
-        pop()
-    }
-
-    ClickableText(
-        text = annotated,
-        onClick = { offset ->
-            annotated.getStringAnnotations(ETIQUETA_ANOTACION, offset, offset)
-                .firstOrNull()
-                ?.let { onRenovar() }
-        },
-        style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.error,
-            fontWeight = FontWeight.Medium
-        ),
-        modifier = modifier.fillMaxWidth()
-    )
-}
-
-private const val ETIQUETA_ANOTACION = "renovar"
 
 /**
  * HomeClientMenuCard
@@ -528,11 +474,19 @@ private enum class EstadoVisualCliente {
  * junto a la fecha (secundaria). El fondo es neutro; solo la bola y el título
  * adoptan el color semántico. El color y el texto dependen del ESTADO (enum),
  * nunca del texto traducido.
+ *
+ * Cuando el estado es PAGO_VENCIDO, dentro del propio indicador se añade el
+ * aviso de renovación (texto no clicable) y el enlace independiente para
+ * solicitar la baja (único elemento clicable). No existe ninguna acción para
+ * renovar o pagar desde la app.
  */
 @Composable
 private fun HomeClientEstadoIndicator(
     estado: EstadoVisualCliente,
     fecha: String?,
+    textoRenovacion: String? = null,
+    textoEnlaceBaja: String? = null,
+    onSolicitarBaja: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val (color, tituloRecurso, prefijoRecurso) = when (estado) {
@@ -586,6 +540,28 @@ private fun HomeClientEstadoIndicator(
                         text = "$prefijo $fecha",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (
+                    estado == EstadoVisualCliente.PAGO_VENCIDO &&
+                    textoRenovacion != null &&
+                    textoEnlaceBaja != null
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = textoRenovacion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = textoEnlaceBaja,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textDecoration = TextDecoration.Underline,
+                        modifier = Modifier.clickable { onSolicitarBaja() }
                     )
                 }
             }

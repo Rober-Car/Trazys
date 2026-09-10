@@ -1,5 +1,33 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
+> **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-10, FUNCIONALIDAD HORARIO + FIX PERMISOS + DEPLOY PENDIENTE):**
+> **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** Working tree con 25 cambios **SIN commit**
+> (**NO revertir**). Resumen de esta tanda (compila; tests OK; Rules **204/204**):
+> 1. **HORARIO (nuevo, independiente de sesiones).** Se guarda en `negocios_publicos/{negocioId}` (NO en
+>    `negocios`): `horarioCentro` (semanal, un tramo por día), `horarioActividades` (`idServicio`+hora) y
+>    `horarioExcepciones` (fechas concretas, separadas del semanal y con prioridad sobre él).
+> 2. **ADMIN:** Ajustes → NEGOCIO agrupa "Mi negocio" + "Horario del centro" + "Horario de actividades".
+>    Centro: "Aplicar horario a toda la semana" (a los 7 días abiertos; los cerrados siguen cerrados),
+>    edición individual y excepciones (crear/editar/eliminar). Actividades: día (scroll horizontal), chips de
+>    actividades existentes seleccionables, hora, añadir/editar/eliminar (guarda `idServicio`).
+> 3. **CLIENTE:** card **"Horario"** en Home (solo vinculados+activos) → `HorarioScreen` (centro + actividades,
+>    días scroll horizontal, tarjetas nombre/hora sin imágenes). Card "Actividades" renombrado a **"Reservas"**.
+> 4. **Notificación CAMBIO_HORARIO:** switch en `configuracion_notificaciones`; al guardar el CENTRO se crea
+>    `notificaciones` tipo `CAMBIO_HORARIO` (TODOS) si está activo. Actividades NO notifican.
+> 5. **Persistencia ante rotación** (`rememberSaveable` + savers + flag `precargado`) y **estilo azul corporativo**
+>    `#1E88E5` (eliminado verde/teal).
+> 6. **FIX de permisos:** `guardarHorario` escribía en `negocios`+`negocios_publicos` (batch); la regla de
+>    `negocios` exige `adminUid` → "No tienes permisos". Ahora escribe **solo** en `negocios_publicos`.
+> 7. **Otras correcciones de la conversación:** `AsistentesSesionScreen` (recuadro tipo perfil + color de icono
+>    estable/aleatorio); `DetalleServicioScreen` (card de sesión con color distinto); `ProgramarSesionesScreen`
+>    (hora global para todos los días + persistencia rotación).
+>
+> **⚠️ DEPLOY PENDIENTE (HORARIO no funciona aún en producción):** el ruleset desplegado
+> `17c46034-e079-4223-b26d-3a72ee3832cc` (2026-09-09) NO incluye horario; y **`firebase.json` no tiene sección
+> `firestore`**, por lo que `firebase deploy --only firestore:rules` falla con "No targets in firebase.json
+> match". Antes de desplegar: añadir `"firestore": { "rules": "firestore.rules" }`. El diff local↔desplegado es
+> solo lo de HORARIO (aditivo) → seguro desplegar únicamente rules. Los bloques siguientes son históricos.
+
 > **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-09, sistema de reservas + asistentes + despliegues):** FASE 1–4 del
 > sistema de reservas del CLIENTE. Working tree SIN commit (NO revertir; estado real en AGENTS.md y
 > `git status`; HEAD del desarrollador `e31e701`). Resumen de lo cerrado en esta tanda (compilando y con

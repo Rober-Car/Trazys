@@ -55,6 +55,7 @@ class NotificacionRemotoRepository @Inject constructor(
 
         const val TIPO_MANUAL = "MANUAL"
         const val TIPO_PROGRAMADA = "PROGRAMADA"
+        const val TIPO_CAMBIO_HORARIO = "CAMBIO_HORARIO"
         const val ORIGEN_MANUAL = "MANUAL"
         const val ESTADO_PENDIENTE = "PENDIENTE"
         const val ESTADO_ENVIADA = "ENVIADA"
@@ -74,7 +75,8 @@ class NotificacionRemotoRepository @Inject constructor(
             ConfiguracionNotificaciones(
                 morosidadActiva = false,
                 recordatorioHoras = 0,
-                bajaConfirmadaActiva = true
+                bajaConfirmadaActiva = true,
+                cambioHorarioActiva = false
             )
 
         /**
@@ -529,12 +531,14 @@ class NotificacionRemotoRepository @Inject constructor(
             if (!documento.exists()) return configuracionPorDefecto()
             val morosidad = documento.get("morosidad") as? Map<*, *>
             val bajaConfirmada = documento.get("bajaConfirmada") as? Map<*, *>
+            val cambioHorario = documento.get("cambioHorario") as? Map<*, *>
             ConfiguracionNotificaciones(
                 morosidadActiva = (morosidad?.get("activa") as? Boolean) ?: false,
                 recordatorioHoras = enteroDe(morosidad?.get("recordatorioHoras")) ?: 0,
                 bajaConfirmadaActiva = bajaConfirmadaActivaPorDefecto(
                     bajaConfirmada?.get("activa") as? Boolean
-                )
+                ),
+                cambioHorarioActiva = (cambioHorario?.get("activa") as? Boolean) ?: false
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error leyendo configuración de notificaciones", e)
@@ -560,6 +564,9 @@ class NotificacionRemotoRepository @Inject constructor(
                 ),
                 "bajaConfirmada" to mapOf(
                     "activa" to config.bajaConfirmadaActiva
+                ),
+                "cambioHorario" to mapOf(
+                    "activa" to config.cambioHorarioActiva
                 )
             )
             val referencia = db.collection(COLECCION_CONFIG).document(negocioId)

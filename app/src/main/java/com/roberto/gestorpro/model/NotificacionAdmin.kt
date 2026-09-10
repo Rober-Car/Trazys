@@ -36,7 +36,8 @@ data class NotificacionAdmin(
 data class ConfiguracionNotificaciones(
     val morosidadActiva: Boolean,
     val recordatorioHoras: Int,
-    val bajaConfirmadaActiva: Boolean
+    val bajaConfirmadaActiva: Boolean,
+    val cambioHorarioActiva: Boolean = false
 )
 
 /**

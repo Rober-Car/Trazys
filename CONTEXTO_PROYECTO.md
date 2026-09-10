@@ -1,5 +1,27 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🔴 ACTUALIZACIÓN 2026-09-10 — FUNCIONALIDAD HORARIO + FIX PERMISOS + DEPLOY PENDIENTE (estado vigente):**
+> verificado contra el árbol real. **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** El working
+> tree conserva **SIN commit** 25 cambios (**NO revertir**; ver CHECKPOINT superior de AGENTS.md y `git status`).
+> - **HORARIO (nuevo, independiente de sesiones):** en `negocios_publicos/{negocioId}` → `horarioCentro`
+>   (semanal), `horarioActividades` (`idServicio`+hora) y `horarioExcepciones` (fechas concretas, con prioridad
+>   sobre el semanal). No se guarda en `negocios`.
+> - **ADMIN:** Ajustes → NEGOCIO agrupa "Mi negocio" + "Horario del centro" + "Horario de actividades"
+>   (rutas `HORARIO_CENTRO`/`HORARIO_ACTIVIDADES`). Centro: aplicar a toda la semana + edición individual +
+>   excepciones. Actividades: día (scroll horizontal) + chips de actividades + hora + CRUD (guarda `idServicio`).
+> - **CLIENTE:** card "Horario" en Home (solo vinculados+activos) → `HorarioScreen` (centro + actividades, sin
+>   imágenes). Card "Actividades" renombrado a **"Reservas"** (solo texto).
+> - **Notificación `CAMBIO_HORARIO`:** switch en `configuracion_notificaciones`; al guardar el horario del
+>   CENTRO se crea `notificaciones` tipo `CAMBIO_HORARIO` (TODOS) si está activo. Actividades NO notifican.
+> - **Persistencia rotación** (`rememberSaveable` + savers) y **estilo azul corporativo** `#1E88E5`.
+> - **FIX permisos:** `guardarHorario` escribe **solo** en `negocios_publicos` (antes también `negocios`, cuya
+>   regla exige `adminUid` → "No tienes permisos").
+> - **Rules locales 204/204**; `:app`/`:appCliente` compile/assemble/test OK; `git diff --check` limpio.
+> - **⚠️ DEPLOY PENDIENTE:** el ruleset desplegado (`17c46034-…`, 2026-09-09) no incluye horario y
+>   `firebase.json` **no tiene sección `firestore`** → `firebase deploy --only firestore:rules` falla con
+>   "No targets…". Añadir `"firestore": { "rules": "firestore.rules" }` antes de desplegar (el diff es solo
+>   HORARIO, aditivo → seguro desplegar únicamente rules). Los bloques inferiores son históricos.
+
 > **🔴 ACTUALIZACIÓN 2026-09-09 — SISTEMA DE RESERVAS + ASISTENTES (estado vigente):** verificado contra
 > el árbol real. **HEAD del desarrollador: `e31e701`** (i18n, en `origin/master`). El working tree
 > conserva SIN commit el sistema de reservas (FASES 1–4) y sus correcciones (**NO revertir**; ver

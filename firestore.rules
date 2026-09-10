@@ -244,7 +244,10 @@ service cloud.firestore {
 
       allow create: if esAdmin()
         && request.resource.data.keys()
-            .hasOnly(["codigoMaestro", "nombre", "logo"])
+            .hasOnly([
+              "codigoMaestro", "nombre", "logo",
+              "horarioCentro", "horarioActividades", "horarioExcepciones"
+            ])
         && usuarioActual().negocioId == null
         && request.resource.data.codigoMaestro is string
         && request.resource.data.nombre is string
@@ -259,7 +262,10 @@ service cloud.firestore {
         && usuarioActual().negocioId == negocioId
         && request.resource.data.diff(resource.data)
             .affectedKeys()
-            .hasOnly(["codigoMaestro", "nombre", "logo"])
+            .hasOnly([
+              "codigoMaestro", "nombre", "logo",
+              "horarioCentro", "horarioActividades", "horarioExcepciones"
+            ])
         && (!request.resource.data.diff(resource.data)
               .affectedKeys()
               .hasAny(["codigoMaestro"])
@@ -1175,7 +1181,7 @@ service cloud.firestore {
            ])
         && request.resource.data.titulo is string
         && request.resource.data.mensaje is string
-        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "SOLICITUD_BAJA"]
+        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "SOLICITUD_BAJA", "CAMBIO_HORARIO"]
         && request.resource.data.origen in ["MANUAL", "AUTOMATICA", "PRECONFIGURADA"]
         && request.resource.data.modoDestino in ["INDIVIDUAL", "GRUPO", "TODOS"]
         && request.resource.data.fechaCreacion is timestamp
@@ -1277,7 +1283,7 @@ service cloud.firestore {
         && request.resource.data.firebaseUid is string
         && request.resource.data.titulo is string
         && request.resource.data.mensaje is string
-        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA"]
+        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "CAMBIO_HORARIO"]
         && request.resource.data.origen in ["MANUAL", "AUTOMATICA", "PRECONFIGURADA"]
         && request.resource.data.fechaEnvio is timestamp
         && request.resource.data.leida is bool
@@ -1315,20 +1321,25 @@ service cloud.firestore {
 
       allow create: if esAdmin()
         && request.resource.data.negocioId == usuarioActual().negocioId
-        && request.resource.data.keys().hasOnly(["negocioId", "morosidad", "bajaConfirmada"])
+        && request.resource.data.keys()
+            .hasOnly(["negocioId", "morosidad", "bajaConfirmada", "cambioHorario"])
         && request.resource.data.morosidad.activa is bool
         && request.resource.data.morosidad.recordatorioHoras is int
-        && request.resource.data.bajaConfirmada.activa is bool;
+        && request.resource.data.bajaConfirmada.activa is bool
+        && (!("cambioHorario" in request.resource.data.keys())
+            || request.resource.data.cambioHorario.activa is bool);
 
       allow update: if esAdmin()
         && resource.data.negocioId == usuarioActual().negocioId
         && request.resource.data.negocioId == resource.data.negocioId
         && request.resource.data.diff(resource.data)
             .affectedKeys()
-            .hasOnly(["morosidad", "bajaConfirmada"])
+            .hasOnly(["morosidad", "bajaConfirmada", "cambioHorario"])
         && request.resource.data.morosidad.activa is bool
         && request.resource.data.morosidad.recordatorioHoras is int
-        && request.resource.data.bajaConfirmada.activa is bool;
+        && request.resource.data.bajaConfirmada.activa is bool
+        && (!("cambioHorario" in request.resource.data.keys())
+            || request.resource.data.cambioHorario.activa is bool);
 
       allow delete: if false;
     }

@@ -4,6 +4,8 @@ import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.roberto.gestorpro.model.HorarioNegocio
+import com.roberto.gestorpro.model.HorarioSerializacion
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -372,6 +374,65 @@ class NegocioRepository @Inject constructor(
         return try {
             batch.commit().esperar()
             ResultadoAutenticacion(true, "Nombre actualizado")
+        } catch (e: Exception) {
+            ResultadoAutenticacion(false, mensajeDe(e))
+        }
+    }
+
+    /**
+     * leerHorario
+     * -----------
+     * Lee el horario configurable (centro + actividades) de
+     * negocios_publicos/{negocioId}. Devuelve un HorarioNegocio vacío si el
+     * documento o los campos no existen (negocios sin horario configurado).
+     */
+    suspend fun leerHorario(): HorarioNegocio {
+        val negocioId = obtenerNegocioIdCuenta() ?: return HorarioNegocio()
+        return try {
+            val documento = db.collection(COLECCION_NEGOCIOS_PUBLICOS)
+                .document(negocioId)
+                .get()
+                .esperar()
+            if (!documento.exists()) return HorarioNegocio()
+            HorarioNegocio(
+                centro = HorarioSerializacion.mapaACentro(documento.get("horarioCentro")),
+                actividades = HorarioSerializacion.mapaAActividades(
+                    documento.get("horarioActividades")
+                ),
+                excepciones = HorarioSerializacion.listaAExcepciones(
+                    documento.get("horarioExcepciones")
+                )
+            )
+        } catch (_: Exception) {
+            HorarioNegocio()
+        }
+    }
+
+    /**
+     * guardarHorario
+     * --------------
+     * Guarda el horario (centro + actividades + excepciones) en
+     * `negocios_publicos/{negocioId}`, que es la fuente pública que lee el
+     * CLIENTE (y también `leerHorario`). NO se escribe en `negocios/{id}`: el
+     * horario es información pública y así no depende de la regla de update del
+     * documento privado (que exige `adminUid`). Las Rules de `negocios_publicos`
+     * ya permiten al ADMIN propietario escribir estos campos.
+     */
+    suspend fun guardarHorario(horario: HorarioNegocio): ResultadoAutenticacion {
+        val uid = auth.currentUser?.uid
+            ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
+        val negocioId = negocioIdDeAdmin(uid)
+        val datos = mapOf(
+            "horarioCentro" to HorarioSerializacion.centroAMapa(horario.centro),
+            "horarioActividades" to HorarioSerializacion.actividadesAMapa(horario.actividades),
+            "horarioExcepciones" to HorarioSerializacion.excepcionesALista(horario.excepciones)
+        )
+        return try {
+            db.collection(COLECCION_NEGOCIOS_PUBLICOS)
+                .document(negocioId)
+                .update(datos)
+                .esperar()
+            ResultadoAutenticacion(true, "Horario guardado")
         } catch (e: Exception) {
             ResultadoAutenticacion(false, mensajeDe(e))
         }

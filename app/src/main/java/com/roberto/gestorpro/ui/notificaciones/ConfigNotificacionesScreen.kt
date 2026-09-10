@@ -71,6 +71,7 @@ fun ConfigNotificacionesScreen(
     var morosidadActiva by rememberSaveable { mutableStateOf(false) }
     var recordatorioActivo by rememberSaveable { mutableStateOf(false) }
     var bajaConfirmadaActiva by rememberSaveable { mutableStateOf(false) }
+    var cambioHorarioActiva by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.cargarConfiguracion()
@@ -81,6 +82,7 @@ fun ConfigNotificacionesScreen(
             morosidadActiva = config.morosidadActiva
             recordatorioActivo = config.recordatorioHoras > 0
             bajaConfirmadaActiva = config.bajaConfirmadaActiva
+            cambioHorarioActiva = config.cambioHorarioActiva
         }
     }
 
@@ -172,6 +174,12 @@ fun ConfigNotificacionesScreen(
                                 onCambio = { bajaConfirmadaActiva = it },
                                 colorActivado = Color(0xFFF44336)
                             )
+                            OpcionConfiguracion(
+                                titulo = "Cambio de horario",
+                                descripcion = "Aviso al cliente cuando cambia el horario del centro",
+                                activa = cambioHorarioActiva,
+                                onCambio = { cambioHorarioActiva = it }
+                            )
                         }
                     }
 
@@ -198,7 +206,8 @@ fun ConfigNotificacionesScreen(
                                 ConfiguracionNotificaciones(
                                     morosidadActiva = morosidadActiva,
                                     recordatorioHoras = if (recordatorioActivo) 24 else 0,
-                                    bajaConfirmadaActiva = bajaConfirmadaActiva
+                                    bajaConfirmadaActiva = bajaConfirmadaActiva,
+                                    cambioHorarioActiva = cambioHorarioActiva
                                 )
                             )
                         },

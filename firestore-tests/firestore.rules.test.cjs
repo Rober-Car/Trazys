@@ -4981,3 +4981,160 @@ test("PRUEBA 178: permiteCombinarDia del servicio solo lo modifica el ADMIN de S
         updateDoc(doc(dbCliente, "servicios", "17801"), { permiteCombinarDia: false })
     );
 });
+
+// =========================================================
+// HORARIO DEL NEGOCIO (PRUEBA 179+)
+// =========================================================
+
+test("PRUEBA 179: el ADMIN guarda el horario (centro y actividades) en negocios_publicos -> ALLOW", async () => {
+    const admin = "admin-horario-179";
+    const negocioId = "negocio-horario-179";
+    await seedAdminNotif(admin, negocioId);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "negocios_publicos", negocioId), {
+            nombre: "Gimnasio Horario",
+            codigoMaestro: "MAESTRO-H179"
+        });
+    });
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        updateDoc(doc(db, "negocios_publicos", negocioId), {
+            horarioCentro: {
+                MONDAY: { cerrado: false, apertura: "09:00", cierre: "21:00" },
+                TUESDAY: { cerrado: true, apertura: "", cierre: "" }
+            },
+            horarioActividades: {
+                MONDAY: [{ idServicio: 7, hora: "18:00" }, { idServicio: 9, hora: "18:00" }]
+            }
+        })
+    );
+});
+
+test("PRUEBA 180: un CLIENTE no puede guardar el horario en negocios_publicos -> DENY", async () => {
+    const cliente = "cliente-horario-180";
+    const negocioId = "negocio-horario-180";
+    await seedClienteNotif(cliente, 18001, negocioId);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "negocios_publicos", negocioId), {
+            nombre: "Gimnasio Horario",
+            codigoMaestro: "MAESTRO-H180"
+        });
+    });
+    const db = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(
+        updateDoc(doc(db, "negocios_publicos", negocioId), {
+            horarioCentro: { MONDAY: { cerrado: false, apertura: "09:00", cierre: "21:00" } }
+        })
+    );
+});
+
+test("PRUEBA 181: el ADMIN crea/actualiza la configuracion con el switch cambioHorario -> ALLOW", async () => {
+    const admin = "admin-horario-181";
+    const negocioId = "negocio-horario-181";
+    await seedAdminNotif(admin, negocioId);
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        setDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: false, recordatorioHoras: 0 },
+            bajaConfirmada: { activa: true },
+            cambioHorario: { activa: true }
+        })
+    );
+    await assertSucceeds(
+        updateDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            cambioHorario: { activa: false }
+        })
+    );
+});
+
+test("PRUEBA 182: el ADMIN crea una notificacion tipo CAMBIO_HORARIO -> ALLOW", async () => {
+    const admin = "admin-horario-182";
+    const negocioId = "negocio-horario-182";
+    await seedAdminNotif(admin, negocioId);
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        setDoc(doc(db, "notificaciones", "n-cambio-horario-182"), {
+            negocioId,
+            titulo: "Cambio de horario",
+            mensaje: "El horario del centro ha cambiado.",
+            tipo: "CAMBIO_HORARIO",
+            origen: "MANUAL",
+            modoDestino: "TODOS",
+            idsClientes: [1, 2],
+            fechaCreacion: Timestamp.now(),
+            programada: false,
+            estado: "PENDIENTE"
+        })
+    );
+});
+
+test("PRUEBA 183: el ADMIN crea un buzon tipo CAMBIO_HORARIO -> ALLOW", async () => {
+    const admin = "admin-horario-183";
+    const negocioId = "negocio-horario-183";
+    await seedAdminNotif(admin, negocioId);
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        setDoc(
+            doc(db, "notificaciones_por_destinatario", "1_n-cambio-horario-183"),
+            notifDestinatarioDoc(negocioId, 1, "n-cambio-horario-183", CLIENTE_UID, {
+                tipo: "CAMBIO_HORARIO"
+            })
+        )
+    );
+});
+
+test("PRUEBA 185: el ADMIN guarda el horario con el MISMO batch que la app (negocios + negocios_publicos) -> ALLOW", async () => {
+    const admin = "admin-horario-185";
+    const negocioId = "negocio-horario-185";
+    await seedAdminNotif(admin, negocioId);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const d = context.firestore();
+        await setDoc(doc(d, "negocios", negocioId), {
+            adminUid: admin,
+            nombre: "Gimnasio Horario",
+            codigoMaestro: "MAESTRO-H185"
+        });
+        await setDoc(doc(d, "negocios_publicos", negocioId), {
+            nombre: "Gimnasio Horario",
+            codigoMaestro: "MAESTRO-H185"
+        });
+    });
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    const datos = {
+        horarioCentro: {
+            MONDAY: { cerrado: false, apertura: "09:00", cierre: "21:00" }
+        },
+        horarioActividades: {
+            MONDAY: [{ idServicio: 7, hora: "18:00" }]
+        },
+        horarioExcepciones: [
+            { fecha: 1790000000000, cerrado: true, apertura: "", cierre: "" }
+        ]
+    };
+    const batch = writeBatch(db);
+    batch.update(doc(db, "negocios", negocioId), datos);
+    batch.update(doc(db, "negocios_publicos", negocioId), datos);
+    await assertSucceeds(batch.commit());
+});
+
+test("PRUEBA 184: el ADMIN guarda excepciones de horario (dias concretos) -> ALLOW", async () => {
+    const admin = "admin-horario-184";
+    const negocioId = "negocio-horario-184";
+    await seedAdminNotif(admin, negocioId);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "negocios_publicos", negocioId), {
+            nombre: "Gimnasio Horario",
+            codigoMaestro: "MAESTRO-H184"
+        });
+    });
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        updateDoc(doc(db, "negocios_publicos", negocioId), {
+            horarioExcepciones: [
+                { fecha: 1790000000000, cerrado: true, apertura: "", cierre: "" },
+                { fecha: 1791000000000, cerrado: false, apertura: "10:00", cierre: "14:00" }
+            ]
+        })
+    );
+});

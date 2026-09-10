@@ -279,7 +279,7 @@ private fun CardSesionHoy(
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E88E5).copy(alpha = 0.08f)
+            containerColor = Color(0xFF00897B).copy(alpha = 0.08f)
         )
     ) {
         Column(
@@ -290,7 +290,7 @@ private fun CardSesionHoy(
                 Icon(
                     imageVector = Icons.Default.CalendarMonth,
                     contentDescription = null,
-                    tint = Color(0xFF1E88E5),
+                    tint = Color(0xFF00897B),
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))

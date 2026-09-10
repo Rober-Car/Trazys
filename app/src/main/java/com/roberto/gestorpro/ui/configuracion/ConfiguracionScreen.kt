@@ -23,9 +23,11 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
@@ -102,6 +104,22 @@ fun ConfiguracionScreen(
                     icono = Icons.Default.AccountBox,
                     colorAcento = Color(0xFF1E88E5),
                     onClick = { navController.navigate(Routes.MINEGOCIO) }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                AjusteAdminItem(
+                    titulo = "Horario del centro",
+                    descripcion = "Días, apertura, cierre y excepciones",
+                    icono = Icons.Default.Schedule,
+                    colorAcento = Color(0xFF1E88E5),
+                    onClick = { navController.navigate(Routes.HORARIO_CENTRO) }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                AjusteAdminItem(
+                    titulo = "Horario de actividades",
+                    descripcion = "Actividades y horas por día",
+                    icono = Icons.Default.FitnessCenter,
+                    colorAcento = Color(0xFF1E88E5),
+                    onClick = { navController.navigate(Routes.HORARIO_ACTIVIDADES) }
                 )
             }
 
