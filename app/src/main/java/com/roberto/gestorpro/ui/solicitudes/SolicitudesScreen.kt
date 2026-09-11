@@ -185,7 +185,7 @@ fun SolicitudesScreen(
 
                 false -> SinNegocioContenido(
                     titulo = "No puedes gestionar solicitudes todavía.",
-                    mensaje = "Primero debes crear tu negocio para poder gestionar las solicitudes de baja.",
+                    mensaje = "Primero debes crear tu centro para poder gestionar las solicitudes de baja.",
                     onCrearNegocio = { navController.navigate(Routes.MINEGOCIO) }
                 )
 

@@ -556,13 +556,13 @@ class VinculacionRepository @Inject constructor(
                 FirebaseFirestoreException.Code.DEADLINE_EXCEEDED ->
                     texto(R.string.vinculacion_error_sin_conexion)
 
-                else -> e.message ?: texto(R.string.auth_error_inesperado)
+                else -> texto(R.string.auth_error_inesperado)
             }
 
             is FirebaseNetworkException ->
                 texto(R.string.vinculacion_error_sin_conexion)
 
-            else -> e.message ?: texto(R.string.auth_error_inesperado)
+            else -> texto(R.string.auth_error_inesperado)
         }
     }
 }

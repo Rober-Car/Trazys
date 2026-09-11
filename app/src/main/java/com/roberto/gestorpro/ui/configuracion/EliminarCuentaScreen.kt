@@ -53,10 +53,10 @@ fun EliminarCuentaScreen(
     if (mostrarConfirmacion) {
         AlertDialog(
             onDismissRequest = { navController.popBackStack() },
-            title = { Text("Eliminar cuenta y negocio") },
+            title = { Text("Eliminar cuenta y centro") },
             text = {
                 Text(
-                    "Se eliminará PERMANENTEMENTE tu cuenta, tu negocio, tus " +
+                    "Se eliminará PERMANENTEMENTE tu cuenta, tu centro, tus " +
                         "clientes, servicios, sesiones, reservas, economía, " +
                         "notificaciones y el logo. Esta acción es irreversible. " +
                         "Introduce tu contraseña para continuar."
@@ -94,7 +94,7 @@ fun EliminarCuentaScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Se borrará tu cuenta de Firebase y todo tu negocio de " +
+                text = "Se borrará tu cuenta de Firebase y todo tu centro de " +
                     "Trazys (clientes, datos económicos, notificaciones, logo, " +
                     "etc.). No podrás recuperar esta información.",
                 style = MaterialTheme.typography.bodyMedium
@@ -130,7 +130,7 @@ fun EliminarCuentaScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             AppPrimaryButton(
-                text = if (eliminando) "Eliminando…" else "Eliminar cuenta y negocio",
+                text = if (eliminando) "Eliminando…" else "Eliminar cuenta y centro",
                 enabled = !eliminando && contrasena.isNotBlank(),
                 onClick = {
                     error = null

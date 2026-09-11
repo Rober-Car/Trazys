@@ -1316,7 +1316,14 @@ service cloud.firestore {
     // =========================================================
 
     match /configuracion_notificaciones/{configId} {
-      allow get, list: if esAdmin()
+      // El ID del documento ES el negocioId. Se usa configId (no
+      // resource.data.negocioId) para permitir también la lectura del documento
+      // cuando aún NO existe (resource == null): la app hace get() antes de
+      // crear/actualizar y sin esto la primera lectura se denegaría.
+      allow get: if esAdmin()
+        && configId == usuarioActual().negocioId;
+
+      allow list: if esAdmin()
         && resource.data.negocioId == usuarioActual().negocioId;
 
       allow create: if esAdmin()

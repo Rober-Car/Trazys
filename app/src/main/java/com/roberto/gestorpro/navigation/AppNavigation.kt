@@ -32,20 +32,22 @@ import com.roberto.gestorpro.ui.clases.DetalleSesionReservasScreen
 import com.roberto.gestorpro.ui.clientes.AñadirClienteScreen
 import com.roberto.gestorpro.ui.clientes.ClientesScreen
 import com.roberto.gestorpro.ui.clientes.PerfilClienteScreen
+import com.roberto.gestorpro.ui.gestioncentro.CentroScreen
 import com.roberto.gestorpro.ui.configuracion.ConfiguracionScreen
-import com.roberto.gestorpro.ui.configuracion.CrearNegocioScreen
+import com.roberto.gestorpro.ui.gestioncentro.CrearNegocioScreen
 import com.roberto.gestorpro.ui.configuracion.CuentaScreen
 import com.roberto.gestorpro.ui.configuracion.DatosScreen
-import com.roberto.gestorpro.ui.configuracion.MiNegocioScreen
+import com.roberto.gestorpro.ui.gestioncentro.MiNegocioScreen
 import com.roberto.gestorpro.ui.configuracion.PreferenciasScreen
 import com.roberto.gestorpro.ui.configuracion.PoliticaPrivacidadScreen
 import com.roberto.gestorpro.ui.configuracion.EliminarCuentaScreen
 import com.roberto.gestorpro.ui.configuracion.TerminosDeUsoScreen
 import com.roberto.gestorpro.ui.configuracion.GestionDenunciasScreen
-import com.roberto.gestorpro.ui.configuracion.HorarioActividadesScreen
-import com.roberto.gestorpro.ui.configuracion.HorarioCentroScreen
+import com.roberto.gestorpro.ui.gestioncentro.HorarioActividadesScreen
+import com.roberto.gestorpro.ui.gestioncentro.HorarioCentroScreen
 import com.roberto.gestorpro.ui.economia.EconomiaScreen
 import com.roberto.gestorpro.ui.home.HomeScreen
+import com.roberto.gestorpro.ui.rutinas.RutinasAdminScreen
 import com.roberto.gestorpro.ui.notificaciones.ConfigNotificacionesScreen
 import com.roberto.gestorpro.ui.notificaciones.CrearNotificacionScreen
 import com.roberto.gestorpro.ui.notificaciones.GestionNotificacionesScreen
@@ -193,6 +195,14 @@ fun AppNavigation() {
 
         composable(Routes.MINEGOCIO) {
             MiNegocioScreen(navController, mainViewModel)
+        }
+
+        composable(Routes.CENTRO) {
+            CentroScreen(navController)
+        }
+
+        composable(Routes.RUTINAS_ADMIN) {
+            RutinasAdminScreen(navController)
         }
 
         composable(Routes.CREAR_NEGOCIO) {
@@ -434,7 +444,7 @@ private fun DialogoPropietarioIndeterminado(
             Text(
                 text = "Esta instalación contiene datos locales que no pueden " +
                     "atribuirse con seguridad a ninguna cuenta. Trazys Admin guarda " +
-                    "en este dispositivo los datos de UN solo negocio.\n\n" +
+                    "en este dispositivo los datos de UN solo centro.\n\n" +
                     if (pendientes.hayAlgo()) {
                         "Además hay ${pendientes.total} operaciones pendientes de " +
                             "sincronizar de la sesión anterior.\n\n"
@@ -442,7 +452,7 @@ private fun DialogoPropietarioIndeterminado(
                         ""
                     } +
                     "La opción recomendada es empezar con los datos de TU cuenta: " +
-                    "se borrará la caché local y se reconstruirá desde la nube de tu negocio.",
+                    "se borrará la caché local y se reconstruirá desde la nube de tu centro.",
                 textAlign = TextAlign.Start
             )
         },
@@ -483,7 +493,7 @@ private fun DialogoCambioBloqueado(
                     "(eliminaciones y/o movimientos económicos).\n\n" +
                     "Para no perderlas, estas operaciones no pueden ejecutarse bajo la " +
                     "cuenta nueva. Inicia sesión con la cuenta anterior y sincroniza, " +
-                    "o descarta la caché local (se reconstruirá desde la nube de tu negocio).",
+                    "o descarta la caché local (se reconstruirá desde la nube de tu centro).",
                 textAlign = TextAlign.Start
             )
         },

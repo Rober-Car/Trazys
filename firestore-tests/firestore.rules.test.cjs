@@ -5138,3 +5138,118 @@ test("PRUEBA 184: el ADMIN guarda excepciones de horario (dias concretos) -> ALL
         })
     );
 });
+
+// =========================================================
+// CONFIGURACION DE NOTIFICACIONES (regresion guardado ADMIN)
+// =========================================================
+
+test("PRUEBA 186: el ADMIN propietario puede leer su configuracion aunque aun no exista (get) -> ALLOW", async () => {
+    const admin = "admin-config-186";
+    const negocioId = "negocio-config-186";
+    await seedAdminNotif(admin, negocioId);
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    // La app hace get() antes de crear; el documento todavia no existe.
+    await assertSucceeds(getDoc(doc(db, "configuracion_notificaciones", negocioId)));
+});
+
+test("PRUEBA 187: el ADMIN propietario guarda la configuracion con los 4 bloques -> ALLOW", async () => {
+    const admin = "admin-config-187";
+    const negocioId = "negocio-config-187";
+    await seedAdminNotif(admin, negocioId);
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        setDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: true, recordatorioHoras: 24 },
+            bajaConfirmada: { activa: true },
+            cambioHorario: { activa: true }
+        })
+    );
+});
+
+test("PRUEBA 188: el ADMIN propietario modifica solo cambioHorario -> ALLOW", async () => {
+    const admin = "admin-config-188";
+    const negocioId = "negocio-config-188";
+    await seedAdminNotif(admin, negocioId);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: false, recordatorioHoras: 0 },
+            bajaConfirmada: { activa: true },
+            cambioHorario: { activa: false }
+        });
+    });
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        updateDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            cambioHorario: { activa: true }
+        })
+    );
+});
+
+test("PRUEBA 189: el ADMIN propietario modifica morosidad y bajaConfirmada -> ALLOW", async () => {
+    const admin = "admin-config-189";
+    const negocioId = "negocio-config-189";
+    await seedAdminNotif(admin, negocioId);
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: false, recordatorioHoras: 0 },
+            bajaConfirmada: { activa: false },
+            cambioHorario: { activa: true }
+        });
+    });
+    const db = testEnvironment.authenticatedContext(admin).firestore();
+    await assertSucceeds(
+        updateDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            morosidad: { activa: true, recordatorioHoras: 24 },
+            bajaConfirmada: { activa: true }
+        })
+    );
+});
+
+test("PRUEBA 190: el ADMIN de OTRO negocio no puede leer ni guardar la configuracion -> DENY", async () => {
+    const adminAjeno = "admin-config-190";
+    const negocioId = "negocio-config-190";
+    await seedAdminNotif(adminAjeno, "negocio-ajeno-190");
+    const db = testEnvironment.authenticatedContext(adminAjeno).firestore();
+    await assertFails(getDoc(doc(db, "configuracion_notificaciones", negocioId)));
+    await assertFails(
+        setDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: true, recordatorioHoras: 24 },
+            bajaConfirmada: { activa: true },
+            cambioHorario: { activa: true }
+        })
+    );
+});
+
+test("PRUEBA 191: el CLIENTE no puede leer ni guardar la configuracion -> DENY", async () => {
+    const cliente = "cliente-config-191";
+    const negocioId = "negocio-config-191";
+    await seedClienteNotif(cliente, 19101, negocioId);
+    const db = testEnvironment.authenticatedContext(cliente).firestore();
+    await assertFails(getDoc(doc(db, "configuracion_notificaciones", negocioId)));
+    await assertFails(
+        setDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: true, recordatorioHoras: 24 },
+            bajaConfirmada: { activa: true },
+            cambioHorario: { activa: true }
+        })
+    );
+});
+
+test("PRUEBA 192: sin autenticacion no se puede leer ni guardar la configuracion -> DENY", async () => {
+    const negocioId = "negocio-config-192";
+    const db = testEnvironment.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, "configuracion_notificaciones", negocioId)));
+    await assertFails(
+        setDoc(doc(db, "configuracion_notificaciones", negocioId), {
+            negocioId,
+            morosidad: { activa: true, recordatorioHoras: 24 },
+            bajaConfirmada: { activa: true },
+            cambioHorario: { activa: true }
+        })
+    );
+});

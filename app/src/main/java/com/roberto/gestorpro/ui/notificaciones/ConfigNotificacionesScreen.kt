@@ -41,6 +41,7 @@ import androidx.navigation.NavHostController
 import com.roberto.gestorpro.model.ConfiguracionNotificaciones
 import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
+import com.roberto.gestorpro.ui.components.AyudaContextual
 import com.roberto.gestorpro.ui.viewmodel.NotificacionesViewModel
 
 /**
@@ -112,26 +113,25 @@ fun ConfigNotificacionesScreen(
                 AppNavigationBackButton(onClick = { navController.popBackStack() })
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Configuración de notificaciones",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        AyudaContextual(
+                            titulo = "Notificaciones preconfiguradas",
+                            texto = "Estas opciones activan o desactivan los avisos " +
+                                "automáticos que generará el sistema. El envío " +
+                                "automático se implementará en una fase posterior."
+                        )
+                    }
                     Text(
-                        text = "Configuración de notificaciones",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = "Preconfiguradas del negocio",
+                        text = "Preconfiguradas del centro",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
                 }
             }
-
-            Text(
-                text = "Estas opciones activan o desactivan los avisos automáticos " +
-                    "que generará el sistema. El envío automático se implementará " +
-                    "en una fase posterior.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
 
             when {
                 cargandoConfiguracion -> {

@@ -90,7 +90,7 @@ class ServicioRemotoRepository @Inject constructor(
             if (e.message?.contains("permission", ignoreCase = true) == true) {
                 return ResultadoAutenticacion(
                     false,
-                    "El idServicio ya está en uso por otro negocio"
+                    "El idServicio ya está en uso por otro centro"
                 )
             }
             return ResultadoAutenticacion(false, mensajeDe(e))
@@ -102,7 +102,7 @@ class ServicioRemotoRepository @Inject constructor(
             } else {
                 ResultadoAutenticacion(
                     false,
-                    "El idServicio ya está en uso por otro negocio"
+                    "El idServicio ya está en uso por otro centro"
                 )
             }
         }
@@ -122,7 +122,7 @@ class ServicioRemotoRepository @Inject constructor(
             }.esperar()
             ResultadoAutenticacion(true, "Servicio sincronizado")
         } catch (e: ColisionServicioException) {
-            ResultadoAutenticacion(false, "El idServicio ya está en uso por otro negocio")
+            ResultadoAutenticacion(false, "El idServicio ya está en uso por otro centro")
         } catch (e: Exception) {
             registrarError("CREATE de servicios/${servicio.idServicio}", e)
             ResultadoAutenticacion(false, mensajeDe(e))

@@ -125,7 +125,7 @@ class ClienteRepository @Inject constructor(
         return when {
             e.message?.contains("permission", ignoreCase = true) == true ->
                 texto(R.string.perfil_error_permisos)
-            else -> e.message ?: texto(R.string.auth_error_inesperado)
+            else -> texto(R.string.auth_error_inesperado)
         }
     }
 }

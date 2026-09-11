@@ -189,20 +189,20 @@
     <string name="home_no_vinculado_descripcion">Vincula tu cuenta para acceder a las funciones de tu centro.</string>
     <string name="home_vincular_centro">Vincular centro</string>
     <string name="home_card_actividades">Reservas</string>
-    <string name="home_card_actividades_descripcion">Consulta y reserva tus clases</string>
+    <string name="home_card_actividades_descripcion">Tus clases y reservas</string>
     <string name="home_card_rutinas">Rutinas</string>
-    <string name="home_card_rutinas_descripcion">Rutinas de entrenamiento</string>
+    <string name="home_card_rutinas_descripcion">Tus entrenamientos</string>
     <string name="rutinas_proximamente">Próximamente podrás consultar tus rutinas de entrenamiento.</string>
     <string name="home_card_ajustes">Ajustes</string>
-    <string name="home_card_ajustes_descripcion">Configuración general</string>
+    <string name="home_card_ajustes_descripcion">Ajustes de la app</string>
     <string name="home_card_notificaciones">Notificaciones</string>
-    <string name="home_card_notificaciones_descripcion">Consulta tus avisos</string>
+    <string name="home_card_notificaciones_descripcion">Tus avisos</string>
 
     <!-- ===== Horario (centro y actividades) ===== -->
     <string name="home_card_horario">Horario del centro</string>
-    <string name="home_card_horario_descripcion">Apertura y cierre del centro</string>
+    <string name="home_card_horario_descripcion">Horario de apertura</string>
     <string name="home_card_horario_actividades">Actividades</string>
-    <string name="home_card_horario_actividades_descripcion">Horarios habituales de las actividades del centro</string>
+    <string name="home_card_horario_actividades_descripcion">Horario de actividades</string>
     <string name="horario_titulo">Horario</string>
     <string name="horario_titulo_centro">Horario del centro</string>
     <string name="horario_titulo_actividades">Actividades</string>
@@ -310,6 +310,8 @@
     <string name="notif_accion_denunciar">Denunciar</string>
     <string name="notif_denunciar_titulo">Denunciar contenido</string>
     <string name="notif_recibir_avisos_centro">Recibir avisos del centro</string>
+    <string name="notif_canal_nombre">Notificaciones del centro</string>
+    <string name="notif_push_titulo_defecto">Notificación</string>
 
     <!-- ===== Actividades / Clases de hoy ===== -->
     <string name="clases_titulo">Clases de hoy</string>

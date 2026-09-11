@@ -391,8 +391,7 @@ class MainViewModel @Inject constructor(
                 autenticacionRepository.cerrarSesion()
                 onTerminado(null)
             } catch (e: Exception) {
-                val detalle = e.message
-                    ?: texto(R.string.eliminar_error_detalle_desconocido)
+                val detalle = texto(R.string.eliminar_error_detalle_desconocido)
                 onTerminado(texto(R.string.eliminar_error_generico, detalle))
             } finally {
                 _eliminandoCuenta.value = false
@@ -864,7 +863,7 @@ class MainViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 _errorSolicitudBaja.value =
-                    e.message ?: texto(R.string.cuenta_error_cargar_solicitudes)
+                    texto(R.string.cuenta_error_cargar_solicitudes)
             } finally {
                 _cargandoSolicitudesBaja.value = false
             }

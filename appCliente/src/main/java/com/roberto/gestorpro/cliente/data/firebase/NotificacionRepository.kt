@@ -61,7 +61,9 @@ class NotificacionRepository @Inject constructor(
                 origen = datos["origen"] as? String ?: "MANUAL",
                 fechaEnvio = fechaEnvio,
                 leida = (datos["leida"] as? Boolean) ?: false,
-                fechaLeida = fechaEnMilisegundos(datos["fechaLeida"])
+                fechaLeida = fechaEnMilisegundos(datos["fechaLeida"]),
+                tituloEn = datos["tituloEn"] as? String,
+                subtipo = datos["subtipo"] as? String
             )
         }
     }

@@ -1,0 +1,48 @@
+<resources>
+    <!-- ============================================================= -->
+    <!-- Documentos legales de Trazys (app Cliente) — ESPAÑOL          -->
+    <!-- Texto de referencia. No modificar el contenido jurídico sin   -->
+    <!-- revisión expresa. Las claves leg_* están separadas de las     -->
+    <!-- cadenas normales de UI para facilitar su revisión.            -->
+    <!-- ============================================================= -->
+
+    <!-- ===== Términos de uso: cuerpo completo ===== -->
+    <string name="legal_terminos_cuerpo">1. Objeto\nTrazys es una aplicación de gestión de gimnasios formada por una app de administración (ADMIN) y una app para clientes (CLIENTE). Estos términos regulan tu uso de Trazys.\n\nResponsable: Roberto Carlos Salvador Martin. NIF: 48910659D. Domicilio: Avenida de Huelva, 6, 21830 Bonares (Huelva), España. Contacto: Pollinox@hotmail.com.\n\n2. Cuentas\nEres responsable de mantener seguras tus credenciales y de que los datos que introduces sean correctos.\n\n3. Contenido que puedes aportar\nComo CLIENTE puedes aportar tus datos personales, tu fotografía de perfil y tu relación con el centro. Tu contenido solo es accesible por tu centro y por ti; no se publica de forma abierta.\n\n4. Contenido prohibido\nQueda prohibido introducir contenido ilegal, ofensivo, discriminatorio, de acoso, que infrinja derechos de terceros o que no corresponda a la finalidad de Trazys.\n\n5. Fotografías y datos\nTu fotografía se almacena de forma segura en Firebase Storage y solo es visible para tu centro. Puedes corregir o retirar tus datos personales según lo indicado en la política de privacidad.\n\n6. Retirada de contenido y denuncias\nPuedes solicitar la retirada de contenido o informar de un uso indebido escribiendo al contacto indicado. Las solicitudes se atienden manualmente.\n\n7. Uso indebido e incumplimiento\nEl uso indebido puede conllevar la retirada de contenido, la suspensión o la eliminación de la cuenta, además de las consecuencias legales que correspondan.\n\n8. Eliminación de cuenta\nPuedes eliminar tu cuenta desde la aplicación (Configuración &gt; Eliminar mi cuenta). Se eliminan tu cuenta y tus datos personales; el histórico económico del negocio se conserva según lo indicado en la aplicación.\n\n9. Limitaciones y responsabilidad\nTrazys se presta en el estado en que se encuentra. Tu centro es el responsable de la relación contigo y del tratamiento de tus datos conforme a su propia política.\n\n10. Cambios\nEstos términos pueden actualizarse. Cuando cambie la versión vigente, deberás aceptar la nueva versión para continuar usando Trazys.\n\nPuedes consultar también la política de privacidad de Trazys, que es un documento independiente sobre el tratamiento de datos personales.</string>
+
+    <!-- ===== Política de privacidad: títulos y cuerpos por sección ===== -->
+    <string name="legal_privacidad_seccion1_titulo">1. Responsable del tratamiento</string>
+    <string name="legal_privacidad_seccion1_cuerpo">Trazys es una aplicación de gestión de un centro.\n\nResponsable del tratamiento: Roberto Carlos Salvador Martin.\nNIF: 48910659D.\nDomicilio: Avenida de Huelva, 6, 21830 Bonares (Huelva), España.\nContacto de privacidad y ejercicio de derechos: Pollinox@hotmail.com.</string>
+
+    <string name="legal_privacidad_seccion2_titulo">2. Qué datos tratamos</string>
+    <string name="legal_privacidad_seccion2_cuerpo">Cuando te das de alta o utilizas la aplicación como cliente del centro tratamos los siguientes datos:\n\n• Datos de identificación: nombre, apellidos y DNI.\n• Datos de contacto: teléfono y correo electrónico.\n• Fecha de nacimiento (si la indicas).\n• Fotografía: se guarda en tu ficha y se almacena de forma segura en la nube de Trazys (Firebase Storage) para que tu centro pueda verla.\n• Datos de tu relación con el centro: negocio al que estás vinculado, servicios contratados, sesiones y reservas, y estado de tu ficha.\n• Datos económicos de tu cuenta con el centro: cuotas y movimientos, importes, estado de pago, fecha y método de pago, y deuda pendiente. No se almacenan números de tarjeta ni datos bancarios.\n• Solicitudes de baja y su estado.\n• Notificaciones recibidas y tus preferencias de notificación.\n• Identificador del dispositivo: se registra para gestionar las notificaciones de tu cuenta.\n• Datos de la cuenta de acceso: correo y contraseña (gestionada por Firebase Authentication) y un identificador interno de usuario.</string>
+
+    <string name="legal_privacidad_seccion3_titulo">3. Para qué utilizamos tus datos</string>
+    <string name="legal_privacidad_seccion3_cuerpo">Utilizamos los datos para:\n\n• Gestionar tu relación con el centro: alta, servicios contratados, sesiones, reservas y estado de tu ficha.\n• Gestionar las cuotas y cobros del centro: movimientos, importes, estado, fecha y método de pago y deuda.\n• Gestionar las solicitudes de baja.\n• Enviarte notificaciones relacionadas con tu relación con el centro (por ejemplo, recordatorios o avisos), si las has autorizado en tu dispositivo.\n• Atender solicitudes y consultas y, en su caso, cumplir obligaciones legales.\n\nLa aplicación no utiliza tu ubicación: no solicita permisos de localización ni recoge tu posición.</string>
+
+    <string name="legal_privacidad_seccion4_titulo">4. Base jurídica</string>
+    <string name="legal_privacidad_seccion4_cuerpo">Tratamos tus datos porque es necesario para la relación de servicios que mantienes con el centro (por ejemplo, gestionar tu alta, tus servicios, tus reservas y tus pagos) y por el interés legítimo del centro en gestionar y administrar correctamente esa relación.\n\nCuando te enviamos notificaciones a tu dispositivo tratamos los datos con tu consentimiento, que puedes retirar en cualquier momento desactivando las notificaciones en tu dispositivo o en la aplicación.\n\nCiertos datos económicos pueden conservarse además por obligaciones legales aplicables.</string>
+
+    <string name="legal_privacidad_seccion5_titulo">5. Cómo se almacenan y protegen los datos</string>
+    <string name="legal_privacidad_seccion5_cuerpo">Los datos se almacenan de forma segura en servicios en la nube de Google (Firebase) y, en parte, en tu propio dispositivo. Las comunicaciones con los servidores se realizan de forma cifrada y el acceso está limitado a quien gestiona el centro y a ti mismo según tu rol. No se comparten los datos con terceros para publicidad.</string>
+
+    <string name="legal_privacidad_seccion6_titulo">6. Proveedores de servicios</string>
+    <string name="legal_privacidad_seccion6_cuerpo">La aplicación utiliza los servicios de Google:\n\n• Firebase Authentication: identificación con correo y contraseña.\n• Firebase (Cloud Firestore): almacenamiento de los datos de la aplicación.\n• Firebase Cloud Messaging (FCM): se utiliza para registrar el identificador de tu dispositivo y gestionar tus notificaciones.\n\nGoogle puede tratar datos fuera del Espacio Económico Europeo. Cuando ello resulte necesario, se aplicarán las garantías previstas por la normativa de protección de datos, incluidas, en su caso, las cláusulas contractuales tipo u otros mecanismos válidos. No se utiliza ningún otro proveedor que trate los datos personales de los usuarios.</string>
+
+    <string name="legal_privacidad_seccion7_titulo">7. Conservación</string>
+    <string name="legal_privacidad_seccion7_cuerpo">Los datos personales se conservarán durante el tiempo necesario para cumplir las finalidades para las que fueron recabados y mientras exista una relación con el usuario, y posteriormente durante los plazos necesarios para atender las obligaciones legales y posibles responsabilidades que puedan derivarse del tratamiento.</string>
+
+    <string name="legal_privacidad_seccion8_titulo">8. Derechos de los usuarios</string>
+    <string name="legal_privacidad_seccion8_cuerpo">Puedes ejercer, cuando corresponda, los derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad, así como retirar tu consentimiento cuando el tratamiento se base en él. También puedes reclamar ante la Agencia Española de Protección de Datos (www.aepd.es) cuando lo consideres oportuno.</string>
+
+    <string name="legal_privacidad_seccion9_titulo">9. Cómo ejercer tus derechos</string>
+    <string name="legal_privacidad_seccion9_cuerpo">Puedes ejercer tus derechos escribiendo a Pollinox@hotmail.com, indicando tu nombre y el derecho que quieres ejercer. Atenderemos tu solicitud en los plazos legalmente establecidos.</string>
+
+    <string name="legal_privacidad_seccion10_titulo">10. Menores</string>
+    <string name="legal_privacidad_seccion10_cuerpo">Trazys no está dirigida a un público determinado y no impide su uso por menores por el mero hecho de serlo. No obstante, cuando el tratamiento se base en el consentimiento, en España se considera que un mayor de 14 años puede prestar su consentimiento; para menores de esa edad será necesario el consentimiento del titular de la patria potestad o tutela. La aplicación no dispone de un mecanismo de verificación de la edad del usuario.</string>
+
+    <string name="legal_privacidad_seccion11_titulo">11. Cambios de la política</string>
+    <string name="legal_privacidad_seccion11_cuerpo">Podremos actualizar esta política para reflejar cambios en la aplicación o en la normativa. La versión vigente estará siempre disponible en esta sección.</string>
+
+    <string name="legal_privacidad_seccion12_titulo">12. Contacto</string>
+    <string name="legal_privacidad_seccion12_cuerpo">Para cualquier cuestión relacionada con esta política o con tus datos personales puedes escribir a: Pollinox@hotmail.com.</string>
+</resources>

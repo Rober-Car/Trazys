@@ -4,6 +4,7 @@ const { getMessaging } = require("firebase-admin/messaging");
 const { logger } = require("firebase-functions/v2");
 const { db } = require("./firestore");
 const { esTokenInvalido, dividirEnLotes, MAX_TOKENS_POR_LOTE } = require("./tokens");
+const { construirMensajeMulticast } = require("./plan_envio");
 
 /**
  * envio.js
@@ -29,6 +30,8 @@ async function enviarFCMaClientes({
   tipo,
   origen,
   clienteIds,
+  tituloEn,
+  soloDatos = false,
 }) {
   const messaging = getMessaging();
   const resultado = {
@@ -65,17 +68,20 @@ async function enviarFCMaClientes({
 
     for (const lote of dividirEnLotes(tokens, MAX_TOKENS_POR_LOTE)) {
       try {
-        const respuesta = await messaging.sendEachForMulticast({
-          tokens: lote.map((t) => t.token),
-          notification: { title: titulo, body: mensaje },
-          data: {
-            notificacionId: String(notificacionId),
-            clienteId: String(clienteId),
-            tipo: String(tipo),
-            negocioId: String(negocioId),
-            origen: String(origen || ""),
-          },
-        });
+        const respuesta = await messaging.sendEachForMulticast(
+          construirMensajeMulticast({
+            tokens: lote.map((t) => t.token),
+            notificacionId,
+            clienteId,
+            tipo,
+            negocioId,
+            origen,
+            titulo,
+            mensaje,
+            tituloEn,
+            soloDatos,
+          })
+        );
         respuesta.responses.forEach((r, i) => {
           if (r.success) {
             resultado.enviados += 1;

@@ -7,12 +7,13 @@
  * Triggers:
  *   - notificacionInmediata  : onDocumentCreated("notificaciones/{id}").
  *   - procesarProgramadas    : onSchedule cada 2 minutos (PROGRAMADA vencidas).
- *   - recordatorioMorosidad  : onSchedule cada 1 hora (recordatorio 24h).
- *   - entradaMorosidad       : onDocumentUpdated("clientes/{id}").
+ *   - entradaMorosidad       : onSchedule diario 08:00 Europe/Madrid (morosidad por fecha).
+ *   - recordatorioMorosidad  : onSchedule diario 08:00 Europe/Madrid (recordatorio 24h).
  *   - bajaConfirmada         : onDocumentUpdated("clientes/{id}").
  *
- * Índice compuesto requerido en Firestore:
+ * Índices compuestos requeridos en Firestore:
  *   notificaciones(estado ASC, fechaProgramada ASC)
+ *   clientes(estado ASC, fechaFinActual ASC)
  */
 const { initializeApp } = require("firebase-admin/app");
 initializeApp();
@@ -43,11 +44,17 @@ exports.notificacionInmediata = onDocumentCreated(
 
 exports.procesarProgramadas = onSchedule("every 2 minutes", procesarProgramadas);
 
-exports.recordatorioMorosidad = onSchedule("every 1 hour", procesarRecordatorioMorosidad);
-
-exports.entradaMorosidad = onDocumentUpdated(
-  "clientes/{clienteId}",
+// Barrido diario (~08:00 Europe/Madrid) de la morosidad por fecha: la entrada
+// en morosidad se produce por el paso del tiempo, no por una escritura en
+// clientes/{id}, por lo que no puede depender de onDocumentUpdated.
+exports.entradaMorosidad = onSchedule(
+  { schedule: "0 8 * * *", timeZone: "Europe/Madrid" },
   procesarEntradaMorosidad
+);
+
+exports.recordatorioMorosidad = onSchedule(
+  { schedule: "0 8 * * *", timeZone: "Europe/Madrid" },
+  procesarRecordatorioMorosidad
 );
 
 exports.bajaConfirmada = onDocumentUpdated(

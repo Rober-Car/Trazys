@@ -55,4 +55,127 @@
     <string name="auth_error_no_enviar_correo">Could not send the email. Try again</string>
     <string name="auth_cuenta_creada_ok">Account created successfully</string>
     <string name="auth_sesion_iniciada_ok">Signed in successfully</string>
+
+    <!-- ===== Home (ADMIN) ===== -->
+    <string name="home_panel_principal">Main panel</string>
+    <string name="home_accesos_rapidos">Quick access</string>
+    <string name="home_centro_desc">Identity and schedules</string>
+    <string name="home_clientes_titulo">Clients</string>
+    <string name="home_clientes_desc">Client management</string>
+    <string name="home_actividades_titulo">Activities</string>
+    <string name="home_actividades_desc">Create activities</string>
+    <string name="home_economia_titulo">Finance</string>
+    <string name="home_economia_desc">Balance and data</string>
+    <string name="home_ajustes_titulo">Settings</string>
+    <string name="home_ajustes_desc">Configuration</string>
+    <string name="home_notificaciones_titulo">Sent notifications</string>
+    <string name="home_notificaciones_desc">Send notices to your clients</string>
+    <string name="home_solicitudes_titulo">Cancellation requests</string>
+    <string name="home_solicitudes_desc">Pending requests</string>
+
+    <!-- ===== Center (ADMIN) ===== -->
+    <string name="centro_titulo">Center</string>
+    <string name="centro_logo_desc">Center logo</string>
+    <string name="centro_nombre_label">Center name</string>
+    <string name="centro_logo_titulo">Logo</string>
+    <string name="centro_logo_seleccionar">Select logo</string>
+    <string name="centro_logo_cambiar">Change logo</string>
+    <string name="centro_logo_quitar">Remove</string>
+    <string name="centro_estado_comprobando">Checking center status…</string>
+    <string name="centro_estado_sin_crear">You have not created your center in the cloud yet.</string>
+    <string name="centro_estado_creado">Your center is already created in the cloud.</string>
+    <string name="centro_crear">Create center</string>
+    <string name="centro_guardar_cambios">Save changes</string>
+    <string name="centro_codigo_maestro_label">Master code</string>
+    <string name="centro_ver_terminos">View and accept the Terms of Use</string>
+    <string name="centro_item_identidad_desc">Name, logo and master code</string>
+    <string name="centro_horario_centro_desc">Days, opening, closing and special days</string>
+    <string name="centro_horario_actividades_desc">Activities and times per day</string>
+    <string name="centro_ayuda_crear">Pressing Save will create it with the name, logo and master code provided, and you will be able to link clients.</string>
+    <string name="centro_ayuda_guardar">Saving updates the name, logo and master code (changing it does not affect already linked clients).</string>
+    <string name="centro_ayuda_codigo">Your clients use it to link. Changing it does not affect already linked clients.</string>
+    <string name="centro_ayuda_crear_negocio">Create your center in the cloud to be able to link clients. Your clients will use the master code to link to you.</string>
+    <string name="centro_ayuda_codigo_unico">Unique code that you will share with your clients.</string>
+    <string name="centro_error_nombre_vacio">The center name cannot be empty</string>
+    <string name="centro_error_codigo_vacio">The master code cannot be empty</string>
+
+    <!-- ===== Routines (ADMIN) ===== -->
+    <string name="rutinas_titulo">Routines</string>
+    <string name="rutinas_proximamente">Coming soon</string>
+    <string name="rutinas_mensaje">We are working on training routines. This section will be available very soon.</string>
+
+    <!-- ===== Schedule (ADMIN) ===== -->
+    <string name="horario_centro_titulo">Center schedule</string>
+    <string name="horario_centro_subtitulo">Weekly schedule and special days</string>
+    <string name="horario_actividades_titulo">Activity schedule</string>
+    <string name="horario_act_subtitulo">Weekly activity schedule</string>
+    <string name="horario_aplicar_semana_titulo">Apply schedule to the whole week</string>
+    <string name="horario_aplicar_semana_boton">Apply to the whole week</string>
+    <string name="horario_aplicar_semana_ayuda">Define the time slots here once and apply them to all open days. Closed days remain closed.</string>
+    <string name="horario_anadir_tramo">Add time slot</string>
+    <string name="horario_habitual_titulo">Regular schedule</string>
+    <string name="horario_habitual_ayuda">Configure for each day whether the center is open and its time slots. You can add several time slots per day.</string>
+    <string name="horario_abierto">Open</string>
+    <string name="horario_cerrado">Closed</string>
+    <string name="horario_dias_especiales">Special days</string>
+    <string name="horario_dias_especiales_ayuda">Holidays, closures or special schedules for a specific date. They take priority over the regular schedule for that day.</string>
+    <string name="horario_sin_dias_especiales">No special days configured.</string>
+    <string name="horario_editar_dia_especial">Edit special day</string>
+    <string name="horario_eliminar_dia_especial">Delete special day</string>
+    <string name="horario_anadir_dia_especial">Add special day</string>
+    <string name="horario_guardando">Saving...</string>
+    <string name="horario_guardar">Save schedule</string>
+    <string name="horario_error_tramos">Check the time slots: opening must be before closing and there can be no overlaps.</string>
+    <string name="horario_apertura">Opening</string>
+    <string name="horario_cierre">Closing</string>
+    <string name="horario_apertura_semana">Opening (whole week)</string>
+    <string name="horario_cierre_semana">Closing (whole week)</string>
+    <string name="horario_nuevo_dia_especial">New special day</string>
+    <string name="horario_fecha">Date</string>
+    <string name="horario_error_hora">Enter a valid opening and closing time.</string>
+    <string name="horario_error_orden">Opening must be before closing.</string>
+    <string name="horario_error_solape">There are overlapping time slots.</string>
+    <string name="horario_editar_apertura">Edit opening</string>
+    <string name="horario_editar_cierre">Edit closing</string>
+    <string name="horario_eliminar_tramo">Delete time slot</string>
+    <string name="horario_dia">Day</string>
+    <string name="horario_act_centro">Center activities</string>
+    <string name="horario_act_sin_actividades">No activities created. Create activities to configure their schedule.</string>
+    <string name="horario_act_anadir">Add activity to %1$s</string>
+    <string name="horario_act_dia_titulo">%1$s activities</string>
+    <string name="horario_act_sin_dia">No activities configured for this day.</string>
+    <string name="horario_act_fallback">Activity %1$d</string>
+    <string name="horario_act_hora">Usual time: %1$s</string>
+    <string name="horario_act_editar">Edit activity</string>
+    <string name="horario_act_eliminar">Delete activity</string>
+    <string name="horario_act_anadir_dialogo">Add activity · %1$s</string>
+    <string name="horario_act_editar_dialogo">Edit activity · %1$s</string>
+    <string name="horario_act_actividad">Activity</string>
+    <string name="horario_act_ayuda">This schedule is independent of the sessions: it is not modified when creating, editing or deleting sessions.</string>
+    <string name="horario_seccion_configurar">Configure schedule</string>
+    <string name="horario_configurar_ayuda">Set the global schedule and the weekly schedule for each day.</string>
+    <string name="horario_seccion_dia">Day schedule</string>
+    <string name="horario_act_configurar_ayuda">Choose the day, the activity and the time to add it to the schedule.</string>
+    <string name="horario_dia_ayuda">Shows the activities already configured for the selected day.</string>
+
+    <!-- ===== Generic actions ===== -->
+    <string name="accion_aceptar">Accept</string>
+    <string name="accion_cancelar">Cancel</string>
+    <string name="accion_guardar">Save</string>
+
+    <!-- ===== Weekdays ===== -->
+    <string name="dia_lunes">Monday</string>
+    <string name="dia_martes">Tuesday</string>
+    <string name="dia_miercoles">Wednesday</string>
+    <string name="dia_jueves">Thursday</string>
+    <string name="dia_viernes">Friday</string>
+    <string name="dia_sabado">Saturday</string>
+    <string name="dia_domingo">Sunday</string>
+    <string name="dia_corto_lun">Mon</string>
+    <string name="dia_corto_mar">Tue</string>
+    <string name="dia_corto_mie">Wed</string>
+    <string name="dia_corto_jue">Thu</string>
+    <string name="dia_corto_vie">Fri</string>
+    <string name="dia_corto_sab">Sat</string>
+    <string name="dia_corto_dom">Sun</string>
 </resources>

@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SinNegocioContenido(
     titulo: String = "No puedes crear clientes todavía.",
-    mensaje: String = "Primero debes crear tu negocio para poder dar de alta clientes.",
+    mensaje: String = "Primero debes crear tu centro para poder dar de alta clientes.",
     onCrearNegocio: () -> Unit
 ) {
     Column(
@@ -67,7 +67,7 @@ fun SinNegocioContenido(
         )
         Spacer(modifier = Modifier.size(24.dp))
         AppPrimaryButton(
-            text = "Crear mi negocio",
+            text = "Crear mi centro",
             onClick = onCrearNegocio,
             fullWidth = false
         )

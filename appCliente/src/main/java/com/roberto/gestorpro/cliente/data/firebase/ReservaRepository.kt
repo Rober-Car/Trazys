@@ -505,9 +505,9 @@ class ReservaRepository @Inject constructor(
                 texto(R.string.vinculacion_error_sin_conexion)
             FirebaseFirestoreException.Code.ABORTED ->
                 texto(R.string.reserva_error_sesion_cambio)
-            else -> e.message ?: texto(R.string.auth_error_inesperado)
+            else -> texto(R.string.auth_error_inesperado)
         }
-        else -> e.message ?: texto(R.string.auth_error_inesperado)
+        else -> texto(R.string.auth_error_inesperado)
     }
 }
 

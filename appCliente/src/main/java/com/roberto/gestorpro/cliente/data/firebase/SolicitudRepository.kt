@@ -154,7 +154,7 @@ class SolicitudRepository @Inject constructor(
         return when {
             e.message?.contains("permission", ignoreCase = true) == true ->
                 texto(R.string.cuenta_error_permisos_baja)
-            else -> e.message ?: texto(R.string.cuenta_error_inesperado_baja)
+            else -> texto(R.string.cuenta_error_inesperado_baja)
         }
     }
 }

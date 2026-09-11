@@ -548,7 +548,7 @@ class MainViewModel @Inject constructor(
      * y guarda además el nombre en DataStore para la identidad local.
      */
     suspend fun crearNegocio(nombre: String, codigoMaestro: String): String? {
-        if (nombre.isBlank()) return "El nombre del negocio no puede estar vacío"
+        if (nombre.isBlank()) return "El nombre del centro no puede estar vacío"
         if (codigoMaestro.isBlank()) return "El código maestro no puede estar vacío"
 
         _operandoRemoto.value = true
@@ -711,7 +711,7 @@ class MainViewModel @Inject constructor(
      * nube, para que la app Cliente vea el nuevo nombre.
      */
     suspend fun sincronizarNombreNegocio(nombre: String): String? {
-        if (nombre.isBlank()) return "El nombre del negocio no puede estar vacío"
+        if (nombre.isBlank()) return "El nombre del centro no puede estar vacío"
 
         _operandoRemoto.value = true
         try {

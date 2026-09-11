@@ -1,4 +1,4 @@
-package com.roberto.gestorpro.ui.configuracion
+package com.roberto.gestorpro.ui.gestioncentro
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -38,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -49,14 +48,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
+import com.roberto.gestorpro.ui.components.AyudaContextual
 import com.roberto.gestorpro.ui.components.LogoNegocioAutenticado
 import com.roberto.gestorpro.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
@@ -260,7 +262,7 @@ fun MiNegocioScreen(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
-                    text = "Mi negocio",
+                    text = stringResource(R.string.centro_titulo),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -277,8 +279,8 @@ fun MiNegocioScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre del negocio") },
-                placeholder = { Text("Trazys") },
+                label = { Text(stringResource(R.string.centro_nombre_label)) },
+                placeholder = { Text(stringResource(R.string.app_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -291,7 +293,7 @@ fun MiNegocioScreen(
              * Sirve para separar visualmente el nombre del logo.
              */
             Text(
-                text = "Logo",
+                text = stringResource(R.string.centro_logo_titulo),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -313,7 +315,7 @@ fun MiNegocioScreen(
                         // (mismo patrón que Home/Login), nunca con GET HTTP anónimo.
                         LogoNegocioAutenticado(
                             url = logo,
-                            contentDescription = "Logo del negocio",
+                            contentDescription = stringResource(R.string.centro_logo_desc),
                             tamano = 140.dp,
                             bordeColor = Color(0xFF1E88E5),
                             bordeAncho = 2.dp
@@ -321,7 +323,7 @@ fun MiNegocioScreen(
                     } else {
                         AsyncImage(
                             model = File(logo),
-                            contentDescription = "Logo del negocio",
+                            contentDescription = stringResource(R.string.centro_logo_desc),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(140.dp)
@@ -376,7 +378,13 @@ fun MiNegocioScreen(
                             )
                         }
                     ) {
-                        Text(if (logo.isBlank()) "Seleccionar logo" else "Cambiar logo")
+                        Text(
+                            if (logo.isBlank()) {
+                                stringResource(R.string.centro_logo_seleccionar)
+                            } else {
+                                stringResource(R.string.centro_logo_cambiar)
+                            }
+                        )
                     }
 
                     /**
@@ -390,7 +398,7 @@ fun MiNegocioScreen(
                         OutlinedButton(
                             onClick = { logo = "" }
                         ) {
-                            Text("Quitar")
+                            Text(stringResource(R.string.centro_logo_quitar))
                         }
                     }
                 }
@@ -405,21 +413,29 @@ fun MiNegocioScreen(
              */
             when (negocioEnNube) {
                 null -> Text(
-                    text = "Comprobando estado del negocio…",
+                    text = stringResource(R.string.centro_estado_comprobando),
                     style = MaterialTheme.typography.bodySmall
                 )
-                false -> Text(
-                    text = "Aún no has creado tu negocio en la nube. " +
-                        "Al pulsar Guardar se creará con el nombre, el logo y el " +
-                        "código maestro indicados, y podrás vincular clientes.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                else -> Text(
-                    text = "Tu negocio ya está creado en la nube. Guardar actualiza " +
-                        "el nombre, el logo y el código maestro (cambiarlo no afecta " +
-                        "a los clientes ya vinculados).",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                false -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.centro_estado_sin_crear),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    AyudaContextual(
+                        titulo = stringResource(R.string.centro_crear),
+                        texto = stringResource(R.string.centro_ayuda_crear)
+                    )
+                }
+                else -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.centro_estado_creado),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    AyudaContextual(
+                        titulo = stringResource(R.string.centro_guardar_cambios),
+                        texto = stringResource(R.string.centro_ayuda_guardar)
+                    )
+                }
             }
 
             /**
@@ -431,14 +447,11 @@ fun MiNegocioScreen(
             OutlinedTextField(
                 value = codigoMaestro,
                 onValueChange = { codigoMaestro = it },
-                label = { Text("Código maestro") },
-                supportingText = {
-                    Text(
-                        if (negocioEnNube == false) {
-                            "Lo usarán tus clientes para vincularse"
-                        } else {
-                            "Lo usan tus clientes para vincularse; cambiarlo no afecta a los ya vinculados"
-                        }
+                label = { Text(stringResource(R.string.centro_codigo_maestro_label)) },
+                trailingIcon = {
+                    AyudaContextual(
+                        titulo = stringResource(R.string.centro_codigo_maestro_label),
+                        texto = stringResource(R.string.centro_ayuda_codigo)
                     )
                 },
                 singleLine = true,
@@ -458,7 +471,7 @@ fun MiNegocioScreen(
                     onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Ver y aceptar los Términos de uso")
+                    Text(stringResource(R.string.centro_ver_terminos))
                 }
             }
 
@@ -473,19 +486,19 @@ fun MiNegocioScreen(
              */
             AppPrimaryButton(
                 text = when (negocioEnNube) {
-                    true -> "Guardar cambios"
-                    else -> "Crear negocio"
+                    true -> stringResource(R.string.centro_guardar_cambios)
+                    else -> stringResource(R.string.centro_crear)
                 },
                 onClick = {
                     alcance.launch {
                         mensajeRemoto = ""
                         val estadoNegocio = negocioEnNube ?: return@launch
                         if (nombre.isBlank()) {
-                            mensajeRemoto = "El nombre del negocio no puede estar vacío"
+                            mensajeRemoto = context.getString(R.string.centro_error_nombre_vacio)
                             return@launch
                         }
                         if (codigoMaestro.isBlank()) {
-                            mensajeRemoto = "El código maestro no puede estar vacío"
+                            mensajeRemoto = context.getString(R.string.centro_error_codigo_vacio)
                             return@launch
                         }
 

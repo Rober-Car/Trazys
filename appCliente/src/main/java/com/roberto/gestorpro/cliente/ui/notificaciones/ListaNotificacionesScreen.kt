@@ -56,6 +56,7 @@ import com.roberto.gestorpro.cliente.ui.components.AppSecondaryButton
 import com.roberto.gestorpro.cliente.ui.components.DialogoDenuncia
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 import com.roberto.gestorpro.cliente.ui.viewmodel.NotificacionesClienteViewModel
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -266,7 +267,10 @@ private fun NotificacionCard(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = notificacion.titulo,
+                    text = IdiomaAplicacion.textoLocalizado(
+                        notificacion.titulo,
+                        notificacion.tituloEn
+                    ),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = if (leida) FontWeight.SemiBold else FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface

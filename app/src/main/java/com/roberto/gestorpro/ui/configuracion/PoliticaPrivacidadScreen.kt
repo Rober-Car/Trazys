@@ -91,10 +91,10 @@ fun PoliticaPrivacidadScreen(
                             "• Datos de tu cuenta de acceso: correo electrónico y contraseña " +
                             "(gestionada por Firebase Authentication) y un identificador " +
                             "interno de usuario.\n" +
-                            "• Datos del negocio que configuras: nombre, código maestro de " +
+                            "• Datos del centro que configuras: nombre, código maestro de " +
                             "acceso para los clientes y logo (el logo se almacena de forma " +
                             "segura en la nube de Trazys, en Firebase Storage).\n" +
-                            "• Datos de los clientes de tu gimnasio que introduces o gestionas: " +
+                            "• Datos de los clientes de tu centro que introduces o gestionas: " +
                             "identificación (nombre, apellidos, DNI), contacto (teléfono y " +
                             "correo), fecha de nacimiento, fotografía, servicios contratados, " +
                             "sesiones y reservas, estado de cada ficha y observaciones internas.\n" +
@@ -107,14 +107,14 @@ fun PoliticaPrivacidadScreen(
                             "notificaciones.\n" +
                             "• Gastos y datos de gestión que registres en la aplicación.\n\n" +
                             "En todo caso, los datos de tus clientes se tratan únicamente para " +
-                            "gestionar tu gimnasio y nunca se ceden para publicidad."
+                            "gestionar tu centro y nunca se ceden para publicidad."
                     )
                 }
 
                 SeccionAdminPrivacidad("3. Para qué utilizamos los datos") {
                     Text(
                         "Utilizamos los datos para:\n\n" +
-                            "• Permitirte gestionar tu gimnasio: clientes, servicios, sesiones, " +
+                            "• Permitirte gestionar tu centro: clientes, servicios, sesiones, " +
                             "reservas, solicitudes de baja y comunicaciones.\n" +
                             "• Registrar las cuotas y cobros de tus clientes y su estado de pago.\n" +
                             "• Enviar notificaciones a tus clientes desde la aplicación.\n" +
@@ -128,10 +128,10 @@ fun PoliticaPrivacidadScreen(
                     Text(
                         "Tratamos los datos necesarios para la prestación del servicio de " +
                             "gestión que ofrece Trazys y por el interés legítimo del " +
-                            "responsable en administrar correctamente el gimnasio y la " +
+                            "responsable en administrar correctamente el centro y la " +
                             "relación con sus clientes. Las notificaciones a los clientes se " +
                             "envían según la relación que cada cliente mantiene con tu " +
-                            "gimnasio y, en su caso, con el consentimiento del cliente. Ciertos " +
+                            "centro y, en su caso, con el consentimiento del cliente. Ciertos " +
                             "datos económicos pueden conservarse además por obligaciones " +
                             "legales aplicables.\n\n" +
                             "Como administrador, eres quien decide introducir los datos de tus " +
@@ -185,7 +185,7 @@ fun PoliticaPrivacidadScreen(
                             "tratamiento se base en él. También puedes reclamar ante la Agencia " +
                             "Española de Protección de Datos (www.aepd.es) cuando lo consideres " +
                             "oportuno.\n\n" +
-                            "Los clientes de tu gimnasio podrán ejercer sus derechos ante ti o " +
+                            "Los clientes de tu centro podrán ejercer sus derechos ante ti o " +
                             "ante el responsable conforme a esta política."
                     )
                 }

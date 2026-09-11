@@ -103,7 +103,7 @@ fun GestionDenunciasScreen(
 
                 if (!cargando && denuncias.isEmpty() && error == null) {
                     Text(
-                        text = "No hay denuncias de tu negocio.",
+                        text = "No hay denuncias de tu centro.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(16.dp)

@@ -80,7 +80,7 @@ class BajaClienteRemotoRepository @Inject constructor(
             }
             val negocioId = cliente.getString("negocioId")
             if (negocioId.isNullOrBlank()) {
-                return ResultadoAutenticacion(false, "El cliente no tiene negocio")
+                return ResultadoAutenticacion(false, "El cliente no tiene centro")
             }
 
             val canceladas = cancelarReservasFuturas(idCliente, negocioId)

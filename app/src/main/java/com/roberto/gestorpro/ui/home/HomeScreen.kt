@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
@@ -42,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.LogoNegocioAutenticado
 import com.roberto.gestorpro.ui.components.MenuCard
@@ -84,13 +87,13 @@ fun HomeScreen(
                     if (logoNegocio.startsWith("http")) {
                         LogoNegocioAutenticado(
                             url = logoNegocio,
-                            contentDescription = "Logo del negocio",
+                            contentDescription = stringResource(R.string.centro_logo_desc),
                             tamano = 44.dp
                         )
                     } else {
                         AsyncImage(
                             model = File(logoNegocio),
-                            contentDescription = "Logo del negocio",
+                            contentDescription = stringResource(R.string.centro_logo_desc),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(44.dp)
@@ -116,12 +119,12 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Panel principal",
+                        text = stringResource(R.string.home_panel_principal),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = nombreNegocio.ifBlank { "Trazys" },
+                        text = nombreNegocio.ifBlank { stringResource(R.string.app_name) },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -132,7 +135,7 @@ fun HomeScreen(
             }
 
             Text(
-                text = "Accesos rápidos",
+                text = stringResource(R.string.home_accesos_rapidos),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -148,8 +151,19 @@ fun HomeScreen(
             ) {
                 item {
                     MenuCard(
-                        titulo = "Clientes",
-                        descripcion = "Gestión de clientes",
+                        titulo = stringResource(R.string.centro_titulo),
+                        descripcion = stringResource(R.string.home_centro_desc),
+                        icono = Icons.Default.Storefront,
+                        containerColor = Color(0xFF1E88E5).copy(alpha = 0.12f),
+                        iconContainerColor = Color(0xFF1E88E5),
+                        iconTint = Color.White,
+                        onClick = { navController.navigate(Routes.CENTRO) }
+                    )
+                }
+                item {
+                    MenuCard(
+                        titulo = stringResource(R.string.home_clientes_titulo),
+                        descripcion = stringResource(R.string.home_clientes_desc),
                         icono = Icons.Default.Person,
                         containerColor = Color(0xFF2196F3).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF2196F3),
@@ -159,8 +173,8 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Actividades",
-                        descripcion = "Crea actividades",
+                        titulo = stringResource(R.string.home_actividades_titulo),
+                        descripcion = stringResource(R.string.home_actividades_desc),
                         icono = Icons.Default.FitnessCenter,
                         containerColor = Color(0xFF43A047).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF43A047),
@@ -170,8 +184,19 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Economía",
-                        descripcion = "Balance y datos",
+                        titulo = stringResource(R.string.rutinas_titulo),
+                        descripcion = stringResource(R.string.rutinas_proximamente),
+                        icono = Icons.Default.FitnessCenter,
+                        containerColor = Color(0xFF1E88E5).copy(alpha = 0.12f),
+                        iconContainerColor = Color(0xFF1E88E5),
+                        iconTint = Color.White,
+                        onClick = { navController.navigate(Routes.RUTINAS_ADMIN) }
+                    )
+                }
+                item {
+                    MenuCard(
+                        titulo = stringResource(R.string.home_economia_titulo),
+                        descripcion = stringResource(R.string.home_economia_desc),
                         icono = Icons.Default.AccountBalance,
                         containerColor = Color(0xFFFB8C00).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFFFB8C00),
@@ -181,8 +206,8 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Ajustes",
-                        descripcion = "Configuración",
+                        titulo = stringResource(R.string.home_ajustes_titulo),
+                        descripcion = stringResource(R.string.home_ajustes_desc),
                         icono = Icons.Default.Settings,
                         containerColor = Color(0xFF78909C).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF78909C),
@@ -192,8 +217,8 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Notificaciones enviadas",
-                        descripcion = "Envía avisos a tus clientes",
+                        titulo = stringResource(R.string.home_notificaciones_titulo),
+                        descripcion = stringResource(R.string.home_notificaciones_desc),
                         icono = Icons.Default.Notifications,
                         containerColor = Color(0xFFE91E63).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFFE91E63),
@@ -203,8 +228,8 @@ fun HomeScreen(
                 }
                 item {
                     MenuCard(
-                        titulo = "Solicitudes de baja",
-                        descripcion = "Solicitudes pendientes",
+                        titulo = stringResource(R.string.home_solicitudes_titulo),
+                        descripcion = stringResource(R.string.home_solicitudes_desc),
                         icono = Icons.Default.Email,
                         containerColor = Color(0xFF00ACC1).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF00ACC1),

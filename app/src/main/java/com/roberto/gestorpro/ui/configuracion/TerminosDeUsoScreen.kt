@@ -132,20 +132,20 @@ private fun terminosDeUsoTexto(): String =
         "Contacto: Pollinox@hotmail.com.\n\n" +
         "2. Cuentas\n" +
         "El usuario es responsable de mantener seguras sus credenciales y de que los datos que " +
-        "introduce sean correctos. Existen dos roles: ADMIN (gestiona el gimnasio) y CLIENTE " +
+        "introduce sean correctos. Existen dos roles: ADMIN (gestiona el centro) y CLIENTE " +
         "(usuario del centro).\n\n" +
         "3. Contenido que puede aportar cada rol\n" +
-        "El ADMIN puede aportar el nombre y el logo del negocio, notificaciones y mensajes para sus " +
+        "El ADMIN puede aportar el nombre y el logo del centro, notificaciones y mensajes para sus " +
         "clientes, y gestionar las fichas de sus clientes. El CLIENTE puede aportar su fotografía de " +
         "perfil y sus datos personales, vinculados a su ficha en el centro.\n\n" +
         "4. Contenido prohibido\n" +
         "Queda prohibido introducir contenido ilegal, ofensivo, discriminatorio, de acoso, que infrinja " +
         "derechos de terceros o que no corresponda a la finalidad de Trazys. No se publica contenido de " +
-        "forma abierta: el contenido solo es accesible por las cuentas relacionadas con el mismo negocio.\n\n" +
+        "forma abierta: el contenido solo es accesible por las cuentas relacionadas con el mismo centro.\n\n" +
         "5. Fotografías, logos y notificaciones\n" +
         "Las fotografías de perfil y los logos se almacenan de forma segura en Firebase Storage y solo " +
-        "son visibles para el negocio y, en su caso, sus clientes. Las notificaciones y mensajes del " +
-        "ADMIN se envían a los clientes del negocio correspondiente.\n\n" +
+        "son visibles para el centro y, en su caso, sus clientes. Las notificaciones y mensajes del " +
+        "ADMIN se envían a los clientes del centro correspondiente.\n\n" +
         "6. Retirada de contenido y moderación\n" +
         "El ADMIN puede retirar o corregir el contenido que gestiona (fichas, logos y notificaciones). " +
         "Cualquier usuario puede solicitar la retirada de contenido o el cese del uso indebido " +
@@ -155,8 +155,8 @@ private fun terminosDeUsoTexto(): String =
         "eliminación de la cuenta, además de las consecuencias legales que correspondan.\n\n" +
         "8. Eliminación de cuenta\n" +
         "Puedes eliminar tu cuenta desde la aplicación (Configuración > Eliminar mi cuenta / " +
-        "Eliminar cuenta y negocio). El CLIENTE elimina su cuenta y datos personales; el ADMIN " +
-        "elimina su cuenta y todo su negocio. El histórico económico del negocio se conserva según " +
+        "Eliminar cuenta y centro). El CLIENTE elimina su cuenta y datos personales; el ADMIN " +
+        "elimina su cuenta y todo su centro. El histórico económico del centro se conserva según " +
         "lo indicado en la aplicación.\n\n" +
         "9. Limitaciones y responsabilidad\n" +
         "Trazys se presta en el estado en que se encuentra. El responsable no responde de los daños " +

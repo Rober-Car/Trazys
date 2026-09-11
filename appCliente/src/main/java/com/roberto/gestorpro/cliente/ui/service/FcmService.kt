@@ -15,6 +15,7 @@ import com.roberto.gestorpro.cliente.MainActivity
 import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.firebase.DispositivoRepository
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
+import com.roberto.gestorpro.cliente.util.IdiomaAplicacion
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +56,10 @@ class FcmService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         val data = message.data
-        val titulo = data["titulo"] ?: message.notification?.title ?: "Notificación"
+        val tituloBase = data["titulo"]
+            ?: message.notification?.title
+            ?: getString(R.string.notif_push_titulo_defecto)
+        val titulo = IdiomaAplicacion.textoLocalizado(tituloBase, data["tituloEn"])
         val cuerpo = data["mensaje"] ?: message.notification?.body ?: ""
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             val activadas = try {
@@ -74,7 +78,7 @@ class FcmService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 canal,
-                "Notificaciones del centro",
+                getString(R.string.notif_canal_nombre),
                 NotificationManager.IMPORTANCE_HIGH
             )
             val gestor = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

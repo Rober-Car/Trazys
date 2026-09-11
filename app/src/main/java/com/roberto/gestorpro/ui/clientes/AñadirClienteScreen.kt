@@ -1042,7 +1042,7 @@ fun AñadirClienteScreen(
                 if (idCliente == null && negocioOk != true) {
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
-                            "No puedes crear clientes todavía. Primero debes crear tu negocio."
+                            "No puedes crear clientes todavía. Primero debes crear tu centro."
                         )
                     }
                     return@AppPrimaryButton

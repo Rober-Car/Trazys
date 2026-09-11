@@ -218,14 +218,14 @@ class ReservaRemotoRepository @Inject constructor(
                 val cliente = transaction.get(clienteRef)
                 if (!cliente.exists()) throw ReservaException("El cliente no existe")
                 val negocioId = cliente.getString("negocioId")
-                    ?: throw ReservaException("El cliente no tiene negocio")
+                    ?: throw ReservaException("El cliente no tiene centro")
                 val serviciosContratados = cliente.get("serviciosContratados") as? List<*>
                     ?: emptyList<Any>()
 
                 val sesion = transaction.get(sesionRef)
                 if (!sesion.exists()) throw ReservaException("La sesión no existe")
                 if (sesion.getString("negocioId") != negocioId) {
-                    throw ReservaException("La sesión no pertenece a tu negocio")
+                    throw ReservaException("La sesión no pertenece a tu centro")
                 }
                 val idServicio = sesion.getLong("idServicio")?.toInt()
                     ?: throw ReservaException("La sesión no tiene servicio")
@@ -237,7 +237,7 @@ class ReservaRemotoRepository @Inject constructor(
                 val servicio = transaction.get(servicioRef)
                 if (!servicio.exists()) throw ReservaException("El servicio no existe")
                 if (servicio.getString("negocioId") != negocioId) {
-                    throw ReservaException("El servicio no pertenece a tu negocio")
+                    throw ReservaException("El servicio no pertenece a tu centro")
                 }
                 if (servicio.getBoolean("activo") != true) {
                     throw ReservaException("El servicio está inactivo")

@@ -87,7 +87,7 @@ fun DatosScreen(
             onDismissRequest = { viewModel.cancelarImportar() },
             title = { Text("¿Importar datos?") },
             text = {
-                Text("Se incorporarán o actualizarán los datos del backup del MISMO negocio. No se borrarán los datos actuales.")
+                Text("Se incorporarán o actualizarán los datos del backup del MISMO centro. No se borrarán los datos actuales.")
             },
             confirmButton = {
                 AppDialogConfirmButton(
@@ -109,7 +109,7 @@ fun DatosScreen(
             onDismissRequest = { viewModel.cancelarRestaurar() },
             title = { Text("¿Restaurar copia de seguridad?") },
             text = {
-                Text("Se reemplazarán TODOS los datos locales actuales por el contenido del backup del MISMO negocio. Esta acción no se puede deshacer.")
+                Text("Se reemplazarán TODOS los datos locales actuales por el contenido del backup del MISMO centro. Esta acción no se puede deshacer.")
             },
             confirmButton = {
                 AppDialogConfirmButton(
@@ -177,21 +177,21 @@ fun DatosScreen(
 
             DatosItem(
                 titulo = "Exportar datos",
-                descripcion = "Guardar una copia completa de tu negocio",
+                descripcion = "Guardar una copia completa de tu centro",
                 icono = Icons.Default.CloudUpload,
                 onClick = { exportarLauncher.launch("trazys_backup.zip") }
             )
 
             DatosItem(
                 titulo = "Importar datos",
-                descripcion = "Añadir/actualizar datos desde un backup del mismo negocio",
+                descripcion = "Añadir/actualizar datos desde un backup del mismo centro",
                 icono = Icons.Default.CloudDownload,
                 onClick = { importarLauncher.launch(arrayOf("application/zip")) }
             )
 
             DatosItem(
                 titulo = "Restaurar copia de seguridad",
-                descripcion = "Reemplazar todos los datos por un backup del mismo negocio",
+                descripcion = "Reemplazar todos los datos por un backup del mismo centro",
                 icono = Icons.Default.Restore,
                 onClick = { restaurarLauncher.launch(arrayOf("application/zip")) }
             )

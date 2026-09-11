@@ -86,7 +86,7 @@ class SesionRemotoRepository @Inject constructor(
             if (e.message?.contains("permission", ignoreCase = true) == true) {
                 return ResultadoAutenticacion(
                     false,
-                    "El idSesion ya está en uso por otro negocio"
+                    "El idSesion ya está en uso por otro centro"
                 )
             }
             return ResultadoAutenticacion(false, mensajeDe(e))
@@ -98,7 +98,7 @@ class SesionRemotoRepository @Inject constructor(
             } else {
                 ResultadoAutenticacion(
                     false,
-                    "El idSesion ya está en uso por otro negocio"
+                    "El idSesion ya está en uso por otro centro"
                 )
             }
         }
@@ -116,7 +116,7 @@ class SesionRemotoRepository @Inject constructor(
             }.esperar()
             ResultadoAutenticacion(true, "Sesión sincronizada")
         } catch (e: ColisionSesionException) {
-            ResultadoAutenticacion(false, "El idSesion ya está en uso por otro negocio")
+            ResultadoAutenticacion(false, "El idSesion ya está en uso por otro centro")
         } catch (e: Exception) {
             ResultadoAutenticacion(false, mensajeDe(e))
         }

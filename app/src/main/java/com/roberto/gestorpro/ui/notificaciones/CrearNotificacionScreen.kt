@@ -66,6 +66,7 @@ import com.roberto.gestorpro.navigation.Routes
 import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
 import com.roberto.gestorpro.ui.components.AppSecondaryButton
+import com.roberto.gestorpro.ui.components.AyudaContextual
 import com.roberto.gestorpro.ui.viewmodel.ClienteViewModel
 import com.roberto.gestorpro.ui.viewmodel.NotificacionesViewModel
 import java.time.Instant
@@ -323,7 +324,7 @@ fun CrearNotificacionScreen(
                 else -> {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "La notificación se enviará a todos los clientes vinculados del negocio.",
+                        text = "La notificación se enviará a todos los clientes vinculados del centro.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
@@ -367,7 +368,14 @@ fun CrearNotificacionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Programar envío", style = MaterialTheme.typography.bodyLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Programar envío", style = MaterialTheme.typography.bodyLarge)
+                    AyudaContextual(
+                        titulo = "Programar envío",
+                        texto = "La notificación se guardará como PROGRAMADA y no se " +
+                            "enviará hasta la fecha indicada."
+                    )
+                }
                 Switch(
                     checked = programar,
                     onCheckedChange = {
@@ -382,12 +390,6 @@ fun CrearNotificacionScreen(
             }
 
             if (programar) {
-                Text(
-                    text = "La notificación se guardará en PROGRAMADA y no se enviará hasta la fecha indicada.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = fechaProgramada?.let { formatoFechaProgramada(it) } ?: "",
@@ -703,7 +705,7 @@ private fun resumenDeDestino(
             ModoDestino.GRUPO.valor ->
                 "Se programará para ${idsObjetivo.size} clientes."
             else ->
-                "Se programará para todos los clientes vinculados del negocio."
+                "Se programará para todos los clientes vinculados del centro."
         }
     }
     if (resolviendo) return "Comprobando destinatarios..."
@@ -713,14 +715,14 @@ private fun resumenDeDestino(
         return when (modoDestino) {
             ModoDestino.INDIVIDUAL.valor -> "Selecciona el cliente destinatario."
             ModoDestino.GRUPO.valor -> "Selecciona los clientes destinatarios."
-            else -> "Comprobando todos los clientes del negocio..."
+            else -> "Comprobando todos los clientes del centro..."
         }
     }
     if (resolucion.totalObjetivo == 0) {
         return when (modoDestino) {
             ModoDestino.INDIVIDUAL.valor -> "Selecciona el cliente destinatario."
             ModoDestino.GRUPO.valor -> "Selecciona los clientes destinatarios."
-            else -> "No hay clientes en el negocio."
+            else -> "No hay clientes en el centro."
         }
     }
     if (resolucion.destinatarios.isEmpty()) {

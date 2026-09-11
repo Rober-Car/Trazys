@@ -1,5 +1,46 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> **🟢 ACTUALIZACIÓN 2026-09-11 — RESERVAS (FASES 1–4) + MOROSIDAD AUTOMÁTICA + LOCALIZACIÓN DE NOTIFICACIONES + DEPLOYS (estado vigente):**
+> verificado contra el árbol real. **HEAD del desarrollador: `7cf9a7d "Nueva funcionalidad horario"` (rama
+> `master`).** El horario (bloque 2026-09-10 II) quedó **commiteado** en `e11ebe4`/`7cf9a7d`. El working
+> tree conserva **SIN commit** todo lo de esta tanda (**NO revertir**; ~72 archivos). Este bloque SUSTITUYE
+> a la actualización 2026-09-10 (II), que queda como histórica.
+> - **RESERVAS DEL CLIENTE (Fases 1–4):** callables `reservar`/`cancelarReserva` (Admin SDK) que escriben
+>   `reservas/{clienteId}_{sesionId}`, `sesiones/{id}.asistentes.{clienteId}=nombre` y la agenda derivada
+>   `clientes/{clienteId}/agenda/{fecha}`; respetan `servicios/{id}.permiteCombinarDia` (default true).
+>   `appCliente` usa las callables y tiene `AsistentesSesionScreen` independiente; el ADMIN añade
+>   `permiteCombinarDia` (**Room v19**) y cascadas de agenda. Rules de FASE 3/4 (agenda + cierre del
+>   acceso directo del CLIENTE). **Desplegadas** `reservar`/`cancelarReserva`.
+> - **NOTIFICACIONES AUTOMÁTICAS DE MOROSIDAD:** `entradaMorosidad` y `recordatorioMorosidad` son ahora
+>   **`onSchedule` diario 08:00 Europe/Madrid** (antes `onDocumentUpdated`, incapaz de detectar el paso del
+>   tiempo). Regla **definitiva**: notificar si `clientes/{id}.estado == "ACTIVO"` y `fechaFinActual < ahora`
+>   y `exentoMorosidad != true` y `configuracion_notificaciones.morosidad.activa == true`; **no** se
+>   inspeccionan movimientos (PAGADO/PENDIENTE). Módulos puros `plan_morosidad.js` e `idempotencia.js`.
+>   `crearYEnviarAutomatica` es idempotente (crear/reanudar/omitir + claim PENDIENTE→ENVIADA) con IDs
+>   deterministas. Índice `clientes(estado ASC, fechaFinActual ASC)`. **Desplegadas** ambas Functions + índice.
+> - **LOCALIZACIÓN ES/EN + DATA-ONLY (solo morosidad):** `notificaciones/{id}` y buzón incluyen `titulo`
+>   (ES), `tituloEn` (EN) y `subtipo` (`ENTRADA`/`RECORDATORIO`); se mantiene `tipo = "MOROSIDAD"`. El
+>   Cliente (`IdiomaAplicacion.textoLocalizado`, `ListaNotificacionesScreen`, `FcmService`) muestra el
+>   título según el idioma. Las de morosidad viajan **data-only** (`plan_envio.js`, `android.priority:"high"`,
+>   texto en `data`) para localizar también en segundo plano; el resto conserva `notification`. Compatible
+>   con notificaciones antiguas sin `tituloEn`/`subtipo`.
+> - **FIX de Rules en `configuracion_notificaciones`:** la regla `get` usa el ID del documento
+>   (`configId == usuarioActual().negocioId`) para permitir leer un documento inexistente (el repositorio
+>   hace `get()` antes de crear/actualizar). **Deploy** solo `firestore:rules` → ruleset activo
+>   `49e46140-2c39-4121-bf1a-9f2ed06ac3a8` (updateTime `2026-09-11T09:52:17Z`), idéntico al local.
+> - **OTROS:** ayuda contextual `AyudaContextual` (ⓘ) en Admin y Cliente; reorganización visual de las
+>   pantallas de horario en secciones; nomenclatura Admin "negocio/gimnasio" → "centro" (cards Centro/Rutinas).
+> - **Estado de producción:** Functions desplegadas = `reservar`, `cancelarReserva`, `eliminarMiCuenta`,
+>   `notificacionInmediata`, `entradaMorosidad` (scheduled), `recordatorioMorosidad` (scheduled)
+>   (`europe-west1`, nodejs20). Rules `49e46140`. Índices: los 4 previos + `clientes(estado,fechaFinActual)`,
+>   todos **READY**. **Las Functions de morosidad se desplegaron a las 10:16Z del 11/09, después de las 08:00
+>   Madrid → no se ejecutaron ese día; la 1ª ejecución real es el día siguiente (06:00Z).**
+> - **Verificación:** Functions puras **66/66**; Rules **211/211**; `:app`/`:appCliente` `testDebugUnitTest`
+>   + `assembleDebug` OK; `git diff --check` limpio salvo avisos CRLF y el log del emulador.
+> - **Pendiente:** probar reserva/cancelación y morosidad en dispositivo (forzar el job de Scheduler),
+>   commit agrupado del working tree, y pendientes heredados (logs de diagnóstico,
+>   `fallbackToDestructiveMigration`, Storage/bucket, Node 20 / `firebase-functions`, `.gitignore`).
+
 > **🟢 ACTUALIZACIÓN 2026-09-10 (II) — HORARIO MULTI-TRAMO + "DÍAS ESPECIALES" + RULES DESPLEGADAS (estado vigente):**
 > verificado contra el árbol real. **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** El working
 > tree conserva **SIN commit** los cambios (**NO revertir**; ver CHECKPOINT superior de AGENTS.md y `git status`).

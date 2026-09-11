@@ -189,20 +189,20 @@
     <string name="home_no_vinculado_descripcion">Link your account to access your center\'s features.</string>
     <string name="home_vincular_centro">Link center</string>
     <string name="home_card_actividades">Bookings</string>
-    <string name="home_card_actividades_descripcion">View and book your classes</string>
+    <string name="home_card_actividades_descripcion">Your classes and bookings</string>
     <string name="home_card_rutinas">Workouts</string>
-    <string name="home_card_rutinas_descripcion">Training workouts</string>
+    <string name="home_card_rutinas_descripcion">Your workouts</string>
     <string name="rutinas_proximamente">Soon you will be able to view your training workouts.</string>
     <string name="home_card_ajustes">Settings</string>
-    <string name="home_card_ajustes_descripcion">General settings</string>
+    <string name="home_card_ajustes_descripcion">App settings</string>
     <string name="home_card_notificaciones">Notifications</string>
-    <string name="home_card_notificaciones_descripcion">View your alerts</string>
+    <string name="home_card_notificaciones_descripcion">Your alerts</string>
 
     <!-- ===== Schedule (centre and activities) ===== -->
     <string name="home_card_horario">Center schedule</string>
-    <string name="home_card_horario_descripcion">Center opening hours</string>
+    <string name="home_card_horario_descripcion">Opening hours</string>
     <string name="home_card_horario_actividades">Activities</string>
-    <string name="home_card_horario_actividades_descripcion">Regular activity times at the center</string>
+    <string name="home_card_horario_actividades_descripcion">Activity schedule</string>
     <string name="horario_titulo">Schedule</string>
     <string name="horario_titulo_centro">Center schedule</string>
     <string name="horario_titulo_actividades">Activities</string>
@@ -310,6 +310,8 @@
     <string name="notif_accion_denunciar">Report</string>
     <string name="notif_denunciar_titulo">Report content</string>
     <string name="notif_recibir_avisos_centro">Receive center alerts</string>
+    <string name="notif_canal_nombre">Center notifications</string>
+    <string name="notif_push_titulo_defecto">Notification</string>
 
     <!-- ===== Activities / Today's classes ===== -->
     <string name="clases_titulo">Today\'s classes</string>

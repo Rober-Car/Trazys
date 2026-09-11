@@ -166,7 +166,7 @@ class MovimientoRemotoRepository @Inject constructor(
                     )
                     return ResultadoAutenticacion(
                         false,
-                        "El idMovimiento ya está en uso por otro negocio"
+                        "El idMovimiento ya está en uso por otro centro"
                     )
                 }
             }

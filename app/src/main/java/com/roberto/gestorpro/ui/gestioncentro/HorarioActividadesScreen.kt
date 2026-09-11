@@ -1,4 +1,4 @@
-package com.roberto.gestorpro.ui.configuracion
+package com.roberto.gestorpro.ui.gestioncentro
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,11 +17,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,15 +43,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.data.entity.ServicioEntity
 import com.roberto.gestorpro.model.ActividadHorario
 import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
+import com.roberto.gestorpro.ui.components.AyudaContextual
 import com.roberto.gestorpro.ui.viewmodel.HorarioViewModel
 import java.time.DayOfWeek
 
@@ -125,142 +127,140 @@ fun HorarioActividadesScreen(
                 AppNavigationBackButton(onClick = { navController.popBackStack() })
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.horario_actividades_titulo),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        AyudaContextual(
+                            titulo = stringResource(R.string.horario_actividades_titulo),
+                            texto = stringResource(R.string.horario_act_ayuda)
+                        )
+                    }
                     Text(
-                        text = "Horario de actividades",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = "Horario semanal de actividades",
+                        text = stringResource(R.string.horario_act_subtitulo),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
                 }
             }
 
-            Text(
-                text = "Este horario es independiente de las sesiones: no se modifica " +
-                    "al crear, editar o eliminar sesiones.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+            // ===================== CONFIGURAR HORARIO =====================
+            EncabezadoSeccion(
+                titulo = stringResource(R.string.horario_seccion_configurar),
+                ayuda = stringResource(R.string.horario_act_configurar_ayuda)
             )
-
-            Text(
-                text = "Día",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = AzulTrazys
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                diasSemana.forEach { dia ->
-                    FilterChip(
-                        selected = diaSeleccionado == dia,
-                        onClick = { diaSeleccionado = dia },
-                        label = { Text(nombreDiaCorto(dia)) },
-                        colors = chipAzul()
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Actividades del negocio",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = AzulTrazys
-            )
-            if (servicios.isEmpty()) {
-                Text(
-                    text = "No hay actividades creadas. Crea actividades para poder " +
-                        "configurar su horario.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            } else {
+            ContenedorSeccion {
+                EtiquetaBloque(titulo = stringResource(R.string.horario_dia))
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    servicios.forEach { servicio ->
+                    diasSemana.forEach { dia ->
                         FilterChip(
-                            selected = servicioSeleccionado == servicio.idServicio,
-                            onClick = {
-                                servicioSeleccionado = if (
-                                    servicioSeleccionado == servicio.idServicio
-                                ) {
-                                    null
-                                } else {
-                                    servicio.idServicio
-                                }
-                            },
-                            label = { Text(servicio.nombre) },
+                            selected = diaSeleccionado == dia,
+                            onClick = { diaSeleccionado = dia },
+                            label = { Text(nombreDiaCorto(dia)) },
                             colors = chipAzul()
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            TextButton(
-                onClick = {
-                    indiceEditando = null
-                    dialogoAbierto = true
-                },
-                enabled = servicios.isNotEmpty()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = AzulTrazys
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Añadir actividad a ${nombreDia(diaSeleccionado)}", color = AzulTrazys)
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Actividades de ${nombreDia(diaSeleccionado)}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = AzulTrazys
-            )
-            val lista = actividades[diaSeleccionado] ?: emptyList()
-            if (lista.isEmpty()) {
-                Text(
-                    text = "No hay actividades configuradas para este día.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            } else {
-                lista.forEachIndexed { indice, entrada ->
-                    val nombreActividad = servicios
-                        .firstOrNull { it.idServicio == entrada.idServicio }
-                        ?.nombre
-                        ?: "Actividad ${entrada.idServicio}"
-                    Card(
+                EtiquetaBloque(titulo = stringResource(R.string.horario_act_centro))
+                Spacer(modifier = Modifier.height(8.dp))
+                if (servicios.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.horario_act_sin_actividades),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        servicios.forEach { servicio ->
+                            FilterChip(
+                                selected = servicioSeleccionado == servicio.idServicio,
+                                onClick = {
+                                    servicioSeleccionado = if (
+                                        servicioSeleccionado == servicio.idServicio
+                                    ) {
+                                        null
+                                    } else {
+                                        servicio.idServicio
+                                    }
+                                },
+                                label = { Text(servicio.nombre) },
+                                colors = chipAzul()
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = {
+                        indiceEditando = null
+                        dialogoAbierto = true
+                    },
+                    enabled = servicios.isNotEmpty()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = AzulTrazys
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.horario_act_anadir, nombreDia(diaSeleccionado)),
+                        color = AzulTrazys
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ===================== HORARIO DEL DÍA =====================
+            EncabezadoSeccion(
+                titulo = stringResource(R.string.horario_seccion_dia),
+                ayuda = stringResource(R.string.horario_dia_ayuda)
+            )
+            ContenedorSeccion {
+                EtiquetaBloque(
+                    titulo = stringResource(
+                        R.string.horario_act_dia_titulo,
+                        nombreDia(diaSeleccionado)
+                    )
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                val lista = actividades[diaSeleccionado] ?: emptyList()
+                if (lista.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.horario_act_sin_dia),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    lista.forEachIndexed { indice, entrada ->
+                        val nombreActividad = servicios
+                            .firstOrNull { it.idServicio == entrada.idServicio }
+                            ?.nombre
+                            ?: stringResource(R.string.horario_act_fallback, entrada.idServicio)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -270,7 +270,7 @@ fun HorarioActividadesScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "Hora habitual: ${entrada.hora}",
+                                    text = stringResource(R.string.horario_act_hora, entrada.hora),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color.Gray
                                 )
@@ -282,7 +282,7 @@ fun HorarioActividadesScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
-                                    contentDescription = "Editar actividad",
+                                    contentDescription = stringResource(R.string.horario_act_editar),
                                     tint = AzulTrazys
                                 )
                             }
@@ -298,10 +298,13 @@ fun HorarioActividadesScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Eliminar actividad",
+                                    contentDescription = stringResource(R.string.horario_act_eliminar),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
+                        }
+                        if (indice != lista.lastIndex) {
+                            HorizontalDivider()
                         }
                     }
                 }
@@ -319,7 +322,11 @@ fun HorarioActividadesScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             AppPrimaryButton(
-                text = if (guardando) "Guardando..." else "Guardar horario",
+                text = if (guardando) {
+                    stringResource(R.string.horario_guardando)
+                } else {
+                    stringResource(R.string.horario_guardar)
+                },
                 onClick = { viewModel.guardarActividades(actividades) },
                 enabled = !guardando,
                 fullWidth = false,
@@ -337,9 +344,9 @@ fun HorarioActividadesScreen(
         val entradaActual = indice?.let { actividades[diaSeleccionado]?.getOrNull(it) }
         DialogoActividad(
             titulo = if (indice == null) {
-                "Añadir actividad · ${nombreDia(diaSeleccionado)}"
+                stringResource(R.string.horario_act_anadir_dialogo, nombreDia(diaSeleccionado))
             } else {
-                "Editar actividad · ${nombreDia(diaSeleccionado)}"
+                stringResource(R.string.horario_act_editar_dialogo, nombreDia(diaSeleccionado))
             },
             servicios = servicios,
             servicioInicial = entradaActual?.idServicio ?: servicioSeleccionado,
@@ -402,10 +409,10 @@ private fun DialogoActividad(
                     val m = timePickerState.minute.toString().padStart(2, '0')
                     seleccion?.let { onConfirm(it, "$h:$m") }
                 }
-            ) { Text("Guardar") }
+            ) { Text(stringResource(R.string.accion_guardar)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.accion_cancelar)) }
         },
         title = { Text(titulo) },
         text = {
@@ -414,7 +421,7 @@ private fun DialogoActividad(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Actividad",
+                    text = stringResource(R.string.horario_act_actividad),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth()
@@ -469,12 +476,13 @@ private val SaverActividades =
     )
 
 /** Nombre corto del día para el selector de chips. */
+@Composable
 private fun nombreDiaCorto(dia: DayOfWeek): String = when (dia) {
-    DayOfWeek.MONDAY -> "Lun"
-    DayOfWeek.TUESDAY -> "Mar"
-    DayOfWeek.WEDNESDAY -> "Mié"
-    DayOfWeek.THURSDAY -> "Jue"
-    DayOfWeek.FRIDAY -> "Vie"
-    DayOfWeek.SATURDAY -> "Sáb"
-    DayOfWeek.SUNDAY -> "Dom"
+    DayOfWeek.MONDAY -> stringResource(R.string.dia_corto_lun)
+    DayOfWeek.TUESDAY -> stringResource(R.string.dia_corto_mar)
+    DayOfWeek.WEDNESDAY -> stringResource(R.string.dia_corto_mie)
+    DayOfWeek.THURSDAY -> stringResource(R.string.dia_corto_jue)
+    DayOfWeek.FRIDAY -> stringResource(R.string.dia_corto_vie)
+    DayOfWeek.SATURDAY -> stringResource(R.string.dia_corto_sab)
+    DayOfWeek.SUNDAY -> stringResource(R.string.dia_corto_dom)
 }

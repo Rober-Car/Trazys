@@ -84,4 +84,15 @@ object IdiomaAplicacion {
 
     fun textoDe(base: Context, @StringRes recurso: Int, vararg argumentos: Any): String =
         baseConIdioma(base).getString(recurso, *argumentos)
+
+    /**
+     * textoLocalizado
+     * ---------------
+     * Devuelve el texto en inglés cuando el idioma aplicado es inglés y existe
+     * traducción; en caso contrario devuelve el texto en español. Sirve para
+     * localizar contenido remoto (p. ej. el título de una notificación) sin
+     * depender de recursos. Compatible con contenido antiguo sin traducción.
+     */
+    fun textoLocalizado(es: String, en: String?, idioma: String = actual): String =
+        if (idioma == PreferencesRepository.IDIOMA_EN && !en.isNullOrBlank()) en else es
 }

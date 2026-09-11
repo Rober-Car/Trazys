@@ -153,7 +153,7 @@ fun ServiciosScreen(
             if (mostrarAvisoSinNegocio) {
                 SinNegocioContenido(
                     titulo = "No puedes crear actividades todavía.",
-                    mensaje = "Primero debes crear tu negocio para poder gestionar actividades.",
+                    mensaje = "Primero debes crear tu centro para poder gestionar actividades.",
                     onCrearNegocio = {
                         mostrarAvisoSinNegocio = false
                         navController.navigate(Routes.MINEGOCIO)

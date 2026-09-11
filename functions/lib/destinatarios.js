@@ -65,25 +65,32 @@ async function crearBuzones({
   tipo,
   origen,
   vinculados,
+  tituloEn,
+  subtipo,
 }) {
   const fechaEnvio = Timestamp.now();
   for (const lote of dividirEnLotes(vinculados, 500)) {
     const batch = db().batch();
     for (const v of lote) {
+      const datos = {
+        negocioId,
+        notificacionId,
+        clienteId: v.idCliente,
+        firebaseUid: v.firebaseUid,
+        titulo,
+        mensaje,
+        tipo,
+        origen,
+        fechaEnvio,
+        leida: false,
+      };
+      // Localización opcional (solo notificaciones de morosidad). Las
+      // notificaciones sin estos campos siguen siendo válidas.
+      if (typeof tituloEn === "string" && tituloEn.length > 0) datos.tituloEn = tituloEn;
+      if (typeof subtipo === "string" && subtipo.length > 0) datos.subtipo = subtipo;
       batch.set(
         db().collection("notificaciones_por_destinatario").doc(idBuzon(v.idCliente, notificacionId)),
-        {
-          negocioId,
-          notificacionId,
-          clienteId: v.idCliente,
-          firebaseUid: v.firebaseUid,
-          titulo,
-          mensaje,
-          tipo,
-          origen,
-          fechaEnvio,
-          leida: false,
-        }
+        datos
       );
     }
     await batch.commit();

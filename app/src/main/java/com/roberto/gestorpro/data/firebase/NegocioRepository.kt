@@ -255,7 +255,7 @@ class NegocioRepository @Inject constructor(
                 transaction.update(usuariosRef, mapOf("negocioId" to negocioId))
                 transaction.set(codigosRef, mapOf("negocioId" to negocioId))
             }.esperar()
-            ResultadoAutenticacion(true, "Negocio creado correctamente")
+            ResultadoAutenticacion(true, "Centro creado correctamente")
         } catch (e: CodigoEnUsoException) {
             ResultadoAutenticacion(false, "El código maestro ya está en uso por otro centro")
         } catch (e: Exception) {

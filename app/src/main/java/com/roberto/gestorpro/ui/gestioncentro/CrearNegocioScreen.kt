@@ -1,7 +1,8 @@
-package com.roberto.gestorpro.ui.configuracion
+package com.roberto.gestorpro.ui.gestioncentro
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,20 +21,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppPrimaryButton
+import com.roberto.gestorpro.ui.components.AyudaContextual
 import com.roberto.gestorpro.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
@@ -124,23 +126,22 @@ fun CrearNegocioScreen(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
-                    text = "Crear negocio",
+                    text = stringResource(R.string.centro_crear),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.width(4.dp))
+                AyudaContextual(
+                    titulo = stringResource(R.string.centro_crear),
+                    texto = stringResource(R.string.centro_ayuda_crear_negocio)
+                )
             }
-
-            Text(
-                text = "Crea tu negocio en la nube para poder vincular clientes. " +
-                    "El código maestro lo usarán tus clientes para vincularte.",
-                style = MaterialTheme.typography.bodyMedium
-            )
 
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre del negocio") },
+                label = { Text(stringResource(R.string.centro_nombre_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -148,8 +149,13 @@ fun CrearNegocioScreen(
             OutlinedTextField(
                 value = codigoMaestro,
                 onValueChange = { codigoMaestro = it },
-                label = { Text("Código maestro") },
-                supportingText = { Text("Código único que compartirás con tus clientes") },
+                label = { Text(stringResource(R.string.centro_codigo_maestro_label)) },
+                trailingIcon = {
+                    AyudaContextual(
+                        titulo = stringResource(R.string.centro_codigo_maestro_label),
+                        texto = stringResource(R.string.centro_ayuda_codigo_unico)
+                    )
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -163,7 +169,7 @@ fun CrearNegocioScreen(
             }
 
             AppPrimaryButton(
-                text = "Crear negocio",
+                text = stringResource(R.string.centro_crear),
                 onClick = {
                     alcance.launch {
                         val error = mainViewModel.crearNegocio(nombre, codigoMaestro)
@@ -184,7 +190,7 @@ fun CrearNegocioScreen(
             )
 
             if (operandoRemoto) {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),

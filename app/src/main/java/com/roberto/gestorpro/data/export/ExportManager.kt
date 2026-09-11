@@ -123,7 +123,7 @@ object ExportManager {
         db: ClientesDatabase
     ): Resultado = withContext(Dispatchers.IO) {
         if (negocioId.isBlank()) {
-            return@withContext Resultado(false, "No tienes un negocio creado para exportar")
+            return@withContext Resultado(false, "No tienes un centro creado para exportar")
         }
         try {
             val servicios = db.servicioDao().obtenerTodosLosServiciosSync()
@@ -326,7 +326,7 @@ object ExportManager {
         if (negocioIdCuenta.isNullOrBlank()) {
             return@withContext Lectura(
                 false,
-                "No tienes un negocio creado. No se puede importar/restaurar un backup."
+                "No tienes un centro creado. No se puede importar/restaurar un backup."
             )
         }
 
@@ -334,7 +334,7 @@ object ExportManager {
         if (leido == null) {
             val mensaje = if (errorLectura == "JSON_ANTIGUO") {
                 "Este archivo es un backup antiguo (sin manifest). " +
-                    "Vuelve a exportar el negocio con la versión actual."
+                    "Vuelve a exportar el centro con la versión actual."
             } else {
                 "El archivo no es un backup válido o está corrupto."
             }
@@ -354,7 +354,7 @@ object ExportManager {
         ) {
             return@withContext Lectura(
                 false,
-                "Este backup pertenece a otro negocio y no puede restaurarse aquí."
+                "Este backup pertenece a otro centro y no puede restaurarse aquí."
             )
         }
 

@@ -200,7 +200,7 @@ fun TabClientePlaceholder() {
             color = Color.Gray
         )
         Text(
-            text = "Cuando el negocio active las inscripciones, aquí verás las sesiones de tus servicios",
+            text = "Cuando el centro active las inscripciones, aquí verás las sesiones de tus servicios",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray.copy(alpha = 0.7f)
         )

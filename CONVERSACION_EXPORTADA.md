@@ -3244,3 +3244,91 @@ Sin commit, sin push, sin deploy.
 1. Probar en dispositivo el guardado real de horario (centro multi-tramo, dias especiales, actividades).
 2. Decidir commit agrupado del working tree (no hay commit nuestro).
 3. (Opcional) Anadir `firestore-tests/firestore-debug.log` a `.gitignore`.
+
+---
+
+# ACTUALIZACION 2026-09-11 (SESION VII) — RESERVAS (FASES 1–4), MOROSIDAD AUTOMATICA, LOCALIZACION/DATA-ONLY Y DEPLOYS
+
+> Estado vigente. HEAD del desarrollador: `7cf9a7d "Nueva funcionalidad horario"` (el horario quedo
+> commiteado en `e11ebe4`/`7cf9a7d`). Working tree con cambios SIN commit de esta tanda (~72 archivos; NO
+> revertir). Si hubo deploys autorizados (Functions, Rules, indice). Resumen operativo en AGENTS.md
+> (CHECKPOINT 2026-09-11) y CONTEXTO_PROYECTO.md.
+
+## 1) Reservas del CLIENTE (Fases 1–4) — implementado y desplegado
+
+- **Backend (`functions/`)**: callables `reservar`/`cancelarReserva` (`functions/lib/reservas.js` +
+  `plan_reservas.js` puro). Escriben `reservas/{clienteId}_{sesionId}`,
+  `sesiones/{id}.asistentes.{clienteId}=nombre` y la agenda derivada
+  `clientes/{clienteId}/agenda/{fecha}`; leen `servicios/{id}.permiteCombinarDia` (default true). Combinacion:
+  si cualquiera de las dos actividades del mismo dia no permite combinar -> bloquea.
+- **`appCliente`**: `ReservaRepository` invoca las callables; `Servicio.permiteCombinarDia`;
+  `Sesion.asistentes`; pantalla independiente `AsistentesSesionScreen`/`AsistentesSesionViewModel`
+  (ruta `asistentes_sesion/{idSesion}`).
+- **ADMIN**: `permiteCombinarDia` en `ServicioEntity` + **Room v19** (`MIGRACION_18_19`), repositorio
+  remoto, `ServicioViewModel.crearServicio(+param)`, switch en `EditarServicioScreen`, `HidratacionMapeadores`.
+  Cascadas de reservas/agenda (`ReservaRemotoRepository`, batches <=400) y `BajaClienteRemotoRepository`;
+  `eliminarMiCuenta` limpia agenda/asistentes.
+- **Rules Fase 3/4**: match `clientes/{clienteId}/agenda/{fecha}`; update ADMIN de `sesiones` admite
+  `asistentes`; cierre del acceso directo del CLIENTE.
+- **Correcciones**: (a) `cancelarReserva` con varias reservas hacia `tx.get` tras escrituras -> reordenadas
+  todas las lecturas antes de las escrituras; (b) `AsistentesSesionScreen` con icono de persona + plural.
+
+## 2) Fix de permisos de `configuracion_notificaciones` + deploy de Rules
+
+- Sintoma: "Guardar configuracion" -> "No tienes permisos para gestionar notificaciones".
+- Causa: `guardarConfiguracion` hace `get()` antes de crear/actualizar; la regla `get` usaba
+  `resource.data.negocioId`, que falla con documento inexistente (`resource == null`).
+- Fix (solo Rules): `get` comprueba propiedad por el ID del documento (`configId == usuarioActual().negocioId`).
+- **Deploy solo `firestore:rules`** -> ruleset `49e46140-2c39-4121-bf1a-9f2ed06ac3a8`
+  (updateTime `2026-09-11T09:52:17Z`), identico al local. Tests PRUEBA 186–192.
+
+## 3) Notificaciones automaticas de morosidad
+
+- **Trigger**: `entradaMorosidad` deja de ser `onDocumentUpdated("clientes/{id}")` (no detecta el paso del
+  tiempo) y pasa a **`onSchedule` diario 08:00 Europe/Madrid**; `recordatorioMorosidad` tambien diario.
+- **Regla definitiva**: notificar si `estado == "ACTIVO"` y `fechaFinActual < ahora` y
+  `exentoMorosidad != true` y `configuracion_notificaciones.morosidad.activa == true`. NO se inspeccionan
+  movimientos (PAGADO/PENDIENTE). (Version inicial usaba `coberturaPagadaTerminada()`: corregida.)
+- **Puros**: `plan_morosidad.js` (`debeNotificarMorosidadPorFecha`, gating de config) e `idempotencia.js`.
+- **Idempotencia**: `crearYEnviarAutomatica` crea/reanuda/omite en transaccion (sin `set()` ciego) + claim
+  PENDIENTE->ENVIADA. IDs deterministas `morosidad_{clienteId}_{fechaFinActual}` y
+  `morosidad_recordatorio_{clienteId}_{periodoDe24h}`.
+- **Indice**: `clientes(estado ASC, fechaFinActual ASC)`.
+- **Deploy**: `entradaMorosidad` + `recordatorioMorosidad` + indice. **Diagnostico**: desplegadas a las
+  10:16Z del 11/09 (tras las 08:00 Madrid) -> no se ejecutaron ese dia; primera ejecucion real al dia
+  siguiente a las 06:00Z. Para probar sin cambiar el schedule: forzar el job de Cloud Scheduler.
+
+## 4) Localizacion ES/EN + data-only (solo morosidad)
+
+- Titulos: entrada ES "Alerta de pago vencido" / EN "Payment overdue"; recordatorio ES "Recordatorio de pago
+  vencido" / EN "Overdue payment reminder". Se mantiene `tipo = "MOROSIDAD"`.
+- `notificaciones/{id}` y buzon incluyen `titulo` (ES), `tituloEn` (EN) y `subtipo`
+  (`ENTRADA`/`RECORDATORIO`). Compatibilidad con notificaciones antiguas (sin esos campos -> ES).
+- Cliente: `Notificacion.tituloEn/subtipo`; `IdiomaAplicacion.textoLocalizado`; `ListaNotificacionesScreen`
+  y `FcmService` muestran el titulo segun el idioma.
+- **Data-only para background**: `plan_envio.js` (puro) construye el mensaje FCM; las de morosidad viajan
+  data-only con `android.priority:"high"` e incluyen `titulo`/`tituloEn`/`mensaje` en `data`; el resto
+  conserva `notification`.
+
+## 5) Otros (misma tanda)
+
+- Ayuda contextual `AyudaContextual` (ⓘ) en Admin y Cliente (tooltip/dialogo).
+- Reorganizacion visual de `HorarioCentroScreen`/`HorarioActividadesScreen` en secciones.
+- Nomenclatura Admin "negocio/gimnasio" -> "centro" (cards Centro/Rutinas, `CentroScreen`, `RutinasAdminScreen`).
+
+## Verificacion
+
+- Functions puras `node --test`: **66/66**. Rules: **211/211**. `:app` y `:appCliente`:
+  `testDebugUnitTest` + `assembleDebug` OK. `git diff --check` limpio (avisos CRLF + log del emulador).
+- **Deploys (autorizados):** `reservar`/`cancelarReserva`; `firestore:rules` (`49e46140`);
+  `entradaMorosidad`/`recordatorioMorosidad` + indice `clientes(estado,fechaFinActual)` (READY). Sin commit.
+
+## Para reanudar
+
+1. Probar en dispositivo la reserva/cancelacion (callables) y la morosidad (forzar el job de Scheduler una
+   vez; la 1ª ejecucion diaria es a las 08:00 Madrid).
+2. Commit agrupado del working tree (~72 archivos).
+3. Pendientes heredados: retirar logs de diagnostico (`[DIAG alta]`, `ClasesDiagnostico`),
+   `fallbackToDestructiveMigration`, Storage/bucket, Node 20 (decommission 2026-10-31) y
+   `firebase-functions` desactualizada, limpieza de imagenes de build de GCF, `.gitignore` del log del
+   emulador.

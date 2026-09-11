@@ -207,7 +207,7 @@ class ReservasClienteViewModel @Inject constructor(
     }
 
     private fun mensajeDe(e: Exception): String =
-        e.message ?: texto(R.string.reserva_error_cargar)
+        texto(R.string.reserva_error_cargar)
 }
 
 /** Reserva enriquecida con los datos de la sesión para la pantalla de reservas. */

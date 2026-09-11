@@ -111,7 +111,7 @@ class DenunciaRepository @Inject constructor(
         fun etiquetaTipo(tipo: String): String = when (tipo) {
             TiposContenidoDenunciable.FOTO_CLIENTE -> "Foto de cliente"
             TiposContenidoDenunciable.NOTIFICACION -> "Notificación"
-            TiposContenidoDenunciable.LOGO_NEGOCIO -> "Logo del negocio"
+            TiposContenidoDenunciable.LOGO_NEGOCIO -> "Logo del centro"
             else -> tipo
         }
 

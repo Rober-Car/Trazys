@@ -2,6 +2,107 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## ⚠️ CHECKPOINT 2026-09-11 — RESERVAS (FASES 1–4) + MOROSIDAD AUTOMÁTICA + LOCALIZACIÓN DE NOTIFICACIONES + RULES/FUNCTIONS/ÍNDICE DESPLEGADOS (REANUDAR AQUÍ)
+>
+> **HEAD del desarrollador: `7cf9a7d "Nueva funcionalidad horario"` (rama `master`).** El horario
+> (checkpoint 2026-09-10 II) quedó **commiteado** por el desarrollador en `e11ebe4`/`7cf9a7d`. El working
+> tree conserva **SIN commit** todo lo de esta tanda (**NO revertir**; ~72 archivos en `git status`). Sin
+> commit/push nuestros. SÍ hubo **deploys** (autorizados) de Functions, Rules e índice.
+>
+> ### Estado verificado
+> - `:app` y `:appCliente`: `testDebugUnitTest` + `assembleDebug` OK. Functions puras `node --test` **66/66**.
+>   Rules Firestore/Storage **211/211** (`npm --prefix firestore-tests test`). `git diff --check` limpio
+>   (solo avisos CRLF preexistentes y trailing whitespace del generado `firestore-tests/firestore-debug.log`).
+>
+> ### 1. RESERVAS DEL CLIENTE (FASES 1–4) — IMPLEMENTADO Y DESPLEGADO
+> - **Backend (`functions/`)**: callables `reservar`/`cancelarReserva` (`functions/lib/reservas.js` +
+>   `functions/lib/plan_reservas.js` puro; test `plan_reservas.test.js`). Escriben
+>   `reservas/{clienteId}_{sesionId}`, `sesiones/{id}.asistentes.{clienteId}=nombre` (solo nombre) y la
+>   agenda derivada `clientes/{clienteId}/agenda/{fecha}` = `{negocioId,fecha,sesiones:{sesionId:idServicio}}`;
+>   leen `servicios/{id}.permiteCombinarDia` (default true). Combinación: si cualquiera de las dos
+>   actividades del mismo día no permite combinar → bloquea.
+> - **`appCliente`**: `ReservaRepository` invoca las callables (`europe-west1`); `Servicio.permiteCombinarDia`;
+>   `Sesion.asistentes`; pantalla independiente `AsistentesSesionScreen` + `AsistentesSesionViewModel`
+>   (ruta `asistentes_sesion/{idSesion}`, botón "Ver asistentes" solo en estado RESERVADA); `SesionVisible`
+>   sin `asistentes`.
+> - **ADMIN**: `permiteCombinarDia` en `ServicioEntity` + **Room v19** (`MIGRACION_18_19`), repositorio
+>   remoto, `ServicioViewModel.crearServicio(+param)`, switch en `EditarServicioScreen` y
+>   `HidratacionMapeadores` (default true). Cascadas de reservas/agenda en `ReservaRemotoRepository`
+>   (batches ≤400) y `BajaClienteRemotoRepository`; `eliminarMiCuenta` limpia agenda y asistentes.
+> - **Rules FASE 3/4**: match `clientes/{clienteId}/agenda/{fecha}`; `sesiones` update ADMIN admite
+>   `asistentes`; se cierra el acceso directo del CLIENTE (reservas create/delete y update de
+>   plazas/asistentes del CLIENTE = false; agenda solo lectura propia).
+> - **Correcciones**: (a) `cancelarReserva` con varias reservas hacía `tx.get` tras escrituras ("Firestore
+>   transactions require all reads…") → reordenadas todas las lecturas antes de las escrituras; (b)
+>   `AsistentesSesionScreen` con icono de persona + plural `asistentes_total`.
+> - **DEPLOY**: `reservar` y `cancelarReserva` (v2, `europe-west1`, nodejs20); después solo `cancelarReserva`
+>   con el fix. Rules de FASE 4 desplegadas.
+>
+> ### 2. CONFIGURACIÓN DE NOTIFICACIONES — FIX DE PERMISOS + DEPLOY DE RULES
+> - Síntoma: "Guardar configuración" → "No tienes permisos para gestionar notificaciones".
+> - Causa: `NotificacionRemotoRepository.guardarConfiguracion` hace `get()` antes de crear/actualizar; la
+>   regla `get` usaba `resource.data.negocioId`, que falla con documento inexistente (`resource == null`).
+> - Fix (solo Rules): `get` comprueba propiedad por el **ID del documento** (`configId == usuarioActual().negocioId`),
+>   válido aunque el documento no exista. `list/create/update` intactos.
+> - **DEPLOY (solo `firestore:rules`)**: ruleset activo
+>   `projects/gestorpro-50e83/rulesets/49e46140-2c39-4121-bf1a-9f2ed06ac3a8` (updateTime
+>   `2026-09-11T09:52:17Z`), contenido idéntico al local. Tests PRUEBA 186–192 (get inexistente ALLOW; 4
+>   bloques ALLOW; cambioHorario ALLOW; morosidad/bajaConfirmada ALLOW; otro ADMIN/CLIENTE/no-auth DENY).
+>
+> ### 3. NOTIFICACIONES AUTOMÁTICAS DE MOROSIDAD — IMPLEMENTADO Y DESPLEGADO
+> - **Trigger corregido**: `entradaMorosidad` ya NO es `onDocumentUpdated("clientes/{id}")` (no podía
+>   detectar el paso del tiempo). Ahora es **`onSchedule` diario 08:00 Europe/Madrid**
+>   (`{schedule:"0 8 * * *", timeZone:"Europe/Madrid"}`). `recordatorioMorosidad` también diario 08:00.
+> - **Regla DEFINITIVA**: la notificación depende **solo** de `clientes/{id}.fechaFinActual < ahora` con
+>   `estado == "ACTIVO"` y `exentoMorosidad != true`, y `configuracion_notificaciones.morosidad.activa == true`.
+>   **NO** se inspeccionan movimientos (PAGADO/PENDIENTE). (Antes se usaba `coberturaPagadaTerminada()`, que
+>   exigía un PAGADO vencido: incorrecto.)
+> - **`functions/lib/plan_morosidad.js`** (puro): `debeNotificarMorosidadPorFecha`, `configMorosidadActiva`,
+>   `configRecordatorioActivo`. **`functions/lib/idempotencia.js`** (puro): `decidirCreacionNotificacion`
+>   (crear/continuar/omitir).
+> - **Idempotencia**: `crearYEnviarAutomatica` ya no hace `set()` ciego; transacción (crear si no existe /
+>   reanudar si PENDIENTE / omitir si ENVIADA) + claim atómico PENDIENTE→ENVIADA. IDs deterministas:
+>   `morosidad_{clienteId}_{fechaFinActual}` y `morosidad_recordatorio_{clienteId}_{periodoDe24h}`.
+> - **Índice**: `clientes(estado ASC, fechaFinActual ASC)` en `firestore.indexes.json` (más los 4
+>   preexistentes), declarado en `firebase.json`.
+> - **DEPLOY**: `entradaMorosidad` y `recordatorioMorosidad` (v2, `europe-west1`, `scheduled`) + índice
+>   (estado **READY**).
+> - **Diagnóstico**: las Functions se desplegaron el 2026-09-11 a las 10:16Z (después de las 08:00 Madrid),
+>   por lo que **no se ejecutaron ese día**; la 1ª ejecución real es el día siguiente a las 06:00Z. Para
+>   probar sin cambiar el schedule: forzar el job (`gcloud scheduler jobs run
+>   firebase-schedule-entradaMorosidad-europe-west1 --location=europe-west1` o Console → "Force run").
+>
+> ### 4. LOCALIZACIÓN DE LAS NOTIFICACIONES DE MOROSIDAD (ES/EN) + DATA-ONLY
+> - Títulos: entrada ES "Alerta de pago vencido" / EN "Payment overdue"; recordatorio ES "Recordatorio de
+>   pago vencido" / EN "Overdue payment reminder". Se mantiene `tipo = "MOROSIDAD"`.
+> - `notificaciones/{id}` y el buzón incluyen `titulo` (ES), `tituloEn` (EN) y `subtipo`
+>   (`ENTRADA`/`RECORDATORIO`) solo en morosidad. Compatibilidad: notificaciones antiguas sin
+>   `tituloEn`/`subtipo` siguen mostrando ES.
+> - **Cliente**: `Notificacion.tituloEn/subtipo`; `IdiomaAplicacion.textoLocalizado(es, en, idioma=actual)`;
+>   `ListaNotificacionesScreen` y `FcmService` muestran el título según el idioma.
+> - **Data-only para background**: `functions/lib/plan_envio.js` (puro) construye el mensaje FCM; las
+>   notificaciones de morosidad (con `subtipo`) viajan **data-only** con `android.priority:"high"` e
+>   incluyen `titulo`/`tituloEn`/`mensaje` en `data`, para que `FcmService` pinte el título localizado
+>   también en segundo plano. El resto conserva el payload `notification`.
+> - Sin cambios en detección, IDs, buzones, idempotencia, programación ni Rules.
+>
+> ### 5. OTROS (misma tanda, working tree)
+> - **Ayuda contextual `AyudaContextual` (ⓘ)** en `:app` y `:appCliente` (tooltip corto / diálogo largo),
+>   aplicada a pantallas de centro/horario y notificaciones.
+> - **Reorganización visual** de `HorarioCentroScreen`/`HorarioActividadesScreen` en secciones
+>   (CONFIGURAR HORARIO / DÍAS ESPECIALES / HORARIO DEL DÍA) con un contenedor por sección.
+> - **Nomenclatura/Home Admin**: cards "Centro" y "Rutinas", `CentroScreen`, `RutinasAdminScreen`,
+>   textos "negocio/gimnasio" → "centro" en UI Admin.
+>
+> ### Para reanudar
+> 1. Probar en dispositivo la reserva/cancelación (callables) y la notificación de morosidad (forzar el
+>    job de Scheduler una vez; la 1ª ejecución diaria es a las 08:00 Madrid).
+> 2. Decidir commit agrupado del working tree (~72 archivos).
+> 3. Pendientes heredados: retirar logs de diagnóstico (`[DIAG alta]`, `ClasesDiagnostico`),
+>    `fallbackToDestructiveMigration`, Storage/bucket, Node 20 deprecado (decommission 2026-10-31) y
+>    `firebase-functions` desactualizada, limpieza de imágenes de build de GCF, añadir
+>    `firestore-tests/firestore-debug.log` a `.gitignore`.
+
 > ## ⚠️ CHECKPOINT 2026-09-10 (II) — HORARIO MULTI-TRAMO + "DÍAS ESPECIALES" + RULES DESPLEGADAS (REANUDAR AQUÍ)
 >
 > **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** Working tree **SIN commit** (NO revertir).

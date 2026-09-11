@@ -82,7 +82,7 @@ class NotificacionesClienteViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _error.value = e.message ?: texto(R.string.notif_error_cargar)
+                _error.value = texto(R.string.notif_error_cargar)
             } finally {
                 _cargando.value = false
             }

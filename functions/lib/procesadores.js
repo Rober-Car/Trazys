@@ -11,6 +11,12 @@ const {
 } = require("./destinatarios");
 const { enviarFCMaClientes } = require("./envio");
 const {
+  debeNotificarMorosidadPorFecha,
+  configMorosidadActiva,
+  configRecordatorioActivo,
+} = require("./plan_morosidad");
+const { decidirCreacionNotificacion } = require("./idempotencia");
+const {
   idNotificacionBaja,
   idNotificacionMorosidad,
   idNotificacionRecordatorioMorosidad,
@@ -86,21 +92,46 @@ async function crearYEnviarAutomatica({
   mensaje,
   tipo,
   origen,
+  tituloEn,
+  subtipo,
 }) {
   const ahora = Timestamp.now();
-  await db().collection("notificaciones").doc(notificacionId).set({
-    negocioId,
-    titulo,
-    mensaje,
-    tipo,
-    origen,
-    modoDestino: "INDIVIDUAL",
-    idsClientes: [clienteId],
-    clienteId,
-    fechaCreacion: ahora,
-    programada: false,
-    estado: "PENDIENTE",
+  const notifRef = db().collection("notificaciones").doc(notificacionId);
+
+  // Creación idempotente: nunca un set() ciego que resetee una notificación ya
+  // ENVIADA. En transacción:
+  //  - no existe -> se crea PENDIENTE;
+  //  - existe y PENDIENTE -> se reanuda el proceso;
+  //  - existe y ya procesada (ENVIADA...) -> se omite.
+  const decision = await db().runTransaction(async (t) => {
+    const snap = await t.get(notifRef);
+    const accion = decidirCreacionNotificacion(snap.exists ? snap.data() : null);
+    if (accion === "crear") {
+      const datosNotif = {
+        negocioId,
+        titulo,
+        mensaje,
+        tipo,
+        origen,
+        modoDestino: "INDIVIDUAL",
+        idsClientes: [clienteId],
+        clienteId,
+        fechaCreacion: ahora,
+        programada: false,
+        estado: "PENDIENTE",
+      };
+      // Localización opcional (solo notificaciones de morosidad). Las
+      // notificaciones sin estos campos siguen siendo válidas.
+      if (typeof tituloEn === "string" && tituloEn.length > 0) datosNotif.tituloEn = tituloEn;
+      if (typeof subtipo === "string" && subtipo.length > 0) datosNotif.subtipo = subtipo;
+      t.set(notifRef, datosNotif);
+    }
+    return accion;
   });
+  if (decision === "omitir") {
+    logger.info("Notificación automática ya enviada; se omite", { notificacionId, tipo });
+    return;
+  }
 
   const vinculados = await obtenerVinculados([clienteId]);
   if (vinculados.length > 0) {
@@ -112,6 +143,8 @@ async function crearYEnviarAutomatica({
       tipo,
       origen,
       vinculados,
+      tituloEn,
+      subtipo,
     });
   }
 
@@ -121,6 +154,10 @@ async function crearYEnviarAutomatica({
     return;
   }
 
+  // Las notificaciones de morosidad (con subtipo) viajan como DATA-ONLY para
+  // que el CLIENTE construya la notificación con el título localizado tanto en
+  // primer como en segundo plano. El resto conserva el payload `notification`.
+  const soloDatos = typeof subtipo === "string" && subtipo.length > 0;
   const res = await enviarFCMaClientes({
     negocioId,
     notificacionId,
@@ -129,6 +166,8 @@ async function crearYEnviarAutomatica({
     tipo,
     origen,
     clienteIds: [clienteId],
+    tituloEn,
+    soloDatos,
   });
   await escribirDiagnostico(notificacionId, res);
   logger.info("Notificación automática procesada", { notificacionId, tipo, ...res });
@@ -239,66 +278,99 @@ async function procesarProgramadas() {
 /**
  * procesarEntradaMorosidad
  * ------------------------
- * Trigger: onDocumentUpdated("clientes/{clienteId}"). Detecta la entrada en
- * MOROSO usando únicamente datos de Firestore: cliente ACTIVO con
- * fechaFinActual < ahora. Se ignora si el período no cambió.
+ * Trigger: onSchedule (diario, ~08:00 Europe/Madrid). Barrido de clientes
+ * ACTIVO cuyo `fechaFinActual` ya venció, SIN depender de que el documento
+ * `clientes/{id}` se actualice.
+ *
+ * Regla DEFINITIVA: la notificación depende EXCLUSIVAMENTE de que el período
+ * haya terminado por fecha (`fechaFinActual < ahora`), del estado ACTIVO y de
+ * que el cliente no esté exento. NO se inspeccionan los movimientos
+ * (PAGADO/PENDIENTE): la deuda/impagos los gestiona el ADMIN y no generan por
+ * sí mismos esta notificación. Respeta `morosidad.activa`.
+ *
+ * Idempotencia: ID determinista `morosidad_{clienteId}_{fechaFinActual}` y
+ * creación sin set() ciego (ver crearYEnviarAutomatica).
  */
-async function procesarEntradaMorosidad(event) {
-  const clienteId = event.params.clienteId;
-  const before = event.data.before.data();
-  const after = event.data.after.data();
-  if (!before || !after) return;
-  if (after.estado !== "ACTIVO") return;
+async function procesarEntradaMorosidad() {
+  const ahora = Date.now();
+  const snapshot = await db()
+    .collection("clientes")
+    .where("estado", "==", "ACTIVO")
+    .where("fechaFinActual", "<", Timestamp.fromMillis(ahora))
+    .get();
 
-  const fechaFinMillis = timestampAms(after.fechaFinActual);
-  if (fechaFinMillis === null || fechaFinMillis >= Date.now()) return;
-  const antesMillis = timestampAms(before.fechaFinActual);
-  if (antesMillis === fechaFinMillis) return;
+  logger.info("Barrido de entrada en morosidad", { candidatos: snapshot.size });
 
-  const negocioId = after.negocioId;
-  if (!negocioId) return;
+  for (const doc of snapshot.docs) {
+    const clienteId = doc.id;
+    const cliente = doc.data();
+    try {
+      if (!cliente || !cliente.negocioId) continue;
 
-  const config = await leerConfiguracion(negocioId);
-  if (!config || config.morosidad?.activa !== true) return;
+      const fechaFinActual = timestampAms(cliente.fechaFinActual);
+      if (
+        !debeNotificarMorosidadPorFecha({
+          estado: cliente.estado,
+          fechaFinActual,
+          exentoMorosidad: cliente.exentoMorosidad === true,
+          ahora,
+        })
+      ) {
+        continue;
+      }
 
-  const notificacionId = idNotificacionMorosidad(clienteId, fechaFinMillis);
-  await crearYEnviarAutomatica({
-    notificacionId,
-    negocioId,
-    clienteId: Number(clienteId),
-    titulo: "Alerta de morosidad",
-    mensaje: "Se ha detectado un periodo de pago vencido en tu cuenta.",
-    tipo: "MOROSIDAD",
-    origen: "PRECONFIGURADA",
-  });
+      const negocioId = cliente.negocioId;
+      const config = await leerConfiguracion(negocioId);
+      if (!configMorosidadActiva(config)) continue;
+
+      const notificacionId = idNotificacionMorosidad(clienteId, fechaFinActual);
+      await crearYEnviarAutomatica({
+        notificacionId,
+        negocioId,
+        clienteId: Number(clienteId),
+        titulo: "Alerta de pago vencido",
+        tituloEn: "Payment overdue",
+        subtipo: "ENTRADA",
+        mensaje: "Se ha detectado un periodo de pago vencido en tu cuenta.",
+        tipo: "MOROSIDAD",
+        origen: "PRECONFIGURADA",
+      });
+    } catch (e) {
+      logger.error("Error procesando entrada en morosidad", { clienteId, error: e.message });
+    }
+  }
 }
 
 /**
  * procesarRecordatorioMorosidad
  * -----------------------------
- * Trigger: onSchedule("every 1 hour"). Clientes ACTIVO con fechaFinActual <
- * ahora, cuya configuración tenga morosidad.activa y recordatorioHoras == 24.
- * Usa ultimoRecordatorioMorosidad como claim atómico para enviar como mucho
- * uno cada 24 horas.
+ * Trigger: onSchedule (diario, ~08:00 Europe/Madrid). Misma semántica que la
+ * entrada: recuerda que el período ha terminado por fecha (`fechaFinActual <
+ * ahora`) para clientes ACTIVO no exentos, independientemente de que existan
+ * movimientos pendientes. Requiere morosidad.activa y recordatorioHoras == 24.
+ * Usa ultimoRecordatorioMorosidad como claim atómico para enviar como mucho uno
+ * cada 24 horas.
  */
 async function procesarRecordatorioMorosidad() {
   const ahora = Date.now();
-  const snapshot = await db().collection("clientes").where("estado", "==", "ACTIVO").get();
+  const snapshot = await db()
+    .collection("clientes")
+    .where("estado", "==", "ACTIVO")
+    .where("fechaFinActual", "<", Timestamp.fromMillis(ahora))
+    .get();
 
   const candidatos = snapshot.docs
     .map((d) => ({ id: Number(d.id), data: d.data() }))
-    .filter((c) => {
-      const f = timestampAms(c.data.fechaFinActual);
-      return f !== null && f < ahora;
-    });
+    .filter((c) => Number.isInteger(c.id));
 
   logger.info("Barrido de recordatorios de morosidad", { candidatos: candidatos.length });
 
   for (const c of candidatos) {
+    if (c.data.exentoMorosidad === true) continue;
     const negocioId = c.data.negocioId;
     if (!negocioId) continue;
     const config = await leerConfiguracion(negocioId);
-    if (!config || config.morosidad?.activa !== true || config.morosidad.recordatorioHoras !== 24) {
+    if (!configRecordatorioActivo(config)) {
       continue;
     }
 
@@ -318,7 +390,9 @@ async function procesarRecordatorioMorosidad() {
       notificacionId,
       negocioId,
       clienteId: c.id,
-      titulo: "Recordatorio de morosidad",
+      titulo: "Recordatorio de pago vencido",
+      tituloEn: "Overdue payment reminder",
+      subtipo: "RECORDATORIO",
       mensaje: "Sigue pendiente tu pago. Recuerda regularizar tu situación.",
       tipo: "MOROSIDAD",
       origen: "PRECONFIGURADA",

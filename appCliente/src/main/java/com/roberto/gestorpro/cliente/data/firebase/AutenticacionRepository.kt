@@ -321,7 +321,7 @@ class AutenticacionRepository @Inject constructor(
                 } else {
                     texto(R.string.auth_error_email_formato)
                 }
-            else -> e.message ?: texto(R.string.auth_error_inesperado)
+            else -> texto(R.string.auth_error_inesperado)
         }
     }
 }

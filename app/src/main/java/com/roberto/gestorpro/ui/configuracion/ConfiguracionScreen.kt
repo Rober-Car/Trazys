@@ -20,14 +20,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Report
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Card
@@ -78,52 +75,6 @@ fun ConfiguracionScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "NEGOCIO",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
-            )
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                AjusteAdminItem(
-                    titulo = "Mi negocio",
-                    descripcion = "Datos e identidad del gimnasio",
-                    icono = Icons.Default.AccountBox,
-                    colorAcento = Color(0xFF1E88E5),
-                    onClick = { navController.navigate(Routes.MINEGOCIO) }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                AjusteAdminItem(
-                    titulo = "Horario del centro",
-                    descripcion = "Días, apertura, cierre y días especiales",
-                    icono = Icons.Default.Schedule,
-                    colorAcento = Color(0xFF1E88E5),
-                    onClick = { navController.navigate(Routes.HORARIO_CENTRO) }
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                AjusteAdminItem(
-                    titulo = "Horario de actividades",
-                    descripcion = "Actividades y horas por día",
-                    icono = Icons.Default.FitnessCenter,
-                    colorAcento = Color(0xFF1E88E5),
-                    onClick = { navController.navigate(Routes.HORARIO_ACTIVIDADES) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
 
             Text(
                 text = "APLICACIÓN",
@@ -290,8 +241,8 @@ fun ConfiguracionScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.35f))
             ) {
                 AjusteDestructivoItem(
-                    titulo = "Eliminar cuenta y negocio",
-                    descripcion = "Borra permanentemente tu cuenta, tu negocio y sus datos",
+                    titulo = "Eliminar cuenta y centro",
+                    descripcion = "Borra permanentemente tu cuenta, tu centro y sus datos",
                     onClick = { navController.navigate(Routes.ELIMINAR_CUENTA) }
                 )
             }

@@ -55,4 +55,127 @@
     <string name="auth_error_no_enviar_correo">No se pudo enviar el correo. Inténtalo de nuevo</string>
     <string name="auth_cuenta_creada_ok">Cuenta creada correctamente</string>
     <string name="auth_sesion_iniciada_ok">Sesión iniciada correctamente</string>
+
+    <!-- ===== Home (ADMIN) ===== -->
+    <string name="home_panel_principal">Panel principal</string>
+    <string name="home_accesos_rapidos">Accesos rápidos</string>
+    <string name="home_centro_desc">Identidad y horarios</string>
+    <string name="home_clientes_titulo">Clientes</string>
+    <string name="home_clientes_desc">Gestión de clientes</string>
+    <string name="home_actividades_titulo">Actividades</string>
+    <string name="home_actividades_desc">Crea actividades</string>
+    <string name="home_economia_titulo">Economía</string>
+    <string name="home_economia_desc">Balance y datos</string>
+    <string name="home_ajustes_titulo">Ajustes</string>
+    <string name="home_ajustes_desc">Configuración</string>
+    <string name="home_notificaciones_titulo">Notificaciones enviadas</string>
+    <string name="home_notificaciones_desc">Envía avisos a tus clientes</string>
+    <string name="home_solicitudes_titulo">Solicitudes de baja</string>
+    <string name="home_solicitudes_desc">Solicitudes pendientes</string>
+
+    <!-- ===== Centro (ADMIN) ===== -->
+    <string name="centro_titulo">Centro</string>
+    <string name="centro_logo_desc">Logo del centro</string>
+    <string name="centro_nombre_label">Nombre del centro</string>
+    <string name="centro_logo_titulo">Logo</string>
+    <string name="centro_logo_seleccionar">Seleccionar logo</string>
+    <string name="centro_logo_cambiar">Cambiar logo</string>
+    <string name="centro_logo_quitar">Quitar</string>
+    <string name="centro_estado_comprobando">Comprobando estado del centro…</string>
+    <string name="centro_estado_sin_crear">Aún no has creado tu centro en la nube.</string>
+    <string name="centro_estado_creado">Tu centro ya está creado en la nube.</string>
+    <string name="centro_crear">Crear centro</string>
+    <string name="centro_guardar_cambios">Guardar cambios</string>
+    <string name="centro_codigo_maestro_label">Código maestro</string>
+    <string name="centro_ver_terminos">Ver y aceptar los Términos de uso</string>
+    <string name="centro_item_identidad_desc">Nombre, logo y código maestro</string>
+    <string name="centro_horario_centro_desc">Días, apertura, cierre y días especiales</string>
+    <string name="centro_horario_actividades_desc">Actividades y horas por día</string>
+    <string name="centro_ayuda_crear">Al pulsar Guardar se creará con el nombre, el logo y el código maestro indicados, y podrás vincular clientes.</string>
+    <string name="centro_ayuda_guardar">Guardar actualiza el nombre, el logo y el código maestro (cambiarlo no afecta a los clientes ya vinculados).</string>
+    <string name="centro_ayuda_codigo">Lo usan tus clientes para vincularse. Cambiarlo no afecta a los clientes ya vinculados.</string>
+    <string name="centro_ayuda_crear_negocio">Crea tu centro en la nube para poder vincular clientes. El código maestro lo usarán tus clientes para vincularte.</string>
+    <string name="centro_ayuda_codigo_unico">Código único que compartirás con tus clientes.</string>
+    <string name="centro_error_nombre_vacio">El nombre del centro no puede estar vacío</string>
+    <string name="centro_error_codigo_vacio">El código maestro no puede estar vacío</string>
+
+    <!-- ===== Rutinas (ADMIN) ===== -->
+    <string name="rutinas_titulo">Rutinas</string>
+    <string name="rutinas_proximamente">Próximamente</string>
+    <string name="rutinas_mensaje">Estamos trabajando en las rutinas de entrenamiento. Esta sección estará disponible muy pronto.</string>
+
+    <!-- ===== Horario (ADMIN) ===== -->
+    <string name="horario_centro_titulo">Horario del centro</string>
+    <string name="horario_centro_subtitulo">Horario semanal y días especiales</string>
+    <string name="horario_actividades_titulo">Horario de actividades</string>
+    <string name="horario_act_subtitulo">Horario semanal de actividades</string>
+    <string name="horario_aplicar_semana_titulo">Aplicar horario a toda la semana</string>
+    <string name="horario_aplicar_semana_boton">Aplicar a toda la semana</string>
+    <string name="horario_aplicar_semana_ayuda">Define aquí los tramos una sola vez y aplícalos a todos los días abiertos. Los días cerrados se mantienen cerrados.</string>
+    <string name="horario_anadir_tramo">Añadir tramo</string>
+    <string name="horario_habitual_titulo">Horario habitual</string>
+    <string name="horario_habitual_ayuda">Configura para cada día si el centro está abierto y sus tramos. Puedes añadir varios tramos por día.</string>
+    <string name="horario_abierto">Abierto</string>
+    <string name="horario_cerrado">Cerrado</string>
+    <string name="horario_dias_especiales">Días especiales</string>
+    <string name="horario_dias_especiales_ayuda">Festivos, cierres u horarios especiales para una fecha concreta. Tienen prioridad sobre el horario habitual de ese día.</string>
+    <string name="horario_sin_dias_especiales">No hay días especiales configurados.</string>
+    <string name="horario_editar_dia_especial">Editar día especial</string>
+    <string name="horario_eliminar_dia_especial">Eliminar día especial</string>
+    <string name="horario_anadir_dia_especial">Añadir día especial</string>
+    <string name="horario_guardando">Guardando...</string>
+    <string name="horario_guardar">Guardar horario</string>
+    <string name="horario_error_tramos">Revisa los tramos: la apertura debe ser anterior al cierre y no puede haber solapes.</string>
+    <string name="horario_apertura">Apertura</string>
+    <string name="horario_cierre">Cierre</string>
+    <string name="horario_apertura_semana">Apertura (toda la semana)</string>
+    <string name="horario_cierre_semana">Cierre (toda la semana)</string>
+    <string name="horario_nuevo_dia_especial">Nuevo día especial</string>
+    <string name="horario_fecha">Fecha</string>
+    <string name="horario_error_hora">Indica una hora de apertura y cierre válidas.</string>
+    <string name="horario_error_orden">La apertura debe ser anterior al cierre.</string>
+    <string name="horario_error_solape">Hay tramos que se solapan.</string>
+    <string name="horario_editar_apertura">Editar apertura</string>
+    <string name="horario_editar_cierre">Editar cierre</string>
+    <string name="horario_eliminar_tramo">Eliminar tramo</string>
+    <string name="horario_dia">Día</string>
+    <string name="horario_act_centro">Actividades del centro</string>
+    <string name="horario_act_sin_actividades">No hay actividades creadas. Crea actividades para poder configurar su horario.</string>
+    <string name="horario_act_anadir">Añadir actividad a %1$s</string>
+    <string name="horario_act_dia_titulo">Actividades de %1$s</string>
+    <string name="horario_act_sin_dia">No hay actividades configuradas para este día.</string>
+    <string name="horario_act_fallback">Actividad %1$d</string>
+    <string name="horario_act_hora">Hora habitual: %1$s</string>
+    <string name="horario_act_editar">Editar actividad</string>
+    <string name="horario_act_eliminar">Eliminar actividad</string>
+    <string name="horario_act_anadir_dialogo">Añadir actividad · %1$s</string>
+    <string name="horario_act_editar_dialogo">Editar actividad · %1$s</string>
+    <string name="horario_act_actividad">Actividad</string>
+    <string name="horario_act_ayuda">Este horario es independiente de las sesiones: no se modifica al crear, editar o eliminar sesiones.</string>
+    <string name="horario_seccion_configurar">Configurar horario</string>
+    <string name="horario_configurar_ayuda">Define el horario global y el horario semanal de cada día.</string>
+    <string name="horario_seccion_dia">Horario del día</string>
+    <string name="horario_act_configurar_ayuda">Elige el día, la actividad y la hora para añadirla al horario.</string>
+    <string name="horario_dia_ayuda">Muestra las actividades ya configuradas para el día seleccionado.</string>
+
+    <!-- ===== Acciones genéricas ===== -->
+    <string name="accion_aceptar">Aceptar</string>
+    <string name="accion_cancelar">Cancelar</string>
+    <string name="accion_guardar">Guardar</string>
+
+    <!-- ===== Días de la semana ===== -->
+    <string name="dia_lunes">Lunes</string>
+    <string name="dia_martes">Martes</string>
+    <string name="dia_miercoles">Miércoles</string>
+    <string name="dia_jueves">Jueves</string>
+    <string name="dia_viernes">Viernes</string>
+    <string name="dia_sabado">Sábado</string>
+    <string name="dia_domingo">Domingo</string>
+    <string name="dia_corto_lun">Lun</string>
+    <string name="dia_corto_mar">Mar</string>
+    <string name="dia_corto_mie">Mié</string>
+    <string name="dia_corto_jue">Jue</string>
+    <string name="dia_corto_vie">Vie</string>
+    <string name="dia_corto_sab">Sáb</string>
+    <string name="dia_corto_dom">Dom</string>
 </resources>

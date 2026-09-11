@@ -186,6 +186,21 @@ object Routes {
     const val MINEGOCIO = "mi_negocio"
 
     /**
+     * CENTRO
+     * ------
+     * Ruta de la pantalla "Centro" del ADMIN, que agrupa la identidad del
+     * centro (nombre, logo, código maestro) y sus horarios.
+     */
+    const val CENTRO = "centro"
+
+    /**
+     * RUTINAS_ADMIN
+     * -------------
+     * Ruta de la pantalla informativa de Rutinas del ADMIN (próximamente).
+     */
+    const val RUTINAS_ADMIN = "rutinas_admin"
+
+    /**
      * CREAR_NEGOCIO
      * -------------
      * Ruta del alta remota del negocio (negocios + negocios_publicos +
