@@ -106,4 +106,19 @@ class NotificacionesClienteViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * Elimina una notificación del buzón PROPIO del cliente. Nunca borra el
+     * documento global `notificaciones/{id}` (gestionado por el ADMIN).
+     */
+    fun eliminar(id: String) {
+        viewModelScope.launch {
+            _error.value = null
+            if (notificacionRepository.eliminarNotificacion(id)) {
+                _notificaciones.value = _notificaciones.value.filterNot { it.id == id }
+            } else {
+                _error.value = texto(R.string.notif_error_eliminar)
+            }
+        }
+    }
 }

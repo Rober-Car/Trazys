@@ -18,5 +18,6 @@ data class Notificacion(
     val leida: Boolean,
     val fechaLeida: Long? = null,
     val tituloEn: String? = null,
+    val mensajeEn: String? = null,
     val subtipo: String? = null
 )

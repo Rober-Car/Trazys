@@ -9,13 +9,14 @@ const {
   crearBuzones,
   esperarBuzones,
 } = require("./destinatarios");
-const { enviarFCMaClientes } = require("./envio");
+const { enviarFCMaClientes, enviarFCMaAdmin } = require("./envio");
 const {
   debeNotificarMorosidadPorFecha,
   configMorosidadActiva,
   configRecordatorioActivo,
 } = require("./plan_morosidad");
-const { decidirCreacionNotificacion } = require("./idempotencia");
+const { decidirCreacionNotificacion, decidirEntregaAutomatica } = require("./idempotencia");
+const { esNotificacionInmediataProcesable, esAvisoAlAdmin } = require("./plan_inmediata");
 const {
   idNotificacionBaja,
   idNotificacionMorosidad,
@@ -71,6 +72,7 @@ async function escribirDiagnostico(notificacionId, res) {
       dispositivosEnviados: res.enviados,
       dispositivosFallidos: res.fallidos,
       dispositivosEliminados: res.eliminados,
+      dispositivosSinDispositivos: res.sinDispositivos,
     });
   } catch (e) {
     logger.warn("No se pudo escribir el diagnóstico de envío", { notificacionId, error: e.message });
@@ -98,12 +100,9 @@ async function crearYEnviarAutomatica({
   const ahora = Timestamp.now();
   const notifRef = db().collection("notificaciones").doc(notificacionId);
 
-  // Creación idempotente: nunca un set() ciego que resetee una notificación ya
-  // ENVIADA. En transacción:
-  //  - no existe -> se crea PENDIENTE;
-  //  - existe y PENDIENTE -> se reanuda el proceso;
-  //  - existe y ya procesada (ENVIADA...) -> se omite.
-  const decision = await db().runTransaction(async (t) => {
+  // 1) Creación idempotente: nunca un set() ciego que resetee una notificación
+  //    ya creada. Solo se crea si no existe (PENDIENTE).
+  await db().runTransaction(async (t) => {
     const snap = await t.get(notifRef);
     const accion = decidirCreacionNotificacion(snap.exists ? snap.data() : null);
     if (accion === "crear") {
@@ -126,37 +125,69 @@ async function crearYEnviarAutomatica({
       if (typeof subtipo === "string" && subtipo.length > 0) datosNotif.subtipo = subtipo;
       t.set(notifRef, datosNotif);
     }
-    return accion;
   });
-  if (decision === "omitir") {
-    logger.info("Notificación automática ya enviada; se omite", { notificacionId, tipo });
-    return;
-  }
 
+  // 2) Destinatarios válidos (vinculados). Sin ninguno, la notificación NO se
+  //    considera entregada: queda PENDIENTE y se reintenta cuando el cliente
+  //    obtenga firebaseUid.
   const vinculados = await obtenerVinculados([clienteId]);
-  if (vinculados.length > 0) {
-    await crearBuzones({
-      negocioId,
+  if (vinculados.length === 0) {
+    logger.info("Notificación automática sin destinatario válido; se reintentará", {
       notificacionId,
-      titulo,
-      mensaje,
       tipo,
-      origen,
-      vinculados,
-      tituloEn,
-      subtipo,
     });
-  }
-
-  const claim = await reclamarTransicion(notificacionId, "PENDIENTE");
-  if (claim !== "reclamada") {
-    logger.info("Notificación automática ya procesada", { notificacionId, claim });
     return;
   }
 
-  // Las notificaciones de morosidad (con subtipo) viajan como DATA-ONLY para
-  // que el CLIENTE construya la notificación con el título localizado tanto en
-  // primer como en segundo plano. El resto conserva el payload `notification`.
+  // 3) Buzones que falten (idempotente). Devuelve los destinatarios cuyo buzón
+  //    se acaba de crear (aún no servidos).
+  const pendientes = await crearBuzones({
+    negocioId,
+    notificacionId,
+    titulo,
+    mensaje,
+    tipo,
+    origen,
+    vinculados,
+    tituloEn,
+    subtipo,
+  });
+
+  // 4) Estado y diagnóstico actuales.
+  const snap = await notifRef.get();
+  const datosNotif = snap.exists ? snap.data() : {};
+  const estadoActual = datosNotif.estado;
+  const huboDispositivos =
+    ((datosNotif.dispositivosEnviados || 0) + (datosNotif.dispositivosFallidos || 0)) > 0;
+
+  // 5) Ya entregada (hubo algún dispositivo) y sin buzones pendientes -> omitir.
+  if (
+    decidirEntregaAutomatica({
+      estado: estadoActual,
+      pendientes: pendientes.length,
+      huboDispositivos,
+    }) === "omitir"
+  ) {
+    logger.info("Notificación automática ya entregada; se omite", { notificacionId, tipo });
+    return;
+  }
+
+  // 6) Si sigue PENDIENTE, reclamar (barrera de envío). Si ya estaba ENVIADA
+  //    pero faltaban destinatarios/dispositivos, NO se reclama de nuevo.
+  if (estadoActual === "PENDIENTE") {
+    const claim = await reclamarTransicion(notificacionId, "PENDIENTE");
+    if (claim !== "reclamada") {
+      logger.info("Notificación automática ya procesada", { notificacionId, claim });
+      return;
+    }
+  }
+
+  // 7) Enviar: si ya estaba ENVIADA, solo a los destinatarios pendientes; si no,
+  //    a todos los vinculados. Las de morosidad (con subtipo) viajan DATA-ONLY.
+  const idsEnvio =
+    estadoActual === "ENVIADA" && pendientes.length > 0
+      ? pendientes
+      : vinculados.map((v) => v.idCliente);
   const soloDatos = typeof subtipo === "string" && subtipo.length > 0;
   const res = await enviarFCMaClientes({
     negocioId,
@@ -165,12 +196,31 @@ async function crearYEnviarAutomatica({
     mensaje,
     tipo,
     origen,
-    clienteIds: [clienteId],
+    clienteIds: idsEnvio,
     tituloEn,
     soloDatos,
   });
   await escribirDiagnostico(notificacionId, res);
-  logger.info("Notificación automática procesada", { notificacionId, tipo, ...res });
+
+  // 8) Sin ningún dispositivo válido -> NO entregada: se reabre a PENDIENTE para
+  //    reintentar cuando el cliente registre un dispositivo.
+  if (res.enviados === 0 && res.fallidos === 0) {
+    try {
+      await notifRef.update({ estado: "PENDIENTE" });
+    } catch (e) {
+      logger.warn("No se pudo reabrir la notificación automática", {
+        notificacionId,
+        error: e.message,
+      });
+    }
+    logger.info("Notificación automática sin dispositivos; queda PENDIENTE", {
+      notificacionId,
+      tipo,
+      ...res,
+    });
+  } else {
+    logger.info("Notificación automática procesada", { notificacionId, tipo, ...res });
+  }
 }
 
 /**
@@ -184,19 +234,32 @@ async function procesarNotificacionInmediata(event) {
   const notificacionId = event.params.notificacionId;
   const datos = event.data && event.data.data();
   if (!datos) return;
-  if (datos.estado !== "PENDIENTE" || datos.programada !== false || datos.origen !== "MANUAL") {
-    return;
-  }
+  // MANUAL, las PRECONFIGURADAS de baja (BAJA_CONFIRMADA / SOLICITUD_RECHAZADA)
+  // y los avisos al ADMIN (SOLICITUD_BAJA) se envían aquí. La morosidad la envía
+  // su barrido programado (no se procesa).
+  if (!esNotificacionInmediataProcesable(datos)) return;
   const negocioId = datos.negocioId;
   if (!negocioId) return;
 
-  logger.info("Procesando notificación inmediata", { notificacionId, negocioId });
+  const avisoAdmin = esAvisoAlAdmin(datos);
 
-  const buzones = await esperarBuzones(notificacionId);
-  const clienteIds =
-    buzones.length > 0
-      ? buzones
-      : resolverDestinatariosDesdeDoc(datos);
+  logger.info("Procesando notificación inmediata", {
+    notificacionId,
+    negocioId,
+    tipo: datos.tipo,
+    origen: datos.origen,
+    destino: avisoAdmin ? "ADMIN" : "CLIENTE",
+  });
+
+  // Avisos al ADMIN: no hay buzones que resolver (los ve dentro de la app).
+  let clienteIds = [];
+  if (!avisoAdmin) {
+    const buzones = await esperarBuzones(notificacionId);
+    clienteIds =
+      buzones.length > 0
+        ? buzones
+        : resolverDestinatariosDesdeDoc(datos);
+  }
 
   const claim = await reclamarTransicion(notificacionId, "PENDIENTE");
   if (claim !== "reclamada") {
@@ -204,15 +267,35 @@ async function procesarNotificacionInmediata(event) {
     return;
   }
 
-  const res = await enviarFCMaClientes({
-    negocioId,
-    notificacionId,
-    titulo: datos.titulo,
-    mensaje: datos.mensaje,
-    tipo: datos.tipo,
-    origen: datos.origen,
-    clienteIds,
-  });
+  let res;
+  if (avisoAdmin) {
+    // Canal EXCLUSIVO del ADMIN propietario del negocio; nunca al CLIENTE.
+    res = await enviarFCMaAdmin({
+      negocioId,
+      notificacionId,
+      titulo: datos.titulo,
+      mensaje: datos.mensaje,
+      tipo: datos.tipo,
+      origen: datos.origen,
+    });
+  } else {
+    // Las notificaciones con `subtipo` (baja confirmada / baja rechazada) viajan
+    // como DATA-ONLY con el título localizado en `data.tituloEn`, igual que la
+    // morosidad, para que FcmService pinte el idioma correcto en segundo plano.
+    const soloDatos = typeof datos.subtipo === "string" && datos.subtipo.length > 0;
+    res = await enviarFCMaClientes({
+      negocioId,
+      notificacionId,
+      titulo: datos.titulo,
+      mensaje: datos.mensaje,
+      tipo: datos.tipo,
+      origen: datos.origen,
+      clienteIds,
+      tituloEn: datos.tituloEn,
+      mensajeEn: datos.mensajeEn,
+      soloDatos,
+    });
+  }
   await escribirDiagnostico(notificacionId, res);
   logger.info("Notificación inmediata procesada", { notificacionId, ...res });
 }
@@ -328,7 +411,7 @@ async function procesarEntradaMorosidad() {
         notificacionId,
         negocioId,
         clienteId: Number(clienteId),
-        titulo: "Alerta de pago vencido",
+        titulo: "Pago vencido",
         tituloEn: "Payment overdue",
         subtipo: "ENTRADA",
         mensaje: "Se ha detectado un periodo de pago vencido en tu cuenta.",

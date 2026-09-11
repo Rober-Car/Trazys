@@ -135,7 +135,10 @@ object HidratacionMapeadores {
             estado = estado,
             fechaPago = comoLong(datos["fechaPago"]),
             metodoPago = metodoDe(datos["metodoPago"] as? String),
-            observaciones = datos["observaciones"] as? String
+            observaciones = datos["observaciones"] as? String,
+            // Marca de creación (frontera de etapa). Los documentos antiguos sin
+            // el campo se tratan como anteriores a la etapa (0).
+            fechaRegistro = comoLong(datos["fechaRegistro"]) ?: 0L
         )
     }
 

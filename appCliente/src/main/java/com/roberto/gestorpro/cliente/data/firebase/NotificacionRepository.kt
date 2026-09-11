@@ -63,6 +63,7 @@ class NotificacionRepository @Inject constructor(
                 leida = (datos["leida"] as? Boolean) ?: false,
                 fechaLeida = fechaEnMilisegundos(datos["fechaLeida"]),
                 tituloEn = datos["tituloEn"] as? String,
+                mensajeEn = datos["mensajeEn"] as? String,
                 subtipo = datos["subtipo"] as? String
             )
         }
@@ -88,6 +89,28 @@ class NotificacionRepository @Inject constructor(
             true
         } catch (e: Exception) {
             Log.e(TAG, "No se pudo marcar como leída $docId: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * eliminarNotificacion
+     * --------------------
+     * Elimina una notificación DEL PROPIO buzón del CLIENTE
+     * (`notificaciones_por_destinatario/{clienteId}_{notificacionId}`). Nunca
+     * borra el documento global `notificaciones/{notificacionId}` (otra
+     * colección, gestionada por el ADMIN). Devuelve true si la operación tuvo
+     * éxito; es tolerante a documentos ya inexistentes.
+     */
+    suspend fun eliminarNotificacion(docId: String): Boolean {
+        return try {
+            db.collection(COLECCION)
+                .document(docId)
+                .delete()
+                .esperar()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "No se pudo eliminar la notificación $docId: ${e.message}", e)
             false
         }
     }

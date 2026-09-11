@@ -181,6 +181,7 @@ class HidratacionMapeadoresTest {
             "servicios" to listOf(1L, 2L),
             "fechaInicio" to Timestamp(Date(fecha(1, 9))),
             "fechaFin" to Timestamp(Date(fecha(30, 9))),
+            "fechaRegistro" to Timestamp(Date(fecha(2, 9))),
             "precioFinal" to 42.5,
             "estado" to EstadoMovimiento.PAGADO.name,
             "fechaPago" to Timestamp(Date(fecha(5, 9))),
@@ -195,12 +196,29 @@ class HidratacionMapeadoresTest {
             assertEquals(listOf(1, 2), it.servicios)
             assertEquals(fecha(1, 9), it.fechaInicio)
             assertEquals(fecha(30, 9), it.fechaFin)
+            assertEquals(fecha(2, 9), it.fechaRegistro)
             assertEquals(42.5, it.precioFinal, 0.0)
             assertEquals(EstadoMovimiento.PAGADO, it.estado)
             assertEquals(fecha(5, 9), it.fechaPago)
             assertEquals(MetodoPago.BIZUM, it.metodoPago)
             assertEquals("Cuota septiembre", it.observaciones)
         }
+    }
+
+    @Test
+    fun movimiento_sinFechaRegistro_usaCero() {
+        val datos = mapOf(
+            "idMovimiento" to 4L,
+            "negocioId" to negocio,
+            "idCliente" to 9L,
+            "fechaInicio" to fecha(1, 9),
+            "fechaFin" to fecha(30, 9),
+            "precioFinal" to 10.0,
+            "estado" to EstadoMovimiento.PENDIENTE.name
+        )
+        val movimiento = HidratacionMapeadores.movimientoDeDocumento(datos, negocio)
+        assertNotNull(movimiento)
+        assertEquals(0L, movimiento!!.fechaRegistro)
     }
 
     @Test

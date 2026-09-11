@@ -55,12 +55,8 @@ class FcmService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        val data = message.data
-        val tituloBase = data["titulo"]
-            ?: message.notification?.title
-            ?: getString(R.string.notif_push_titulo_defecto)
-        val titulo = IdiomaAplicacion.textoLocalizado(tituloBase, data["tituloEn"])
-        val cuerpo = data["mensaje"] ?: message.notification?.body ?: ""
+        val titulo = resolverTitulo(message)
+        val cuerpo = resolverCuerpo(message)
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             val activadas = try {
                 preferencesRepository.notificacionesActivadas.first()
@@ -71,6 +67,42 @@ class FcmService : FirebaseMessagingService() {
                 mostrarNotificacion(titulo, cuerpo)
             }
         }
+    }
+
+    /**
+     * resolverTitulo
+     * --------------
+     * Elige el título de la notificación. En los mensajes DATA-ONLY (p. ej. los
+     * avisos de morosidad) el texto viaja en `data`; se usa `tituloEn` cuando el
+     * idioma de la app es inglés, con fallback a `titulo`. El resto de
+     * notificaciones (con payload `notification`) conserva el comportamiento
+     * previo.
+     */
+    private fun resolverTitulo(message: RemoteMessage): String {
+        val data = message.data
+        val tituloData = data["titulo"]
+        if (message.notification == null && tituloData != null) {
+            return IdiomaAplicacion.textoLocalizado(tituloData, data["tituloEn"])
+        }
+        return tituloData
+            ?: message.notification?.title
+            ?: getString(R.string.notif_push_titulo_defecto)
+    }
+
+    /**
+     * resolverCuerpo
+     * --------------
+     * Igual que [resolverTitulo] pero para el cuerpo: en mensajes DATA-ONLY usa
+     * `mensajeEn` cuando el idioma de la app es inglés, con fallback a
+     * `mensaje`. El resto conserva el comportamiento previo.
+     */
+    private fun resolverCuerpo(message: RemoteMessage): String {
+        val data = message.data
+        val mensajeData = data["mensaje"]
+        if (message.notification == null && mensajeData != null) {
+            return IdiomaAplicacion.textoLocalizado(mensajeData, data["mensajeEn"])
+        }
+        return mensajeData ?: message.notification?.body ?: ""
     }
 
     private fun mostrarNotificacion(titulo: String, cuerpo: String) {

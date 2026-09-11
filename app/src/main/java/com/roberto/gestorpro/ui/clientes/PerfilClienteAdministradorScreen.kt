@@ -45,6 +45,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.roberto.gestorpro.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -78,6 +79,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -112,6 +114,7 @@ import com.roberto.gestorpro.ui.viewmodel.DenunciasViewModel
 import com.roberto.gestorpro.ui.viewmodel.MovimientoViewModel
 import com.roberto.gestorpro.util.MovimientoPrecio
 import com.roberto.gestorpro.util.MovimientoPago
+import com.roberto.gestorpro.util.FechaBajaEfectiva
 import com.roberto.gestorpro.util.MovimientoMorosidad
 import java.io.File
 import java.time.Instant
@@ -312,17 +315,27 @@ fun PerfilClienteScreen(
      * (flag independiente del estado administrativo). Sirve para mostrar el
      * borde rojo en la foto del perfil.
      */
-    val esMoroso = cliente?.estado?.let { estadoCliente ->
-        MovimientoMorosidad
-            .resultadoDe(
-                estadoCliente,
-                movimientos,
-                exentoMorosidad = cliente?.exentoMorosidad == true,
-                inicioEtapa = cliente?.fechaBaja,
-                ahora = System.currentTimeMillis()
-            )
-            .moroso
-    } == true
+    val resultadoMorosidad = cliente?.estado?.let { estadoCliente ->
+        MovimientoMorosidad.resultadoDe(
+            estado = estadoCliente,
+            movimientos = movimientos,
+            ahora = System.currentTimeMillis(),
+            exentoMorosidad = cliente?.exentoMorosidad == true,
+            inicioEtapa = cliente?.fechaBaja
+        )
+    }
+    val esMoroso = resultadoMorosidad?.moroso == true
+
+    /**
+     * Motivos (derivados, sin persistir campos nuevos) por los que el cliente
+     * es moroso: "Pago vencido" (por fecha) y/o "Pago pendiente" (por deuda).
+     */
+    val textoPagoVencido = stringResource(R.string.cliente_moroso_pago_vencido)
+    val textoPagoPendiente = stringResource(R.string.cliente_moroso_pago_pendiente)
+    val motivosMorosidad = buildList {
+        if (resultadoMorosidad?.morosoPorFecha == true) add(textoPagoVencido)
+        if (resultadoMorosidad?.morosoPorDeuda == true) add(textoPagoPendiente)
+    }
 
     val deudaTotal = MovimientoMorosidad.deudaDe(movimientos)
 
@@ -541,6 +554,29 @@ fun PerfilClienteScreen(
      * cliente a BAJA (avisa de las consecuencias: reservas futuras, aviso…).
      */
     var mostrarConfirmarBaja by rememberSaveable { mutableStateOf(false) }
+
+    /**
+     * mostrarDatePickerBaja
+     * ---------------------
+     * Controla el selector de la FECHA EFECTIVA de baja. Por defecto es HOY
+     * (fechaBajaElegidaEpochDay == null) y solo se permiten HOY o fechas
+     * anteriores (no futuras).
+     */
+    var mostrarDatePickerBaja by rememberSaveable { mutableStateOf(false) }
+    var fechaBajaElegidaEpochDay by rememberSaveable { mutableStateOf<Long?>(null) }
+
+    /**
+     * fechaBajaEfectivaMillis
+     * -----------------------
+     * Convierte el día elegido para la baja en el instante que se guarda como
+     * `fechaBaja`. Para HOY se usa el instante actual (mismo comportamiento que
+     * antes); para una fecha pasada, la medianoche local de ese día. Función
+     * PURA para poder testearse.
+     */
+    fun fechaBajaEfectivaMillis(diaEpochDay: Long?, ahora: Long): Long =
+        FechaBajaEfectiva.millis(diaEpochDay, ahora)
+
+    val formateadorFechaBaja = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
 
     /**
      * alternarServicioNuevo
@@ -1262,6 +1298,51 @@ fun PerfilClienteScreen(
                     color = Color(0xFFF44336),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // Motivo(s) de la morosidad (derivado del motor existente, sin
+                // almacenar campos nuevos). Solo se muestra si el cliente es
+                // moroso y hay motivos.
+                if (esMoroso && motivosMorosidad.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFF44336).copy(alpha = 0.08f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(1.dp, Color(0xFFF44336).copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = Color(0xFFF44336),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = stringResource(R.string.cliente_morosidad_motivo),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = motivosMorosidad.joinToString(" · "),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -2079,6 +2160,64 @@ fun PerfilClienteScreen(
                     }
                 }
 
+                if (mostrarDatePickerBaja) {
+                    // Fecha EFECTIVA de baja: por defecto HOY; solo se permiten
+                    // HOY o fechas anteriores (no futuras).
+                    val selectableDatesBaja = remember {
+                        val hoy = LocalDate.now()
+                        val hoyUtc = hoy.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                        val fechaMinimaUtc = hoy.minusYears(120)
+                            .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                        object : SelectableDates {
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                                utcTimeMillis in fechaMinimaUtc..hoyUtc
+
+                            override fun isSelectableYear(year: Int): Boolean =
+                                year in (hoy.minusYears(120).year..hoy.year)
+                        }
+                    }
+
+                    val seleccionInicialBaja = fechaBajaElegidaEpochDay?.let {
+                        LocalDate.ofEpochDay(it)
+                            .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                    } ?: LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+                    val datePickerBajaState = rememberDatePickerState(
+                        initialSelectedDateMillis = seleccionInicialBaja,
+                        selectableDates = selectableDatesBaja
+                    )
+
+                    DatePickerDialog(
+                        onDismissRequest = { mostrarDatePickerBaja = false },
+                        confirmButton = {
+                            TextButton(
+                                enabled = datePickerBajaState.selectedDateMillis != null,
+                                onClick = {
+                                    datePickerBajaState.selectedDateMillis?.let { utc ->
+                                        fechaBajaElegidaEpochDay =
+                                            Instant.ofEpochMilli(utc)
+                                                .atZone(ZoneOffset.UTC)
+                                                .toLocalDate()
+                                                .toEpochDay()
+                                    }
+                                    mostrarDatePickerBaja = false
+                                }
+                            ) {
+                                Text("Aceptar")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { mostrarDatePickerBaja = false }
+                            ) {
+                                Text("Cancelar")
+                            }
+                        }
+                    ) {
+                        DatePicker(state = datePickerBajaState)
+                    }
+                }
+
                 if (movimientoSeleccionado != null) {
                     val movimientoDetalle = movimientoSeleccionado
                     if (movimientoDetalle != null) {
@@ -2240,7 +2379,10 @@ fun PerfilClienteScreen(
                             mostrarDialogoEstado = false
                             if (objetivo == null || objetivo == estadoActual) return@AppDialogTextButton
                             when (objetivo) {
-                                EstadoCliente.BAJA -> mostrarConfirmarBaja = true
+                                EstadoCliente.BAJA -> {
+                                    fechaBajaElegidaEpochDay = null
+                                    mostrarConfirmarBaja = true
+                                }
                                 EstadoCliente.ACTIVO -> clienteActual?.let {
                                     viewModel.reactivarCliente(it)
                                 }
@@ -2266,22 +2408,64 @@ fun PerfilClienteScreen(
          * lo permite. La baja efectiva la ejecuta darDeBaja (existente).
          */
         if (mostrarConfirmarBaja) {
+            val diaElegido = fechaBajaElegidaEpochDay?.let { LocalDate.ofEpochDay(it) }
+                ?: LocalDate.now()
             AlertDialog(
                 onDismissRequest = { mostrarConfirmarBaja = false },
                 title = { Text("Confirmar baja") },
                 text = {
-                    Text(
-                        "¿Confirmar la baja de este cliente? Se cancelarán sus " +
-                            "reservas futuras y se le notificará si está activada " +
-                            "la configuración de avisos. Los servicios contratados se conservan."
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            "¿Confirmar la baja de este cliente? Se cancelarán sus " +
+                                "reservas futuras y se le notificará si está activada " +
+                                "la configuración de avisos. Los servicios contratados se conservan."
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { mostrarDatePickerBaja = true }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null,
+                                tint = Color(0xFF1E88E5),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.cliente_baja_fecha),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = diaElegido.format(formateadorFechaBaja),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 },
                 confirmButton = {
                     AppDialogDangerConfirmButton(
                         text = "Dar de baja",
                         onClick = {
                             mostrarConfirmarBaja = false
-                            cliente?.let { viewModel.darDeBaja(it) }
+                            val fechaEfectiva = fechaBajaEfectivaMillis(
+                                fechaBajaElegidaEpochDay,
+                                System.currentTimeMillis()
+                            )
+                            cliente?.let { viewModel.darDeBaja(it, fechaEfectiva) }
                         }
                     )
                 },

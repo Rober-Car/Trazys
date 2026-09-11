@@ -178,4 +178,14 @@
     <string name="dia_corto_vie">Fri</string>
     <string name="dia_corto_sab">Sat</string>
     <string name="dia_corto_dom">Sun</string>
+
+    <!-- ===== Admin push notifications (FCM) ===== -->
+    <string name="fcm_canal_nombre">Center notifications</string>
+    <string name="fcm_push_titulo_defecto">Notification</string>
+
+    <!-- ===== Clients (ADMIN): effective end date and arrears reason ===== -->
+    <string name="cliente_baja_fecha">Effective end date</string>
+    <string name="cliente_morosidad_motivo">Reason for arrears</string>
+    <string name="cliente_moroso_pago_vencido">Overdue payment</string>
+    <string name="cliente_moroso_pago_pendiente">Pending payment</string>
 </resources>

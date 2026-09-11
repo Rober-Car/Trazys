@@ -431,6 +431,21 @@ object AppModule {
     }
 
     /**
+     * MIGRACION_19_20
+     * ---------------
+     * Movimiento: nueva columna `fechaRegistro` (marca de creación, frontera de
+     * etapa para la morosidad por fecha). Las filas existentes toman 0 (se
+     * tratan como anteriores a la etapa actual). ALTER simple con DEFAULT 0.
+     */
+    private val MIGRACION_19_20 = object : Migration(19, 20) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE `movimiento` ADD COLUMN `fechaRegistro` INTEGER NOT NULL DEFAULT 0"
+            )
+        }
+    }
+
+    /**
      * provideFirebaseAuth
      * -------------------
      * ✔ TIPO: método (fun) de Hilt con anotación @Provides y @Singleton → FirebaseAuth
@@ -498,7 +513,8 @@ object AppModule {
                 MIGRACION_15_16,
                 MIGRACION_16_17,
                 MIGRACION_17_18,
-                MIGRACION_18_19
+                MIGRACION_18_19,
+                MIGRACION_19_20
             )
 
         return databaseBuilder.build()

@@ -25,9 +25,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
@@ -62,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.data.entity.ClienteEntity
 import com.roberto.gestorpro.data.firebase.FotoClienteStorage
 import com.roberto.gestorpro.model.EstadoCliente
@@ -84,6 +88,7 @@ import com.roberto.gestorpro.ui.utils.crearFotoTemporal
 import com.roberto.gestorpro.ui.utils.guardaFotoEnInterna
 import com.roberto.gestorpro.ui.utils.guardarFotoDeCamara
 import com.roberto.gestorpro.ui.utils.uriDeFotoTemporal
+import com.roberto.gestorpro.util.FechaBajaEfectiva
 import com.roberto.gestorpro.ui.viewmodel.ClienteViewModel
 import com.roberto.gestorpro.ui.viewmodel.MainViewModel
 import java.io.File
@@ -230,6 +235,13 @@ fun AñadirClienteScreen(
      * Controla el diálogo de confirmación al pasar un cliente ACTIVO a BAJA.
      */
     var mostrarConfirmarBaja by rememberSaveable { mutableStateOf(false) }
+
+    /**
+     * Fecha EFECTIVA de baja elegida (epochDay local). null = HOY.
+     * Solo se usa cuando el cliente pasa de ACTIVO a BAJA.
+     */
+    var mostrarDatePickerBaja by rememberSaveable { mutableStateOf(false) }
+    var fechaBajaElegidaEpochDay by rememberSaveable { mutableStateOf<Long?>(null) }
 
     /**
      * fechaNacimientoFormateada
@@ -1133,7 +1145,15 @@ fun AñadirClienteScreen(
                             if (cliente.estado == EstadoCliente.BAJA && original.estado != EstadoCliente.BAJA) {
                                 // Transición a BAJA: baja efectiva (mismas consecuencias que
                                 // aceptar una solicitud: cancela reservas futuras y notifica).
-                                viewModel.darDeBaja(cliente, onExito = alGuardar)
+                                // La fecha EFECTIVA es la elegida en el selector (HOY por defecto).
+                                viewModel.darDeBaja(
+                                    cliente = cliente,
+                                    fechaBajaMillis = FechaBajaEfectiva.millis(
+                                        fechaBajaElegidaEpochDay,
+                                        System.currentTimeMillis()
+                                    ),
+                                    onExito = alGuardar
+                                )
                             } else {
                                 viewModel.actualizarCliente(cliente, onExito = alGuardar)
                             }
@@ -1298,15 +1318,55 @@ fun AñadirClienteScreen(
     }
 
     if (mostrarConfirmarBaja) {
+        val diaElegido = fechaBajaElegidaEpochDay?.let { LocalDate.ofEpochDay(it) }
+            ?: LocalDate.now()
         AlertDialog(
             onDismissRequest = { mostrarConfirmarBaja = false },
             title = { Text("Confirmar baja") },
             text = {
-                Text(
-                    "¿Confirmar la baja de este cliente? Se cancelarán sus " +
-                        "reservas futuras y se le notificará si está activada " +
-                        "la configuración de avisos. Los servicios contratados se conservan."
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "¿Confirmar la baja de este cliente? Se cancelarán sus " +
+                            "reservas futuras y se le notificará si está activada " +
+                            "la configuración de avisos. Los servicios contratados se conservan."
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { mostrarDatePickerBaja = true }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                            tint = Color(0xFF1E88E5),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.cliente_baja_fecha),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = diaElegido.format(
+                                    DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                ),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             },
             confirmButton = {
                 AppDialogDangerConfirmButton(
@@ -1325,6 +1385,56 @@ fun AñadirClienteScreen(
                 )
             }
         )
+    }
+
+    if (mostrarDatePickerBaja) {
+        // Fecha EFECTIVA de baja: HOY por defecto; solo HOY o anterior.
+        val selectableDatesBaja = remember {
+            val hoy = LocalDate.now()
+            val hoyUtc = hoy.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            val fechaMinimaUtc = hoy.minusYears(120)
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis in fechaMinimaUtc..hoyUtc
+
+                override fun isSelectableYear(year: Int): Boolean =
+                    year in (hoy.minusYears(120).year..hoy.year)
+            }
+        }
+        val seleccionInicialBaja = fechaBajaElegidaEpochDay?.let {
+            LocalDate.ofEpochDay(it).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        } ?: LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val datePickerBajaState = rememberDatePickerState(
+            initialSelectedDateMillis = seleccionInicialBaja,
+            selectableDates = selectableDatesBaja
+        )
+        DatePickerDialog(
+            onDismissRequest = { mostrarDatePickerBaja = false },
+            confirmButton = {
+                TextButton(
+                    enabled = datePickerBajaState.selectedDateMillis != null,
+                    onClick = {
+                        datePickerBajaState.selectedDateMillis?.let { utc ->
+                            fechaBajaElegidaEpochDay = Instant.ofEpochMilli(utc)
+                                .atZone(ZoneOffset.UTC)
+                                .toLocalDate()
+                                .toEpochDay()
+                        }
+                        mostrarDatePickerBaja = false
+                    }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDatePickerBaja = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerBajaState)
+        }
     }
 }
 

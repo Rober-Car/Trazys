@@ -178,4 +178,14 @@
     <string name="dia_corto_vie">Vie</string>
     <string name="dia_corto_sab">Sáb</string>
     <string name="dia_corto_dom">Dom</string>
+
+    <!-- ===== Notificaciones push del ADMIN (FCM) ===== -->
+    <string name="fcm_canal_nombre">Notificaciones del centro</string>
+    <string name="fcm_push_titulo_defecto">Notificación</string>
+
+    <!-- ===== Clientes (ADMIN): baja y motivo de morosidad ===== -->
+    <string name="cliente_baja_fecha">Fecha efectiva de baja</string>
+    <string name="cliente_morosidad_motivo">Motivo de morosidad</string>
+    <string name="cliente_moroso_pago_vencido">Pago vencido</string>
+    <string name="cliente_moroso_pago_pendiente">Pago pendiente</string>
 </resources>

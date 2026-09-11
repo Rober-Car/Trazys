@@ -207,12 +207,35 @@ class SolicitudesViewModel @Inject constructor(
 
             val resultado = solicitudRemotoRepository.rechazarSolicitud(solicitud)
             if (resultado.exito) {
+                // Aviso al CLIENTE (idempotente y según config). Un fallo no
+                // revierte el rechazo, que ya quedó aplicado en Firestore.
+                notificarBajaRechazada(solicitud)
                 _mensajeExito.value = resultado.mensaje
                 cargarSolicitudes()
             } else {
                 _errorSincronizacion.value = resultado.mensaje
                 _solicitudSinSincronizar.value = solicitud
             }
+        }
+    }
+
+    /**
+     * notificarBajaRechazada
+     * ----------------------
+     * Crea la notificación al CLIENTE (con su buzón) cuando se rechaza una
+     * solicitud de baja. Idempotente (ID determinista por solicitud) y respeta
+     * el switch "Baja rechazada". NO modifica el cliente ni las reservas. Un
+     * fallo de la notificación solo se registra: no revierte el rechazo.
+     */
+    private suspend fun notificarBajaRechazada(solicitud: SolicitudBaja) {
+        try {
+            notificacionRemotoRepository.crearNotificacionBajaRechazada(
+                negocioId = solicitud.negocioId,
+                idCliente = solicitud.idCliente,
+                idSolicitud = solicitud.idSolicitud
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "No se pudo crear la notificación de baja rechazada", e)
         }
     }
 

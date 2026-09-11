@@ -31,6 +31,7 @@ async function enviarFCMaClientes({
   origen,
   clienteIds,
   tituloEn,
+  mensajeEn,
   soloDatos = false,
 }) {
   const messaging = getMessaging();
@@ -79,6 +80,7 @@ async function enviarFCMaClientes({
             titulo,
             mensaje,
             tituloEn,
+            mensajeEn,
             soloDatos,
           })
         );
@@ -111,4 +113,101 @@ async function enviarFCMaClientes({
   return resultado;
 }
 
-module.exports = { enviarFCMaClientes };
+/**
+ * enviarFCMaAdmin
+ * ---------------
+ * Envía la notificación al dispositivo del ADMIN propietario del negocio
+ * (`usuarios/{negocioId}/dispositivos/{token}`, donde negocioId = UID del
+ * ADMIN). Es un canal EXCLUSIVO del ADMIN: nunca envía al CLIENTE. Respeta
+ * `notificacionesActivadas` (ausente => activado), divide en lotes de 500 y
+ * elimina los tokens inválidos. Devuelve el mismo resumen que el envío a
+ * clientes.
+ */
+async function enviarFCMaAdmin({
+  negocioId,
+  notificacionId,
+  titulo,
+  mensaje,
+  tipo,
+  origen,
+}) {
+  const messaging = getMessaging();
+  const resultado = {
+    enviados: 0,
+    fallidos: 0,
+    eliminados: 0,
+    sinDispositivos: 0,
+    errorGlobal: null,
+  };
+
+  const adminRef = db().collection("usuarios").doc(String(negocioId));
+  const adminSnap = await adminRef.get();
+  if (!adminSnap.exists) {
+    resultado.sinDispositivos += 1;
+    return resultado;
+  }
+
+  const devsSnap = await adminRef.collection("dispositivos").get();
+  const tokens = devsSnap.docs
+    .map((d) => ({ token: d.data().token, ref: d.ref, activadas: d.data().notificacionesActivadas }))
+    .filter((t) => typeof t.token === "string" && t.token.length > 0)
+    .filter((t) => t.activadas !== false);
+
+  if (tokens.length === 0) {
+    resultado.sinDispositivos += 1;
+    return resultado;
+  }
+
+  for (const lote of dividirEnLotes(tokens, MAX_TOKENS_POR_LOTE)) {
+    try {
+      const respuesta = await messaging.sendEachForMulticast(
+        construirMensajeMulticast({
+          tokens: lote.map((t) => t.token),
+          notificacionId,
+          clienteId: negocioId,
+          tipo,
+          negocioId,
+          origen,
+          titulo,
+          mensaje,
+        })
+      );
+      respuesta.responses.forEach((r, i) => {
+        if (r.success) {
+          resultado.enviados += 1;
+        } else {
+          resultado.fallidos += 1;
+          const codigo = r.error && r.error.code;
+          if (esTokenInvalido(codigo)) {
+            resultado.eliminados += 1;
+            const token = lote[i];
+            token.ref.delete().catch((e) => {
+              logger.warn("No se pudo eliminar token FCM inválido (admin)", {
+                negocioId,
+                error: e.message,
+              });
+            });
+          } else {
+            logger.warn("Push admin no entregado (token válido)", {
+              notificacionId,
+              negocioId,
+              codigo,
+            });
+          }
+        }
+      });
+    } catch (e) {
+      resultado.fallidos += lote.length;
+      if (!resultado.errorGlobal) resultado.errorGlobal = e.message;
+      logger.error("Fallo global al enviar lote FCM (admin)", {
+        notificacionId,
+        negocioId,
+        error: e.message,
+      });
+    }
+  }
+
+  return resultado;
+}
+
+module.exports = { enviarFCMaClientes, enviarFCMaAdmin };

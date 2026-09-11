@@ -1,5 +1,6 @@
 package com.roberto.gestorpro.data.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.roberto.gestorpro.model.EstadoMovimiento
@@ -77,6 +78,17 @@ data class MovimientoEntity(
     /**
      * observaciones: notas opcionales del movimiento.
      */
-    val observaciones: String? = null
+    val observaciones: String? = null,
+
+    /**
+     * fechaRegistro: momento (milisegundos) en que el movimiento se CREÓ en el
+     * sistema. Sirve como frontera de etapa económica: los movimientos creados
+     * antes de la última baja (`fechaBaja`) no cuentan para la morosidad por
+     * fecha tras reactivar (ver MovimientoMorosidad). NO es una fecha del
+     * período (eso es fechaInicio/fechaFin) ni la fecha de pago. Los movimientos
+     * históricos sin este dato valen 0 y se tratan como anteriores a la etapa.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val fechaRegistro: Long = 0L
 
 )

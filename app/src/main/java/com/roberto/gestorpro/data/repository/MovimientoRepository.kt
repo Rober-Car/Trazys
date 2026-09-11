@@ -95,11 +95,17 @@ class MovimientoRepository @Inject constructor(
      */
     suspend fun insertarMovimiento(movimiento: MovimientoEntity) {
         ejecutarOperacionEconomica(movimiento.idCliente) {
-            val conId = if (movimiento.idMovimiento > 0) {
-                movimiento
-            } else {
-                movimiento.copy(idMovimiento = IdMovimiento.nuevo())
-            }
+            // Un movimiento nuevo se crea ahora: se marca su fechaRegistro como
+            // frontera de la etapa económica (los movimientos anteriores a la
+            // última baja no cuentan para la morosidad por fecha tras reactivar).
+            val conId = movimiento.copy(
+                idMovimiento = if (movimiento.idMovimiento > 0) {
+                    movimiento.idMovimiento
+                } else {
+                    IdMovimiento.nuevo()
+                },
+                fechaRegistro = System.currentTimeMillis()
+            )
             movimientoDao.insertarMovimiento(conId)
             val resumen = calcularYPersistirMorosidad(conId.idCliente)
             val resultadoMovimiento = movimientoRemotoRepository
@@ -330,11 +336,19 @@ class MovimientoRepository @Inject constructor(
      * llamador aporta su propio contexto de Mutex/IO/errores).
      */
     private suspend fun actualizarMovimientoCore(movimiento: MovimientoEntity) {
-        movimientoDao.actualizarMovimiento(movimiento)
-        val resumen = calcularYPersistirMorosidad(movimiento.idCliente)
+        // Editar NUNCA cambia la fecha de creación: si la entidad entrante no la
+        // trae (0), se conserva la almacenada.
+        val existente = movimientoDao.obtenerMovimientoPorId(movimiento.idMovimiento)
+        val aGuardar = if (existente != null && movimiento.fechaRegistro == 0L) {
+            movimiento.copy(fechaRegistro = existente.fechaRegistro)
+        } else {
+            movimiento
+        }
+        movimientoDao.actualizarMovimiento(aGuardar)
+        val resumen = calcularYPersistirMorosidad(aGuardar.idCliente)
         val resultadoMovimiento = movimientoRemotoRepository
-            .actualizarMovimientoRemoto(movimiento)
-        publicarResumenYResultado(movimiento.idCliente, resumen, resultadoMovimiento.exito)
+            .actualizarMovimientoRemoto(aGuardar)
+        publicarResumenYResultado(aGuardar.idCliente, resumen, resultadoMovimiento.exito)
     }
 
     /**
@@ -392,6 +406,8 @@ class MovimientoRepository @Inject constructor(
             fechaEntradaPrevia = cliente.fechaEntradaMorosidad,
             ahora = ahora,
             exentoMorosidad = cliente.exentoMorosidad,
+            // Frontera de etapa: la última fecha de baja. Los movimientos creados
+            // antes de esa baja no cuentan para la morosidad por fecha.
             inicioEtapa = cliente.fechaBaja
         )
         clienteDao.actualizarMorosidadDao(
@@ -401,7 +417,10 @@ class MovimientoRepository @Inject constructor(
         )
 
         val deuda = MovimientoMorosidad.deudaDe(movimientos)
-        val actual = movimientos.maxByOrNull { it.fechaFin }
+        // El período actual (fechaInicioActual/fechaFinActual remotos) también se
+        // calcula SOLO con la etapa actual: tras reactivar no debe arrastrar el
+        // período anterior.
+        val actual = MovimientoMorosidad.periodoActualDe(movimientos, cliente.fechaBaja)
         return ResumenEconomia(
             moroso = final.moroso,
             fechaEntradaMorosidad = final.fechaEntradaMorosidad,

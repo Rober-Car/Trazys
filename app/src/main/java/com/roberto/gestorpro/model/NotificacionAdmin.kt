@@ -37,6 +37,7 @@ data class ConfiguracionNotificaciones(
     val morosidadActiva: Boolean,
     val recordatorioHoras: Int,
     val bajaConfirmadaActiva: Boolean,
+    val bajaRechazadaActiva: Boolean = true,
     val cambioHorarioActiva: Boolean = false
 )
 

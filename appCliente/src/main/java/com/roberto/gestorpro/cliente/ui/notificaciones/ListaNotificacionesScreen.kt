@@ -91,6 +91,7 @@ fun ListaNotificacionesScreen(
     val textoReintentar = stringResource(R.string.notif_reintentar)
     val textoMasOpciones = stringResource(R.string.notif_mas_opciones)
     val textoDenunciar = stringResource(R.string.notif_accion_denunciar)
+    val textoEliminar = stringResource(R.string.notif_accion_eliminar)
 
     LaunchedEffect(Unit) {
         viewModel.cargar()
@@ -192,6 +193,7 @@ fun ListaNotificacionesScreen(
                             formateador = formateador,
                             esManual = notificacion.origen == "MANUAL",
                             onDenunciar = { notificacionADenunciar = notificacion },
+                            onEliminar = { viewModel.eliminar(notificacion.id) },
                             onClick = { viewModel.marcarLeida(notificacion.id) }
                         )
                     }
@@ -215,6 +217,7 @@ private fun NotificacionCard(
     formateador: DateTimeFormatter,
     esManual: Boolean,
     onDenunciar: () -> Unit,
+    onEliminar: () -> Unit,
     onClick: () -> Unit
 ) {
     val leida = notificacion.leida
@@ -227,6 +230,7 @@ private fun NotificacionCard(
 
     val textoMasOpciones = stringResource(R.string.notif_mas_opciones)
     val textoDenunciar = stringResource(R.string.notif_accion_denunciar)
+    val textoEliminar = stringResource(R.string.notif_accion_eliminar)
 
     Card(
         onClick = onClick,
@@ -277,7 +281,10 @@ private fun NotificacionCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = notificacion.mensaje,
+                    text = IdiomaAplicacion.textoLocalizado(
+                        notificacion.mensaje,
+                        notificacion.mensajeEn
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -289,19 +296,21 @@ private fun NotificacionCard(
                 )
             }
 
-            if (esManual) {
-                Box {
-                    IconButton(onClick = { menuAbierto = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = textoMasOpciones,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuAbierto,
-                        onDismissRequest = { menuAbierto = false }
-                    ) {
+            Box {
+                IconButton(onClick = { menuAbierto = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = textoMasOpciones,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuAbierto,
+                    onDismissRequest = { menuAbierto = false }
+                ) {
+                    // "Denunciar" solo para las notificaciones de origen MANUAL;
+                    // "Eliminar" (borra SOLO el buzón propio) siempre disponible.
+                    if (esManual) {
                         DropdownMenuItem(
                             text = { Text(textoDenunciar) },
                             onClick = {
@@ -310,6 +319,13 @@ private fun NotificacionCard(
                             }
                         )
                     }
+                    DropdownMenuItem(
+                        text = { Text(textoEliminar) },
+                        onClick = {
+                            menuAbierto = false
+                            onEliminar()
+                        }
+                    )
                 }
             }
         }

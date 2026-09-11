@@ -20,4 +20,22 @@ function decidirCreacionNotificacion(existente) {
   return "omitir";
 }
 
-module.exports = { decidirCreacionNotificacion };
+/**
+ * decidirEntregaAutomatica
+ * ------------------------
+ * Decide si una notificación automática ya está ENTREGADA (se omite) o si hay
+ * que (re)enviarla. La entrega NO debe considerarse hecha cuando no había
+ * ningún dispositivo válido en el intento previo, de modo que el barrido pueda
+ * reintentarla cuando el destinatario esté disponible.
+ *
+ * @param estado           estado de envío actual del documento (PENDIENTE/ENVIADA/...).
+ * @param pendientes       nº de destinatarios cuyo buzón aún no existía (recién creados).
+ * @param huboDispositivos true si en el envío previo se intentó al menos un dispositivo.
+ * @returns "omitir" (ya entregada, sin pendientes) | "enviar" (hay que enviar).
+ */
+function decidirEntregaAutomatica({ estado, pendientes = 0, huboDispositivos = false }) {
+  if (estado === "ENVIADA" && pendientes === 0 && huboDispositivos) return "omitir";
+  return "enviar";
+}
+
+module.exports = { decidirCreacionNotificacion, decidirEntregaAutomatica };

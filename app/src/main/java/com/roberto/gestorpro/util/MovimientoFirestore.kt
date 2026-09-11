@@ -38,6 +38,7 @@ object MovimientoFirestore {
             "servicios" to movimiento.servicios,
             "fechaInicio" to timestampDe(movimiento.fechaInicio),
             "fechaFin" to timestampDe(movimiento.fechaFin),
+            "fechaRegistro" to timestampDe(movimiento.fechaRegistro),
             "precioFinal" to movimiento.precioFinal,
             "estado" to movimiento.estado.name,
             "fechaPago" to movimiento.fechaPago?.let { timestampDe(it) },

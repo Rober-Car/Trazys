@@ -334,14 +334,18 @@ class ClienteViewModel @Inject constructor(
      * recálculo de morosidad, réplica y BAJA_CONFIRMADA según configuración.
      * Solo aplica a clientes ACTIVO/REGISTRADO; BAJA y ARCHIVADO no se tocan.
      */
-    fun darDeBajaClientesSeleccionados(ids: List<Int>) {
+    fun darDeBajaClientesSeleccionados(
+        ids: List<Int>,
+        fechaBajaMillis: Long = System.currentTimeMillis()
+    ) {
         viewModelScope.launch {
             for (id in ids) {
                 val entidad = clienteRepository.obtenerClientePorIdRepo(id) ?: continue
                 if (entidad.estado == EstadoCliente.ACTIVO ||
                     entidad.estado == EstadoCliente.REGISTRADO
                 ) {
-                    darDeBaja(entidad)
+                    // La MISMA fecha elegida se aplica a todas las bajas del lote.
+                    darDeBaja(entidad, fechaBajaMillis)
                 }
             }
             salirSeleccionClientes()
@@ -931,19 +935,23 @@ class ClienteViewModel @Inject constructor(
      * ---------
      * BAJA DIRECTA de un cliente (sin solicitud previa). Produce las MISMAS
      * consecuencias de negocio que aceptar una solicitud de baja:
-     *   1. Room: cliente -> BAJA + fechaBaja;
+     *   1. Room: cliente -> BAJA + fechaBaja EFECTIVA elegida (por defecto hoy);
      *   2. Room: cancela las reservas futuras del cliente (libera plazas);
      *   3. Firestore: replica el cliente en BAJA;
      *   4. Firestore: cancela reservas futuras y genera BAJA_CONFIRMADA si la
      *      configuración lo permite (BajaClienteRemotoRepository).
      * Los servicios contratados se conservan.
      */
-    fun darDeBaja(cliente: ClienteEntity, onExito: () -> Unit = {}) {
+    fun darDeBaja(
+        cliente: ClienteEntity,
+        fechaBajaMillis: Long = System.currentTimeMillis(),
+        onExito: () -> Unit = {}
+    ) {
         viewModelScope.launch {
             _error.value = null
-            // Una BAJA nueva siempre fija la fecha ACTUAL, nunca reutiliza una
-            // fechaBaja anterior conservada de una baja previa.
-            val fechaBaja = System.currentTimeMillis()
+            // Una BAJA nueva fija la fecha EFECTIVA elegida (por defecto HOY),
+            // nunca reutiliza una fechaBaja anterior conservada de una baja previa.
+            val fechaBaja = fechaBajaMillis
             val entidad = aplicarBaja(cliente, fechaBaja)
 
             try {
@@ -980,10 +988,14 @@ class ClienteViewModel @Inject constructor(
      * notificación y sincronización) es exactamente la ya existente.
      * Al completarse refresca el cliente seleccionado para actualizar la UI.
      */
-    fun darDeBaja(cliente: Cliente, onExito: () -> Unit = {}) {
+    fun darDeBaja(
+        cliente: Cliente,
+        fechaBajaMillis: Long = System.currentTimeMillis(),
+        onExito: () -> Unit = {}
+    ) {
         viewModelScope.launch {
             val entity = clienteRepository.obtenerClientePorIdRepo(cliente.idCliente) ?: return@launch
-            darDeBaja(entity) {
+            darDeBaja(entity, fechaBajaMillis) {
                 onExito()
                 viewModelScope.launch {
                     _clienteSeleccionado.value = clienteRepository

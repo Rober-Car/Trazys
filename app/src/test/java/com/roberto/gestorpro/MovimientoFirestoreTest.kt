@@ -30,7 +30,8 @@ class MovimientoFirestoreTest {
         fechaPago: Long? = null,
         metodoPago: MetodoPago? = null,
         observaciones: String? = null,
-        precioFinal: Double = 42.5
+        precioFinal: Double = 42.5,
+        fechaRegistro: Long = fechaIni
     ): MovimientoEntity = MovimientoEntity(
         idMovimiento = idMovimiento,
         idCliente = 3,
@@ -41,7 +42,8 @@ class MovimientoFirestoreTest {
         estado = estado,
         fechaPago = fechaPago,
         metodoPago = metodoPago,
-        observaciones = observaciones
+        observaciones = observaciones,
+        fechaRegistro = fechaRegistro
     )
 
     private fun fecha(dia: Int, mes: Int, anio: Int = 2026): Long =
@@ -64,8 +66,10 @@ class MovimientoFirestoreTest {
 
         val inicio = mapa["fechaInicio"] as Timestamp
         val fin = mapa["fechaFin"] as Timestamp
+        val registro = mapa["fechaRegistro"] as Timestamp
         assertEquals(fechaIni, inicio.toDate().time)
         assertEquals(fechaFin, fin.toDate().time)
+        assertEquals(movimiento.fechaRegistro, registro.toDate().time)
     }
 
     private fun assertMillis(mapa: Map<String, Any?>, clave: String, esperado: Long?) {
@@ -264,6 +268,7 @@ class MovimientoFirestoreTest {
             "servicios",
             "fechaInicio",
             "fechaFin",
+            "fechaRegistro",
             "precioFinal",
             "estado",
             "fechaPago",

@@ -24,6 +24,7 @@ function construirMensajeMulticast({
   titulo,
   mensaje,
   tituloEn,
+  mensajeEn,
   soloDatos = false,
 }) {
   const data = {
@@ -36,10 +37,13 @@ function construirMensajeMulticast({
   if (typeof tituloEn === "string" && tituloEn.length > 0) {
     data.tituloEn = tituloEn;
   }
+  if (typeof mensajeEn === "string" && mensajeEn.length > 0) {
+    data.mensajeEn = mensajeEn;
+  }
 
   const multicast = { tokens, data };
   if (soloDatos) {
-    // Data-only: el CLIENTE pinta la notificación con el título localizado.
+    // Data-only: el CLIENTE pinta la notificación con el texto localizado.
     data.titulo = String(titulo);
     data.mensaje = String(mensaje);
     multicast.android = { priority: "high" };

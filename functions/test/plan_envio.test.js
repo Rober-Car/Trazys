@@ -12,7 +12,7 @@ const base = {
     tipo: "MOROSIDAD",
     negocioId: "negocio-a",
     origen: "PRECONFIGURADA",
-    titulo: "Alerta de pago vencido",
+    titulo: "Pago vencido",
     mensaje: "Se ha detectado un periodo de pago vencido en tu cuenta.",
 };
 
@@ -35,7 +35,7 @@ test("morosidad data-only: sin notification, prioridad alta y texto en data", ()
     });
     assert.equal(m.notification, undefined);
     assert.deepEqual(m.android, { priority: "high" });
-    assert.equal(m.data.titulo, "Alerta de pago vencido");
+    assert.equal(m.data.titulo, "Pago vencido");
     assert.equal(m.data.tituloEn, "Payment overdue");
     assert.equal(m.data.mensaje, base.mensaje);
 });
@@ -43,7 +43,7 @@ test("morosidad data-only: sin notification, prioridad alta y texto en data", ()
 test("data-only sin tituloEn (compatibilidad): tituloEn ausente", () => {
     const m = construirMensajeMulticast({ ...base, soloDatos: true });
     assert.equal(m.data.tituloEn, undefined);
-    assert.equal(m.data.titulo, "Alerta de pago vencido");
+    assert.equal(m.data.titulo, "Pago vencido");
     assert.deepEqual(m.android, { priority: "high" });
 });
 
@@ -52,4 +52,23 @@ test("normal con tituloEn: notification intacta y tituloEn en data", () => {
     assert.deepEqual(m.notification, { title: base.titulo, body: base.mensaje });
     assert.equal(m.data.tituloEn, "Payment overdue");
     assert.equal(m.android, undefined);
+});
+
+test("data-only de baja rechazada: titulo/tituloEn/mensaje/mensajeEn en data", () => {
+    const m = construirMensajeMulticast({
+        ...base,
+        tipo: "SOLICITUD_RECHAZADA",
+        origen: "PRECONFIGURADA",
+        titulo: "Solicitud de baja rechazada",
+        tituloEn: "Cancellation request rejected",
+        mensaje: "Tu solicitud de baja ha sido rechazada.",
+        mensajeEn: "Your cancellation request has been rejected.",
+        soloDatos: true,
+    });
+    assert.equal(m.notification, undefined);
+    assert.deepEqual(m.android, { priority: "high" });
+    assert.equal(m.data.titulo, "Solicitud de baja rechazada");
+    assert.equal(m.data.tituloEn, "Cancellation request rejected");
+    assert.equal(m.data.mensaje, "Tu solicitud de baja ha sido rechazada.");
+    assert.equal(m.data.mensajeEn, "Your cancellation request has been rejected.");
 });

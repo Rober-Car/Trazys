@@ -19,12 +19,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,7 +53,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
-import com.roberto.gestorpro.cliente.ui.components.AppDangerOutlinedButton
 import com.roberto.gestorpro.cliente.ui.components.AppDialogDangerConfirmButton
 import com.roberto.gestorpro.cliente.ui.components.AppDialogTextButton
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
@@ -290,14 +297,26 @@ private fun TarjetaSesion(
     val textoCancelarReserva = stringResource(R.string.clases_cancelar_reserva)
     val textoVerAsistentes = stringResource(R.string.clases_ver_asistentes)
 
+    // Azul corporativo Trazys: da presencia al estado RESERVADA sin depender
+    // del color dinámico de Material You.
+    val azulTrazys = Color(0xFF1E88E5)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (estado == EstadoReserva.RESERVADA) {
+                azulTrazys.copy(alpha = 0.08f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = if (estado == EstadoReserva.RESERVADA) {
+            BorderStroke(1.5.dp, azulTrazys)
+        } else {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        }
     ) {
         Column(
             modifier = Modifier
@@ -367,23 +386,70 @@ private fun TarjetaSesion(
                 }
 
                 EstadoReserva.RESERVADA -> {
-                    Text(
-                        text = textoReservada,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    AppSecondaryButton(
-                        text = textoVerAsistentes,
+                    // Badge "Reservada" con fondo azul corporativo y texto blanco.
+                    Surface(
+                        color = azulTrazys,
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = textoReservada,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(
                         onClick = onVerAsistentes,
+                        modifier = Modifier.fillMaxWidth(),
                         enabled = !operando,
-                        fullWidth = true
-                    )
-                    AppDangerOutlinedButton(
-                        text = textoCancelarReserva,
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = azulTrazys
+                        ),
+                        border = BorderStroke(1.5.dp, azulTrazys)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = textoVerAsistentes,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    OutlinedButton(
                         onClick = onCancelar,
-                        enabled = !operando
-                    )
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !operando,
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(
+                            text = textoCancelarReserva,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                     if (operando) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Box(

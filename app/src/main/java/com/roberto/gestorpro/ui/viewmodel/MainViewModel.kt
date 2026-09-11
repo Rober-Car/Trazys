@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.roberto.gestorpro.R
 import com.roberto.gestorpro.data.firebase.AutenticacionRepository
+import com.roberto.gestorpro.data.firebase.DispositivoAdminRepository
 import com.roberto.gestorpro.data.firebase.EstadoNegocioDeCuenta
 import com.roberto.gestorpro.data.firebase.NegocioRepository
 import com.roberto.gestorpro.data.firebase.esperar
@@ -39,7 +40,8 @@ class MainViewModel @Inject constructor(
     private val movimientoRepository: MovimientoRepository,
     private val preparadorLocalCuenta: PreparadorLocalCuenta,
     private val hidratadorCacheLocal: HidratadorCacheLocal,
-    private val desactivacionServicioSincronizador: DesactivacionServicioSincronizador
+    private val desactivacionServicioSincronizador: DesactivacionServicioSincronizador,
+    private val dispositivoAdminRepository: DispositivoAdminRepository
 ) : ViewModel() {
 
     /**
@@ -182,6 +184,10 @@ class MainViewModel @Inject constructor(
             _estadoPreparacion.value = EstadoPreparacion.SinSesion
             return
         }
+
+        // Registra/actualiza el token FCM del ADMIN (canal de push del
+        // administrador) tras un login o una sesión restaurada.
+        dispositivoAdminRepository.registrarTokenActual()
 
         when (val resultado = preparadorLocalCuenta.resolver(uid)) {
             is PreparadorLocalCuenta.ResultadoResolver.SinSesion ->

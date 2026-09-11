@@ -10,7 +10,7 @@ import com.roberto.gestorpro.model.EstadoMovimiento
  * Resultado de la detección de morosidad de un cliente en un instante dado,
  * con la distinción conceptual de las DOS causas:
  *  - morosoPorDeuda : existe al menos un movimiento PENDIENTE.
- *  - morosoPorFecha : ACTIVO cuyo período pagado terminó sin nueva cobertura.
+ *  - morosoPorFecha : ACTIVO cuyo período actual (de la etapa actual) venció.
  */
 data class ResultadoMorosidad(
     val moroso: Boolean,
@@ -33,34 +33,34 @@ data class EstadoFinalMorosidad(
 /**
  * MovimientoMorosidad
  * -------------------
- * ÚNICA fuente de lógica de morosidad y deuda del ADMIN (F2). Funciones PURAS,
+ * ÚNICA fuente de lógica de morosidad y deuda del ADMIN. Funciones PURAS,
  * sin acceso a base de datos ni UI, para poder testearse fácilmente.
  *
- * Reglas de negocio cerradas (modelo económico definitivo):
- *  - La deuda es la suma de TODOS los movimientos PENDIENTES. NO se filtra por
- *    fechaFin: un PENDIENTE (aunque su período aún no haya terminado) ya es deuda.
- *  - Morosidad por DEUDA: existe al menos un movimiento PENDIENTE.
- *  - Morosidad por FECHA (solo ACTIVO): la cobertura PAGADA ha terminado y no
- *    existe una nueva cobertura PAGADA que cubra la fecha actual.
- *  - ETAPAS: la morosidad por fecha solo considera los periodos PAGADOS de la
- *    etapa actual, es decir, con `fechaFin >= inicioEtapa` (la última `fechaBaja`
- *    del cliente, si la hubo; `null` = sin corte). Al reactivar de BAJA a ACTIVO
- *    se conserva `fechaBaja`, de modo que los periodos cerrados antes de esa baja
- *    quedan fuera de la causa por fecha. La deuda (PENDIENTES) NO depende de
- *    etapas ni de fechas.
- *  - BAJA: solo moroso por deuda (nunca por fecha). La deuda no se elimina.
+ * Reglas (modelo económico vigente):
+ *  - Deuda = suma de TODOS los movimientos PENDIENTES (sin filtrar por etapa ni
+ *    por fechas). Un PENDIENTE ya es deuda.
+ *  - ACTIVO: moroso si tiene deuda pendiente O si `fechaFinActual < ahora`.
+ *  - BAJA: moroso SOLO si existe deuda pendiente (nunca por fecha).
  *  - REGISTRADO / ARCHIVADO / MOROSO (legacy): sin morosidad propia.
+ *  - ETAPA ACTUAL: para la causa "por fecha" solo cuentan los movimientos
+ *    CREADOS en la etapa actual, es decir, con `fechaRegistro >= inicioEtapa`
+ *    (la última `fechaBaja`; `null` = sin corte). Así, al reactivar de BAJA a
+ *    ACTIVO no se hereda la morosidad por fecha del período anterior. Un
+ *    movimiento creado DESPUÉS de la reactivación sí cuenta. Los movimientos
+ *    históricos sin `fechaRegistro` (0) se tratan como anteriores a la etapa.
+ *  - La causa "por fecha" NO depende del estado de pago del movimiento (PAGADO o
+ *    PENDIENTE) y NO usa `fechaPago`.
  *  - exentoMorosidad = true: moroso = false y fechaEntradaMorosidad = null,
  *    pero la DEUDA se sigue calculando (valor real). No toca los movimientos.
  *  - fechaEntradaMorosidad = fecha ACTUAL (ahora) de detección de la entrada en
- *    morosidad; NO se usa fechaFin como fecha de entrada automática. Se conserva
- *    mientras siga moroso; se limpia al salir; se renueva al volver a entrar.
+ *    morosidad; se conserva mientras siga moroso; se limpia al salir; se
+ *    renueva al volver a entrar.
  */
 object MovimientoMorosidad {
 
     /**
      * Deuda actual: suma de precioFinal de TODOS los movimientos PENDIENTE.
-     * No cuenta los PAGADOS. No depende de fechaFin ni de la fecha actual.
+     * No cuenta los PAGADOS. No depende de fechaFin ni de la etapa.
      */
     fun deudaDe(movimientos: List<MovimientoEntity>): Double =
         movimientos
@@ -74,50 +74,50 @@ object MovimientoMorosidad {
         movimientos.any { it.estado == EstadoMovimiento.PENDIENTE }
 
     /**
-     * ¿Existe una cobertura PAGADA de la etapa actual que cubre `ahora`?
-     * `inicioEtapa` (última fecha de baja del cliente) excluye los periodos de la
-     * etapa anterior (cerrados antes de esa baja). `null` = sin corte.
+     * periodoActualDe
+     * ---------------
+     * Movimiento de la ETAPA ACTUAL con mayor `fechaFin` (el período más
+     * reciente). Un movimiento pertenece a la etapa actual si
+     * `fechaRegistro >= inicioEtapa` (última `fechaBaja`); `inicioEtapa == null`
+     * = sin corte (todos los movimientos). null si no hay movimientos de la etapa.
      */
-    fun tieneCoberturaPagadaActual(
+    fun periodoActualDe(
+        movimientos: List<MovimientoEntity>,
+        inicioEtapa: Long? = null
+    ): MovimientoEntity? {
+        val corte = inicioEtapa ?: Long.MIN_VALUE
+        return movimientos
+            .filter { it.fechaRegistro >= corte }
+            .maxByOrNull { it.fechaFin }
+    }
+
+    /**
+     * `fechaFinActual`: fin del período más reciente de la etapa actual
+     * (`periodoActualDe`). null si no hay movimientos en la etapa.
+     */
+    fun fechaFinActualDe(
+        movimientos: List<MovimientoEntity>,
+        inicioEtapa: Long? = null
+    ): Long? = periodoActualDe(movimientos, inicioEtapa)?.fechaFin
+
+    /**
+     * Morosidad por FECHA: el período más reciente de la etapa actual ya venció
+     * (`fechaFinActual < ahora`). NO depende del estado de pago del movimiento
+     * (los PENDIENTES no la impiden) y NO usa `fechaPago`.
+     */
+    fun morosidadPorFecha(
         movimientos: List<MovimientoEntity>,
         ahora: Long,
         inicioEtapa: Long? = null
     ): Boolean {
-        val corte = inicioEtapa ?: Long.MIN_VALUE
-        return movimientos.any {
-            it.estado == EstadoMovimiento.PAGADO &&
-                it.fechaFin >= corte &&
-                it.fechaInicio <= ahora &&
-                ahora <= it.fechaFin
-        }
+        val fin = fechaFinActualDe(movimientos, inicioEtapa) ?: return false
+        return fin < ahora
     }
 
     /**
-     * ¿La cobertura PAGADA de la etapa actual ya terminó y no hay una nueva que
-     * cubra `ahora`? Es la condición de "morosidad por fecha": hubo un período
-     * PAGADO de la etapa actual que finalizó en el pasado y no existe un período
-     * vigente para la fecha actual. Los periodos de etapas anteriores (cerrados
-     * antes de `inicioEtapa`) no cuentan.
-     */
-    fun coberturaPagadaTerminada(
-        movimientos: List<MovimientoEntity>,
-        ahora: Long,
-        inicioEtapa: Long? = null
-    ): Boolean {
-        if (tieneCoberturaPagadaActual(movimientos, ahora, inicioEtapa)) return false
-        val corte = inicioEtapa ?: Long.MIN_VALUE
-        return movimientos.any {
-            it.estado == EstadoMovimiento.PAGADO &&
-                it.fechaFin >= corte &&
-                it.fechaFin < ahora
-        }
-    }
-
-    /**
-     * Detección de morosidad según el estado administrativo del cliente, el
-     * inicio de su etapa actual (`inicioEtapa` = última fecha de baja, para no
-     * arrastrar periodos de una BAJA previa) y la excepción manual
-     * `exentoMorosidad`. Devuelve también la deuda real.
+     * Detección de morosidad según el estado administrativo del cliente, la
+     * frontera de etapa (`inicioEtapa` = última `fechaBaja`) y la excepción
+     * manual `exentoMorosidad`. Devuelve también la deuda real.
      */
     fun resultadoDe(
         estado: EstadoCliente,
@@ -129,7 +129,7 @@ object MovimientoMorosidad {
         val deuda = deudaDe(movimientos)
         val porDeuda = morosidadPorDeuda(movimientos)
         val porFecha = estado == EstadoCliente.ACTIVO &&
-            coberturaPagadaTerminada(movimientos, ahora, inicioEtapa)
+            morosidadPorFecha(movimientos, ahora, inicioEtapa)
         val morosoCalculado = when (estado) {
             EstadoCliente.ACTIVO -> porDeuda || porFecha
             EstadoCliente.BAJA -> porDeuda

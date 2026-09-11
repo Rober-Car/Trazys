@@ -308,6 +308,8 @@
     <string name="notif_reintentar">Retry</string>
     <string name="notif_mas_opciones">More options</string>
     <string name="notif_accion_denunciar">Report</string>
+    <string name="notif_accion_eliminar">Delete</string>
+    <string name="notif_error_eliminar">Could not delete the notification</string>
     <string name="notif_denunciar_titulo">Report content</string>
     <string name="notif_recibir_avisos_centro">Receive center alerts</string>
     <string name="notif_canal_nombre">Center notifications</string>

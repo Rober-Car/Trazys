@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Notificaciones (Android 13+). El ADMIN recibe avisos (p. ej. solicitudes
+         de baja) por el canal de push exclusivo del administrador. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- TODO(PRODUCCION): allowBackup desactivado en desarrollo para que Google no restaure
          BDs antiguas al reinstalar. Antes de publicar: decidir si se reactiva y con qué
          reglas de exclusion (backup_rules.xml / data_extraction_rules.xml) -->
@@ -27,6 +31,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Servicio FCM del ADMIN (canal de push exclusivo del administrador). -->
+        <service
+            android:name=".ui.service.FcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- FileProvider para entregar a la app de cámara una Uri temporal
              válida al hacer fotos de perfil con TakePicture. -->

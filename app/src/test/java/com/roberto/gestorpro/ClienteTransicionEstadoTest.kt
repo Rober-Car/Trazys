@@ -100,4 +100,19 @@ class ClienteTransicionEstadoTest {
         assertEquals(EstadoCliente.BAJA, resultado.estado)
         assertEquals(ahora, resultado.fechaBaja)
     }
+
+    // Baja con una fecha PASADA elegida: se persiste EXACTAMENTE esa fecha
+    // (ni la actual ni otra), sin tocar el resto de campos.
+    @Test
+    fun baja_con_fecha_elegida_persiste_exactamente_esa_fecha() {
+        val fechaElegida = 1_600_000_000_000L
+        val activo = cliente(estado = EstadoCliente.ACTIVO, fechaAlta = 900_000L)
+
+        val resultado = aplicarBaja(activo, fechaElegida)
+
+        assertEquals(EstadoCliente.BAJA, resultado.estado)
+        assertEquals(fechaElegida, resultado.fechaBaja)
+        // La fechaAlta no se modifica al dar de baja.
+        assertEquals(900_000L, resultado.fechaAlta)
+    }
 }

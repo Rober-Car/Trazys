@@ -9,6 +9,7 @@ import com.roberto.gestorpro.model.ConfiguracionNotificaciones
 import com.roberto.gestorpro.model.DestinatarioResuelto
 import com.roberto.gestorpro.model.NotificacionAdmin
 import com.roberto.gestorpro.model.ResolucionDestinatarios
+import com.roberto.gestorpro.util.NotificacionBajaRechazada
 import com.roberto.gestorpro.util.RetiradaNotificacionReglas
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -56,7 +57,18 @@ class NotificacionRemotoRepository @Inject constructor(
         const val TIPO_MANUAL = "MANUAL"
         const val TIPO_PROGRAMADA = "PROGRAMADA"
         const val TIPO_CAMBIO_HORARIO = "CAMBIO_HORARIO"
+        const val TIPO_SOLICITUD_RECHAZADA = "SOLICITUD_RECHAZADA"
         const val ORIGEN_MANUAL = "MANUAL"
+        const val ORIGEN_PRECONFIGURADA = "PRECONFIGURADA"
+
+        /** Textos (ES/EN) de la notificación de baja rechazada. */
+        const val TITULO_BAJA_RECHAZADA_ES = "Solicitud de baja rechazada"
+        const val TITULO_BAJA_RECHAZADA_EN = "Cancellation request rejected"
+        const val MENSAJE_BAJA_RECHAZADA_ES =
+            "Tu solicitud de baja ha sido rechazada. Puedes volver a solicitarla si lo necesitas."
+        const val MENSAJE_BAJA_RECHAZADA_EN =
+            "Your cancellation request has been rejected. You can request it again if needed."
+        const val SUBTIPO_BAJA_RECHAZADA = "RECHAZADA"
         const val ESTADO_PENDIENTE = "PENDIENTE"
         const val ESTADO_ENVIADA = "ENVIADA"
         const val ESTADO_PROGRAMADA = "PROGRAMADA"
@@ -76,6 +88,7 @@ class NotificacionRemotoRepository @Inject constructor(
                 morosidadActiva = false,
                 recordatorioHoras = 0,
                 bajaConfirmadaActiva = true,
+                bajaRechazadaActiva = true,
                 cambioHorarioActiva = false
             )
 
@@ -89,6 +102,16 @@ class NotificacionRemotoRepository @Inject constructor(
         fun bajaConfirmadaActivaPorDefecto(valor: Boolean?): Boolean = valor != false
 
         /**
+         * bajaRechazadaActivaPorDefecto
+         * -----------------------------
+         * Regla de negocio: la notificación de baja RECHAZADA está activa por
+         * defecto, igual que la de baja confirmada. null (sin configuración o
+         * campo ausente) se trata como activa; solo un false explícito la
+         * desactiva.
+         */
+        fun bajaRechazadaActivaPorDefecto(valor: Boolean?): Boolean = valor != false
+
+        /**
          * idDeBuzon
          * ---------
          * DocumentId determinista de un buzón de la colección
@@ -98,6 +121,15 @@ class NotificacionRemotoRepository @Inject constructor(
          */
         fun idDeBuzon(clienteId: Int, notificacionId: String): String =
             "${clienteId}_$notificacionId"
+
+        /**
+         * idNotificacionBajaRechazada
+         * ---------------------------
+         * ID determinista de la notificación de baja rechazada de una solicitud
+         * concreta. Garantiza la idempotencia (un rechazo = una notificación).
+         */
+        fun idNotificacionBajaRechazada(idSolicitud: String): String =
+            NotificacionBajaRechazada.idDeterminista(idSolicitud)
     }
 
     /**
@@ -242,7 +274,10 @@ class NotificacionRemotoRepository @Inject constructor(
         fechaProgramada: Long?,
         tipo: String = TIPO_MANUAL,
         origen: String = ORIGEN_MANUAL,
-        notificacionId: String? = null
+        notificacionId: String? = null,
+        tituloEn: String? = null,
+        mensajeEn: String? = null,
+        subtipo: String? = null
     ): ResultadoAutenticacion {
         val uid = auth.currentUser?.uid
             ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
@@ -266,7 +301,10 @@ class NotificacionRemotoRepository @Inject constructor(
             idsClientes = idsParaRegistro,
             programada = programada,
             fechaProgramada = fechaProgramada,
-            estado = if (programada) ESTADO_PROGRAMADA else ESTADO_PENDIENTE
+            estado = if (programada) ESTADO_PROGRAMADA else ESTADO_PENDIENTE,
+            tituloEn = tituloEn,
+            mensajeEn = mensajeEn,
+            subtipo = subtipo
         )
 
         return try {
@@ -295,7 +333,10 @@ class NotificacionRemotoRepository @Inject constructor(
                     mensaje = mensaje,
                     tipo = tipoFinal,
                     origen = origen,
-                    destinatarios = destinatarios
+                    destinatarios = destinatarios,
+                    tituloEn = tituloEn,
+                    mensajeEn = mensajeEn,
+                    subtipo = subtipo
                 )
                 // NOTA (Fase E): el envío inmediato se deja en PENDIENTE a
                 // propósito. La Cloud Function onDocumentCreated reclamará el
@@ -405,6 +446,70 @@ class NotificacionRemotoRepository @Inject constructor(
             ResultadoAutenticacion(false, mensajeDe(e))
         } catch (e: Exception) {
             Log.e(TAG, "Error creando aviso SOLICITUD_BAJA $idNotificacion", e)
+            ResultadoAutenticacion(false, mensajeDe(e))
+        }
+    }
+
+    /**
+     * crearNotificacionBajaRechazada
+     * ------------------------------
+     * Crea la notificación al CLIENTE cuando el ADMIN rechaza su solicitud de
+     * baja. Es idempotente (ID determinista por solicitud), respeta el switch
+     * "Baja rechazada" (activo por defecto) y usa el tipo interno
+     * SOLICITUD_RECHAZADA con origen PRECONFIGURADA. NO modifica el cliente ni
+     * las reservas: solo crea el registro global y el buzón del cliente
+     * vinculado; el push lo resuelve `notificacionInmediata`.
+     */
+    suspend fun crearNotificacionBajaRechazada(
+        negocioId: String,
+        idCliente: Int,
+        idSolicitud: String
+    ): ResultadoAutenticacion {
+        return try {
+            val cliente = db.collection(COLECCION_CLIENTES)
+                .document(idCliente.toString())
+                .get()
+                .esperar()
+            if (!cliente.exists()) {
+                return ResultadoAutenticacion(false, "El cliente no existe")
+            }
+            val firebaseUid = cliente.getString("firebaseUid")?.takeIf { it.isNotBlank() }
+                ?: return ResultadoAutenticacion(false, "El cliente no está vinculado")
+
+            val notificacionId = idNotificacionBajaRechazada(idSolicitud)
+            val config = obtenerConfiguracion(negocioId)
+            if (!NotificacionBajaRechazada.debeCrear(
+                    config?.bajaRechazadaActiva,
+                    existeNotificacion(notificacionId)
+                )
+            ) {
+                return ResultadoAutenticacion(true, "Notificación de baja rechazada no aplicable")
+            }
+
+            val resultado = crearNotificacion(
+                negocioId = negocioId,
+                titulo = TITULO_BAJA_RECHAZADA_ES,
+                mensaje = MENSAJE_BAJA_RECHAZADA_ES,
+                modoDestino = "INDIVIDUAL",
+                clienteId = idCliente,
+                destinatarios = listOf(DestinatarioResuelto(idCliente, firebaseUid)),
+                idsObjetivo = listOf(idCliente),
+                programada = false,
+                fechaProgramada = null,
+                tipo = TIPO_SOLICITUD_RECHAZADA,
+                origen = ORIGEN_PRECONFIGURADA,
+                notificacionId = notificacionId,
+                tituloEn = TITULO_BAJA_RECHAZADA_EN,
+                mensajeEn = MENSAJE_BAJA_RECHAZADA_EN,
+                subtipo = SUBTIPO_BAJA_RECHAZADA
+            )
+            Log.i(TAG, "Notificación de baja rechazada creada: $notificacionId")
+            return resultado
+        } catch (e: FirebaseFirestoreException) {
+            Log.e(TAG, "Error creando notificación de baja rechazada", e)
+            ResultadoAutenticacion(false, mensajeDe(e))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creando notificación de baja rechazada", e)
             ResultadoAutenticacion(false, mensajeDe(e))
         }
     }
@@ -531,12 +636,16 @@ class NotificacionRemotoRepository @Inject constructor(
             if (!documento.exists()) return configuracionPorDefecto()
             val morosidad = documento.get("morosidad") as? Map<*, *>
             val bajaConfirmada = documento.get("bajaConfirmada") as? Map<*, *>
+            val bajaRechazada = documento.get("bajaRechazada") as? Map<*, *>
             val cambioHorario = documento.get("cambioHorario") as? Map<*, *>
             ConfiguracionNotificaciones(
                 morosidadActiva = (morosidad?.get("activa") as? Boolean) ?: false,
                 recordatorioHoras = enteroDe(morosidad?.get("recordatorioHoras")) ?: 0,
                 bajaConfirmadaActiva = bajaConfirmadaActivaPorDefecto(
                     bajaConfirmada?.get("activa") as? Boolean
+                ),
+                bajaRechazadaActiva = bajaRechazadaActivaPorDefecto(
+                    bajaRechazada?.get("activa") as? Boolean
                 ),
                 cambioHorarioActiva = (cambioHorario?.get("activa") as? Boolean) ?: false
             )
@@ -564,6 +673,9 @@ class NotificacionRemotoRepository @Inject constructor(
                 ),
                 "bajaConfirmada" to mapOf(
                     "activa" to config.bajaConfirmadaActiva
+                ),
+                "bajaRechazada" to mapOf(
+                    "activa" to config.bajaRechazadaActiva
                 ),
                 "cambioHorario" to mapOf(
                     "activa" to config.cambioHorarioActiva
@@ -604,26 +716,35 @@ class NotificacionRemotoRepository @Inject constructor(
         mensaje: String,
         tipo: String,
         origen: String,
-        destinatarios: List<DestinatarioResuelto>
+        destinatarios: List<DestinatarioResuelto>,
+        tituloEn: String? = null,
+        mensajeEn: String? = null,
+        subtipo: String? = null
     ) {
         destinatarios.chunked(MAX_ESCRITURAS_POR_BATCH).forEach { lote ->
             val batch = db.batch()
             lote.forEach { destino ->
+                val datos = mutableMapOf<String, Any?>(
+                    "negocioId" to negocioId,
+                    "notificacionId" to notificacionId,
+                    "clienteId" to destino.idCliente,
+                    "firebaseUid" to destino.firebaseUid,
+                    "titulo" to titulo,
+                    "mensaje" to mensaje,
+                    "tipo" to tipo,
+                    "origen" to origen,
+                    "fechaEnvio" to Timestamp.now(),
+                    "leida" to false
+                )
+                // Localización opcional (baja confirmada / baja rechazada). Las
+                // notificaciones sin estos campos siguen siendo válidas.
+                if (!tituloEn.isNullOrBlank()) datos["tituloEn"] = tituloEn
+                if (!mensajeEn.isNullOrBlank()) datos["mensajeEn"] = mensajeEn
+                if (!subtipo.isNullOrBlank()) datos["subtipo"] = subtipo
                 batch.set(
                     db.collection(COLECCION_BUZON)
                         .document(idDeBuzon(destino.idCliente, notificacionId)),
-                    mapOf(
-                        "negocioId" to negocioId,
-                        "notificacionId" to notificacionId,
-                        "clienteId" to destino.idCliente,
-                        "firebaseUid" to destino.firebaseUid,
-                        "titulo" to titulo,
-                        "mensaje" to mensaje,
-                        "tipo" to tipo,
-                        "origen" to origen,
-                        "fechaEnvio" to Timestamp.now(),
-                        "leida" to false
-                    )
+                    datos
                 )
             }
             batch.commit().esperar()
@@ -665,7 +786,10 @@ class NotificacionRemotoRepository @Inject constructor(
         idsClientes: List<Int>,
         programada: Boolean,
         fechaProgramada: Long?,
-        estado: String
+        estado: String,
+        tituloEn: String? = null,
+        mensajeEn: String? = null,
+        subtipo: String? = null
     ): Map<String, Any?> {
         val mapa = mutableMapOf<String, Any?>(
             "negocioId" to negocioId,
@@ -685,6 +809,11 @@ class NotificacionRemotoRepository @Inject constructor(
         if (fechaProgramada != null) {
             mapa["fechaProgramada"] = Timestamp(java.util.Date(fechaProgramada))
         }
+        // Localización opcional (baja confirmada / baja rechazada). Las
+        // notificaciones sin estos campos siguen siendo válidas.
+        if (!tituloEn.isNullOrBlank()) mapa["tituloEn"] = tituloEn
+        if (!mensajeEn.isNullOrBlank()) mapa["mensajeEn"] = mensajeEn
+        if (!subtipo.isNullOrBlank()) mapa["subtipo"] = subtipo
         return mapa
     }
 

@@ -50,7 +50,7 @@ import com.roberto.gestorpro.data.entity.SolicitudEntity
         EliminacionPendienteEntity::class,
         ServicioDesactivacionPendienteEntity::class
     ],
-    version = 19
+    version = 20
 )
 @TypeConverters(
     EstadoClienteConverter::class,

@@ -383,6 +383,46 @@ service cloud.firestore {
            );
 
       allow delete: if false;
+
+      // =====================================================
+      // DISPOSITIVOS FCM DEL ADMIN (usuarios/{uid}/dispositivos/{token})
+      // El ADMIN solo puede gestionar su PROPIO dispositivo (uid == auth.uid).
+      // El backend (Cloud Functions, Admin SDK) omite estas Rules al leer los
+      // tokens para enviar el push.
+      // =====================================================
+      match /dispositivos/{token} {
+        function tokenDelAdminAutenticado() {
+          return esAdmin() && request.auth.uid == uid;
+        }
+
+        allow get, list: if tokenDelAdminAutenticado();
+
+        allow create: if tokenDelAdminAutenticado()
+          && request.resource.data.token is string
+          && request.resource.data.token == token
+          && request.resource.data.plataforma is string
+          && request.resource.data.keys().hasOnly(
+               ["token", "plataforma", "notificacionesActivadas", "updatedAt"]
+             )
+          && (!("notificacionesActivadas" in request.resource.data.keys())
+              || request.resource.data.notificacionesActivadas is bool)
+          && (!("updatedAt" in request.resource.data.keys())
+              || request.resource.data.updatedAt is timestamp);
+
+        allow update: if tokenDelAdminAutenticado()
+          && request.resource.data.token is string
+          && request.resource.data.token == token
+          && request.resource.data.plataforma is string
+          && request.resource.data.keys().hasOnly(
+               ["token", "plataforma", "notificacionesActivadas", "updatedAt"]
+             )
+          && (!("notificacionesActivadas" in request.resource.data.keys())
+              || request.resource.data.notificacionesActivadas is bool)
+          && (!("updatedAt" in request.resource.data.keys())
+              || request.resource.data.updatedAt is timestamp);
+
+        allow delete: if tokenDelAdminAutenticado();
+      }
     }
 
 
@@ -1177,11 +1217,20 @@ service cloud.firestore {
              "fechaEnvio",
              "programada",
              "fechaProgramada",
-             "estado"
+             "estado",
+             "tituloEn",
+             "mensajeEn",
+             "subtipo"
            ])
         && request.resource.data.titulo is string
         && request.resource.data.mensaje is string
-        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "SOLICITUD_BAJA", "CAMBIO_HORARIO"]
+        && (!("tituloEn" in request.resource.data.keys())
+            || request.resource.data.tituloEn is string)
+        && (!("mensajeEn" in request.resource.data.keys())
+            || request.resource.data.mensajeEn is string)
+        && (!("subtipo" in request.resource.data.keys())
+            || request.resource.data.subtipo is string)
+        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "SOLICITUD_BAJA", "CAMBIO_HORARIO", "SOLICITUD_RECHAZADA"]
         && request.resource.data.origen in ["MANUAL", "AUTOMATICA", "PRECONFIGURADA"]
         && request.resource.data.modoDestino in ["INDIVIDUAL", "GRUPO", "TODOS"]
         && request.resource.data.fechaCreacion is timestamp
@@ -1276,14 +1325,23 @@ service cloud.firestore {
              "origen",
              "fechaEnvio",
              "leida",
-             "fechaLeida"
+             "fechaLeida",
+             "tituloEn",
+             "mensajeEn",
+             "subtipo"
            ])
         && request.resource.data.notificacionId is string
         && request.resource.data.clienteId is int
         && request.resource.data.firebaseUid is string
         && request.resource.data.titulo is string
         && request.resource.data.mensaje is string
-        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "CAMBIO_HORARIO"]
+        && (!("tituloEn" in request.resource.data.keys())
+            || request.resource.data.tituloEn is string)
+        && (!("mensajeEn" in request.resource.data.keys())
+            || request.resource.data.mensajeEn is string)
+        && (!("subtipo" in request.resource.data.keys())
+            || request.resource.data.subtipo is string)
+        && request.resource.data.tipo in ["MANUAL", "MOROSIDAD", "BAJA_CONFIRMADA", "PROGRAMADA", "CAMBIO_HORARIO", "SOLICITUD_RECHAZADA"]
         && request.resource.data.origen in ["MANUAL", "AUTOMATICA", "PRECONFIGURADA"]
         && request.resource.data.fechaEnvio is timestamp
         && request.resource.data.leida is bool
@@ -1305,6 +1363,14 @@ service cloud.firestore {
 
       allow update: if esAdmin()
         && resource.data.negocioId == usuarioActual().negocioId;
+
+      // El CLIENTE puede ELIMINAR únicamente su PROPIO buzón. Solo se borra
+      // notificaciones_por_destinatario/{clienteId}_{notificacionId}; el
+      // documento global notificaciones/{id} NO se toca (otra colección).
+      allow delete: if esCliente()
+        && resource.data.negocioId == usuarioActual().negocioId
+        && resource.data.clienteId == usuarioActual().clienteId
+        && resource.data.firebaseUid == request.auth.uid;
 
       allow delete: if esAdmin()
         && resource.data.negocioId == usuarioActual().negocioId;
@@ -1329,10 +1395,12 @@ service cloud.firestore {
       allow create: if esAdmin()
         && request.resource.data.negocioId == usuarioActual().negocioId
         && request.resource.data.keys()
-            .hasOnly(["negocioId", "morosidad", "bajaConfirmada", "cambioHorario"])
+            .hasOnly(["negocioId", "morosidad", "bajaConfirmada", "bajaRechazada", "cambioHorario"])
         && request.resource.data.morosidad.activa is bool
         && request.resource.data.morosidad.recordatorioHoras is int
         && request.resource.data.bajaConfirmada.activa is bool
+        && (!("bajaRechazada" in request.resource.data.keys())
+            || request.resource.data.bajaRechazada.activa is bool)
         && (!("cambioHorario" in request.resource.data.keys())
             || request.resource.data.cambioHorario.activa is bool);
 
@@ -1341,10 +1409,12 @@ service cloud.firestore {
         && request.resource.data.negocioId == resource.data.negocioId
         && request.resource.data.diff(resource.data)
             .affectedKeys()
-            .hasOnly(["morosidad", "bajaConfirmada", "cambioHorario"])
+            .hasOnly(["morosidad", "bajaConfirmada", "bajaRechazada", "cambioHorario"])
         && request.resource.data.morosidad.activa is bool
         && request.resource.data.morosidad.recordatorioHoras is int
         && request.resource.data.bajaConfirmada.activa is bool
+        && (!("bajaRechazada" in request.resource.data.keys())
+            || request.resource.data.bajaRechazada.activa is bool)
         && (!("cambioHorario" in request.resource.data.keys())
             || request.resource.data.cambioHorario.activa is bool);
 
@@ -1373,7 +1443,11 @@ service cloud.firestore {
         && request.resource.data.token is string
         && request.resource.data.token == token
         && request.resource.data.plataforma is string
-        && request.resource.data.keys().hasOnly(["token", "plataforma", "updatedAt"])
+        && request.resource.data.keys().hasOnly(
+             ["token", "plataforma", "notificacionesActivadas", "updatedAt"]
+           )
+        && (!("notificacionesActivadas" in request.resource.data.keys())
+            || request.resource.data.notificacionesActivadas is bool)
         && (!("updatedAt" in request.resource.data.keys())
             || request.resource.data.updatedAt is timestamp);
 
@@ -1381,7 +1455,11 @@ service cloud.firestore {
         && request.resource.data.token is string
         && request.resource.data.token == token
         && request.resource.data.plataforma is string
-        && request.resource.data.keys().hasOnly(["token", "plataforma", "updatedAt"])
+        && request.resource.data.keys().hasOnly(
+             ["token", "plataforma", "notificacionesActivadas", "updatedAt"]
+           )
+        && (!("notificacionesActivadas" in request.resource.data.keys())
+            || request.resource.data.notificacionesActivadas is bool)
         && (!("updatedAt" in request.resource.data.keys())
             || request.resource.data.updatedAt is timestamp);
 

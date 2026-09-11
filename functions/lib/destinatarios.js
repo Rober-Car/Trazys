@@ -54,8 +54,11 @@ async function obtenerVinculados(clienteIds) {
 /**
  * crearBuzones
  * ------------
- * Crea (set idempotente) notificaciones_por_destinatario/{clienteId}_{id}
- * para los vinculados, en lotes de máximo 500 escrituras por WriteBatch.
+ * Crea los buzones que FALTAN (`notificaciones_por_destinatario/{clienteId}_{id}`)
+ * para los vinculados, en lotes de máximo 500 escrituras por WriteBatch. Es
+ * idempotente: consulta una vez los buzones ya existentes de esa notificación y
+ * solo crea los que no estaban. Devuelve la lista de `idCliente` cuyo buzón se
+ * creó AHORA (destinatarios aún no servidos), para poder enviar solo a ellos.
  */
 async function crearBuzones({
   negocioId,
@@ -68,8 +71,20 @@ async function crearBuzones({
   tituloEn,
   subtipo,
 }) {
+  // Buzones ya existentes de esta notificación (una sola consulta).
+  const existentesSnap = await db()
+    .collection("notificaciones_por_destinatario")
+    .where("notificacionId", "==", notificacionId)
+    .get();
+  const yaServidos = new Set(
+    existentesSnap.docs.map((d) => String(d.data().clienteId))
+  );
+
+  const pendientes = vinculados.filter((v) => !yaServidos.has(String(v.idCliente)));
+  if (pendientes.length === 0) return [];
+
   const fechaEnvio = Timestamp.now();
-  for (const lote of dividirEnLotes(vinculados, 500)) {
+  for (const lote of dividirEnLotes(pendientes, 500)) {
     const batch = db().batch();
     for (const v of lote) {
       const datos = {
@@ -95,6 +110,7 @@ async function crearBuzones({
     }
     await batch.commit();
   }
+  return pendientes.map((v) => v.idCliente);
 }
 
 /**

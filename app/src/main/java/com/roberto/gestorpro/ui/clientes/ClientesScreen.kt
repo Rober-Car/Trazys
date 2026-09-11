@@ -1,6 +1,7 @@
 package com.roberto.gestorpro.ui.clientes
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,21 +19,32 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,17 +55,25 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import com.roberto.gestorpro.R
 import com.roberto.gestorpro.model.Cliente
 import com.roberto.gestorpro.model.EstadoCliente
 import com.roberto.gestorpro.model.FiltroClientes
 import com.roberto.gestorpro.navigation.Routes
+import com.roberto.gestorpro.util.FechaBajaEfectiva
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import com.roberto.gestorpro.ui.components.AccionSeleccionContextual
 import com.roberto.gestorpro.ui.components.AppDialogDangerConfirmButton
 import com.roberto.gestorpro.ui.components.AppDialogTextButton
@@ -126,6 +146,10 @@ fun ClientesScreen(
 
     var textoBusqueda by rememberSaveable { mutableStateOf("") }
 
+    // Ordenación alfabética de la lista: A→Z (ascendente, por defecto) o
+    // Z→A (descendente). Se aplica DESPUÉS de filtros y búsqueda, sin alterarlos.
+    var ordenDescendente by rememberSaveable { mutableStateOf(false) }
+
     // Filtro de VINCULACIÓN (independiente del estado) + visibilidad del menú.
     var filtroCuentaNombre by rememberSaveable { mutableStateOf(FiltroCuenta.TODOS.name) }
     var mostrarMenuFiltros by rememberSaveable { mutableStateOf(false) }
@@ -173,6 +197,11 @@ fun ClientesScreen(
     var listaArchivarConfirmar by remember { mutableStateOf<List<Cliente>?>(null) }
     var listaBajaConfirmar by remember { mutableStateOf<List<Cliente>?>(null) }
 
+    // Fecha EFECTIVA elegida para la baja MASIVA (una sola para todo el lote).
+    // null = HOY.
+    var mostrarDatePickerBaja by rememberSaveable { mutableStateOf(false) }
+    var fechaBajaElegidaEpochDay by rememberSaveable { mutableStateOf<Long?>(null) }
+
     val clientesFiltrados = clientes
         .filter { cliente ->
             cumpleFiltroClientes(
@@ -190,12 +219,18 @@ fun ClientesScreen(
                 cliente.email.orEmpty()
             ).any { it.contains(textoBusqueda, ignoreCase = true) }
         }
-        // Orden natural: apellido (principal) y nombre (secundario), robusto ante
-        // mayúsculas/minúsculas. Se aplica DESPUÉS de los filtros, sin cambiar la
-        // búsqueda ni los filtros (estado/cuenta).
+        // Orden alfabético por apellido (principal) y nombre (secundario),
+        // robusto ante mayúsculas/minúsculas. Se aplica DESPUÉS de los filtros y
+        // la búsqueda, sin alterarlos. El control A→Z / Z→A solo cambia la
+        // dirección (ASC/DESC); no filtra ni oculta clientes.
         .sortedWith(
-            compareBy<Cliente> { it.apellidos.trim().lowercase() }
-                .thenBy { it.nombre.trim().lowercase() }
+            if (ordenDescendente) {
+                compareByDescending<Cliente> { it.apellidos.trim().lowercase() }
+                    .thenByDescending { it.nombre.trim().lowercase() }
+            } else {
+                compareBy<Cliente> { it.apellidos.trim().lowercase() }
+                    .thenBy { it.nombre.trim().lowercase() }
+            }
         )
 
     // En modo selección, al cambiar/limpiar el filtro se podan los ids que ya no
@@ -263,38 +298,66 @@ fun ClientesScreen(
                 }
             }
 
-            OutlinedTextField(
-                value = textoBusqueda,
-                onValueChange = { textoBusqueda = it },
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("Buscar por nombre, DNI, teléfono...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Buscar"
-                    )
-                },
-                trailingIcon = {
-                    if (textoBusqueda.isNotEmpty()) {
-                        IconButton(onClick = { textoBusqueda = "" }) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Limpiar búsqueda"
-                            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = textoBusqueda,
+                    onValueChange = { textoBusqueda = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Buscar por nombre, DNI, teléfono...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar"
+                        )
+                    },
+                    trailingIcon = {
+                        if (textoBusqueda.isNotEmpty()) {
+                            IconButton(onClick = { textoBusqueda = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Limpiar búsqueda"
+                                )
+                            }
                         }
-                    }
-                },
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF1E88E5),
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color(0xFFF5F5F5),
-                    unfocusedContainerColor = Color(0xFFF5F5F5)
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF1E88E5),
+                        unfocusedBorderColor = Color.LightGray,
+                        focusedContainerColor = Color(0xFFF5F5F5),
+                        unfocusedContainerColor = Color(0xFFF5F5F5)
+                    )
                 )
-            )
+                // Ordenación alfabética A→Z / Z→A (mismo patrón visual y
+                // conceptual que el orden por fecha de Economía). Cambia SOLO la
+                // dirección de la ordenación; no filtra ni oculta clientes.
+                Surface(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { ordenDescendente = !ordenDescendente },
+                    color = Color(0xFF1E88E5).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = if (ordenDescendente) {
+                            Icons.Default.ArrowDownward
+                        } else {
+                            Icons.Default.ArrowUpward
+                        },
+                        contentDescription = if (ordenDescendente) "Z a A" else "A a Z",
+                        tint = Color(0xFF1E88E5),
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -436,7 +499,10 @@ fun ClientesScreen(
                 if (puedeDarDeBaja) {
                     acciones += AccionSeleccionContextual(
                         etiqueta = "Dar de baja",
-                        onClick = { listaBajaConfirmar = clientesSeleccionadosActuales },
+                        onClick = {
+                            fechaBajaElegidaEpochDay = null
+                            listaBajaConfirmar = clientesSeleccionadosActuales
+                        },
                         color = Color(0xFFD32F2F)
                     )
                 }
@@ -499,20 +565,65 @@ fun ClientesScreen(
                 )
             },
             text = {
-                Text(
-                    if (pendienteBaja.size == 1) {
-                        "¿Confirmar la baja de este cliente? Se cancelarán sus reservas futuras y se le notificará si está activada la configuración de avisos. Los servicios contratados se conservan."
-                    } else {
-                        "¿Dar de baja ${pendienteBaja.size} clientes?\n\nSe cancelarán sus reservas futuras y se avisará según la configuración. Los servicios contratados se conservan."
+                val diaElegido = fechaBajaElegidaEpochDay?.let { LocalDate.ofEpochDay(it) }
+                    ?: LocalDate.now()
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        if (pendienteBaja.size == 1) {
+                            "¿Confirmar la baja de este cliente? Se cancelarán sus reservas futuras y se le notificará si está activada la configuración de avisos. Los servicios contratados se conservan."
+                        } else {
+                            "¿Dar de baja ${pendienteBaja.size} clientes?\n\nSe cancelarán sus reservas futuras y se avisará según la configuración. Los servicios contratados se conservan."
+                        }
+                    )
+                    // UNA sola fecha efectiva para TODO el lote.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { mostrarDatePickerBaja = true }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                            tint = Color(0xFF1E88E5),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.cliente_baja_fecha),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = diaElegido.format(
+                                    DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                                ),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
-                )
+                }
             },
             confirmButton = {
                 AppDialogDangerConfirmButton(
                     text = "Dar de baja",
                     onClick = {
                         viewModel.darDeBajaClientesSeleccionados(
-                            pendienteBaja.map { it.idCliente }
+                            pendienteBaja.map { it.idCliente },
+                            FechaBajaEfectiva.millis(
+                                fechaBajaElegidaEpochDay,
+                                System.currentTimeMillis()
+                            )
                         )
                         listaBajaConfirmar = null
                     }
@@ -526,6 +637,57 @@ fun ClientesScreen(
             }
         )
     }
+
+    if (mostrarDatePickerBaja) {
+        // Fecha EFECTIVA de la baja masiva: HOY por defecto; solo HOY o anterior.
+        val selectableDatesBaja = remember {
+            val hoy = LocalDate.now()
+            val hoyUtc = hoy.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            val fechaMinimaUtc = hoy.minusYears(120)
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis in fechaMinimaUtc..hoyUtc
+
+                override fun isSelectableYear(year: Int): Boolean =
+                    year in (hoy.minusYears(120).year..hoy.year)
+            }
+        }
+        val seleccionInicialBaja = fechaBajaElegidaEpochDay?.let {
+            LocalDate.ofEpochDay(it).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        } ?: LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val datePickerBajaState = rememberDatePickerState(
+            initialSelectedDateMillis = seleccionInicialBaja,
+            selectableDates = selectableDatesBaja
+        )
+        DatePickerDialog(
+            onDismissRequest = { mostrarDatePickerBaja = false },
+            confirmButton = {
+                TextButton(
+                    enabled = datePickerBajaState.selectedDateMillis != null,
+                    onClick = {
+                        datePickerBajaState.selectedDateMillis?.let { utc ->
+                            fechaBajaElegidaEpochDay = Instant.ofEpochMilli(utc)
+                                .atZone(ZoneOffset.UTC)
+                                .toLocalDate()
+                                .toEpochDay()
+                        }
+                        mostrarDatePickerBaja = false
+                    }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDatePickerBaja = false }) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerBajaState)
+        }
+    }
+
     if (mostrarMenuFiltros) {
         AlertDialog(
             onDismissRequest = { mostrarMenuFiltros = false },

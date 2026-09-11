@@ -72,6 +72,7 @@ fun ConfigNotificacionesScreen(
     var morosidadActiva by rememberSaveable { mutableStateOf(false) }
     var recordatorioActivo by rememberSaveable { mutableStateOf(false) }
     var bajaConfirmadaActiva by rememberSaveable { mutableStateOf(false) }
+    var bajaRechazadaActiva by rememberSaveable { mutableStateOf(true) }
     var cambioHorarioActiva by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -83,6 +84,7 @@ fun ConfigNotificacionesScreen(
             morosidadActiva = config.morosidadActiva
             recordatorioActivo = config.recordatorioHoras > 0
             bajaConfirmadaActiva = config.bajaConfirmadaActiva
+            bajaRechazadaActiva = config.bajaRechazadaActiva
             cambioHorarioActiva = config.cambioHorarioActiva
         }
     }
@@ -175,6 +177,13 @@ fun ConfigNotificacionesScreen(
                                 colorActivado = Color(0xFFF44336)
                             )
                             OpcionConfiguracion(
+                                titulo = "Baja rechazada",
+                                descripcion = "Aviso al cliente cuando se rechaza su solicitud de baja",
+                                activa = bajaRechazadaActiva,
+                                onCambio = { bajaRechazadaActiva = it },
+                                colorActivado = Color(0xFFF44336)
+                            )
+                            OpcionConfiguracion(
                                 titulo = "Cambio de horario",
                                 descripcion = "Aviso al cliente cuando cambia el horario del centro",
                                 activa = cambioHorarioActiva,
@@ -207,6 +216,7 @@ fun ConfigNotificacionesScreen(
                                     morosidadActiva = morosidadActiva,
                                     recordatorioHoras = if (recordatorioActivo) 24 else 0,
                                     bajaConfirmadaActiva = bajaConfirmadaActiva,
+                                    bajaRechazadaActiva = bajaRechazadaActiva,
                                     cambioHorarioActiva = cambioHorarioActiva
                                 )
                             )

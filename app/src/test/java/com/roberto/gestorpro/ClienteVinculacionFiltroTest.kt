@@ -150,4 +150,5 @@ class ClienteVinculacionFiltroTest {
         assertEquals(snapshot, original)
         assertEquals("uid", original.firebaseUid)
     }
+
 }
