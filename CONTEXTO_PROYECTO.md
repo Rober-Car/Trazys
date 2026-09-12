@@ -231,10 +231,27 @@
 > - **Estado: GENERADO Y VERIFICADO LOCALMENTE** (NO publicado/subido/aprobado en Google Play).
 >
 > ### RELEASE CANDIDATE — commit de punto de lanzamiento (2026-09-12)
-> - **Commit creado:** `Release beta 1.0`. ADMIN **1.0 / versionCode 1**; CLIENTE **1.0 / versionCode 1**.
+> - **Commit creado:** `9046786` — `Release beta 1.0` (`master`, working tree limpio; **sin push**).
+>   ADMIN **1.0 / versionCode 1**; CLIENTE **1.0 / versionCode 1**.
 > - **AAB definitivos generados y verificados** localmente: ADMIN `08E8FC12…` (19.431.333 B) y CLIENTE
 >   `C107B7EC…` (18.494.068 B). **NO publicados todavía en Google Play.**
 > - Sin secretos ni rutas privadas de credenciales en el commit.
+>
+> ### ACTUALIZACIÓN — GOOGLE PLAY CONSOLE: CUENTA EN VERIFICACIÓN (2026-09-12)
+> - **IMPLEMENTADO:** cuenta personal de Google Play Console creada (nombre visible actual: **Roca DevAI**).
+> - **EN CURSO:** **verificación de identidad** ("Google está verificando tu identidad").
+> - **BLOQUEADO (administrativo, NO técnico):** la creación de aplicaciones nuevas está bloqueada
+>   ("Completa las verificaciones de la cuenta para crear aplicaciones nuevas"; botón "Crear aplicación"
+>   deshabilitado).
+> - **PENDIENTE de Google:** completar verificación de identidad; habilitar verificación de dispositivo
+>   Android; completar/verificar teléfono de contacto; habilitar creación de aplicaciones.
+> - **PENDIENTE del proyecto (tras la verificación):** crear **Trazys ADMIN** y **Trazys Cliente**,
+>   configurar **PRUEBA CERRADA** (no producción pública), preparar cuentas de prueba y requisitos de Play,
+>   y **subir los AAB definitivos**.
+> - **AAB:** siguen **"GENERADOS Y VERIFICADOS LOCALMENTE — PENDIENTES DE SUBIDA A GOOGLE PLAY"**
+>   (no regenerar sin un cambio técnico nuevo). **NO publicados/subidos/aprobados.**
+> - **Estado:** BLOQUEADO POR VERIFICACIÓN DE CUENTA (administrativo). No es un bloqueo técnico del
+>   proyecto. **Próxima acción:** RETOMAR desde Play Console cuando Google finalice la verificación.
 >
 > ### BRANDING — iconos y wordmark (2026-09-12)
 > - **Iconos launcher implementados** (Image Asset Studio): ADMIN **T + A**, CLIENTE **T + c**, fondo

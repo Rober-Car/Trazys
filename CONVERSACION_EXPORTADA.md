@@ -116,9 +116,15 @@
 >   `app-release.aab` (SHA-256 `08E8FC12…`, 19.431.333 B) y CLIENTE `appCliente-release.aab` (SHA-256
 >   `C107B7EC…`, 18.494.068 B). Firma release correcta (`jarsigner` "jar verified"), sin `debug.keystore`.
 >   **NO publicado** en Google Play. Sin deploy ni commit.
-> - **Release Candidate (2026-09-12):** commit "Release beta 1.0". Versiones ADMIN 1.0/versionCode 1 y
->   CLIENTE 1.0/versionCode 1. AAB definitivos generados y verificados localmente. **NO publicados en
->   Google Play.**
+> - **Release Candidate (2026-09-12):** commit `9046786` "Release beta 1.0" (`master`, working tree
+>   limpio; sin push). Versiones ADMIN 1.0/versionCode 1 y CLIENTE 1.0/versionCode 1. AAB definitivos
+>   generados y verificados localmente. **NO publicados en Google Play.**
+> - **Google Play Console — cuenta en verificación (2026-09-12):** cuenta personal creada (nombre visible
+>   actual "Roca DevAI"). **En curso:** verificación de identidad. **Bloqueado (administrativo):** creación
+>   de aplicaciones nuevas ("Completa las verificaciones...", botón deshabilitado). **Pendiente:** completar
+>   verificaciones (identidad, dispositivo, teléfono), crear Trazys ADMIN/Cliente, configurar **PRUEBA
+>   CERRADA**, subir AAB. **AAB:** generados y verificados localmente, pendientes de subida (no regenerar
+>   sin cambio técnico). Próxima acción: retomar Play Console al finalizar la verificación. Sin commit.
 > - **Branding/iconos (2026-09-12):** iconos launcher ADMIN **T+A** y CLIENTE **T+c** (fondo `#1E88E5`,
 >   adaptive + monochrome + PNG Play 512×512), validados visualmente; wordmark `trazys_logo` integrado en
 >   **Login ADMIN** y **Login CLIENTE**; logo/nombre del centro eliminados del Login CLIENTE y conservados
