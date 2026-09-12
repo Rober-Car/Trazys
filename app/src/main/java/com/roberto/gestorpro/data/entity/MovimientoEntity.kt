@@ -30,9 +30,33 @@ data class MovimientoEntity(
     val idMovimiento: Int = 0,
 
     /**
-     * idCliente: cliente al que pertenece el movimiento.
+     * idCliente: cliente al que pertenece el movimiento. Es una REFERENCIA
+     * HISTÓRICA interna: el movimiento es histórico autónomo del centro y su
+     * visualización NO depende de que `clientes/{idCliente}` siga existiendo.
      */
     val idCliente: Int,
+
+    /**
+     * nombreCliente: FOTOGRAFÍA histórica del nombre del cliente en el momento
+     * de crear el movimiento. No se actualiza al editar ni cuando cambia la ficha.
+     * El defaultValue debe coincidir con la migración 20→21 (`DEFAULT ''`).
+     */
+    @ColumnInfo(defaultValue = "")
+    val nombreCliente: String = "",
+
+    /**
+     * apellidosCliente: FOTOGRAFÍA histórica de los apellidos del cliente en el
+     * momento de crear el movimiento. Inmutable al editar.
+     */
+    @ColumnInfo(defaultValue = "")
+    val apellidosCliente: String = "",
+
+    /**
+     * dniCliente: FOTOGRAFÍA histórica del DNI del cliente en el momento de
+     * crear el movimiento. Inmutable al editar.
+     */
+    @ColumnInfo(defaultValue = "")
+    val dniCliente: String = "",
 
     /**
      * servicios: IDs de ServicioEntity incluidos en este movimiento.

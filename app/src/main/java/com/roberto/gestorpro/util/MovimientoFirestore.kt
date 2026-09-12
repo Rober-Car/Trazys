@@ -35,6 +35,11 @@ object MovimientoFirestore {
             "idMovimiento" to movimiento.idMovimiento,
             "negocioId" to negocioId,
             "idCliente" to movimiento.idCliente,
+            // Fotografía histórica de la identidad del cliente en el momento
+            // del movimiento (no se actualiza al editar ni cuando cambia la ficha).
+            "nombreCliente" to movimiento.nombreCliente,
+            "apellidosCliente" to movimiento.apellidosCliente,
+            "dniCliente" to movimiento.dniCliente,
             "servicios" to movimiento.servicios,
             "fechaInicio" to timestampDe(movimiento.fechaInicio),
             "fechaFin" to timestampDe(movimiento.fechaFin),

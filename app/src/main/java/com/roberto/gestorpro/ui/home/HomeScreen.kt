@@ -152,7 +152,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.centro_titulo),
-                        descripcion = stringResource(R.string.home_centro_desc),
                         icono = Icons.Default.Storefront,
                         containerColor = Color(0xFF1E88E5).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF1E88E5),
@@ -163,7 +162,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.home_clientes_titulo),
-                        descripcion = stringResource(R.string.home_clientes_desc),
                         icono = Icons.Default.Person,
                         containerColor = Color(0xFF2196F3).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF2196F3),
@@ -174,7 +172,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.home_actividades_titulo),
-                        descripcion = stringResource(R.string.home_actividades_desc),
                         icono = Icons.Default.FitnessCenter,
                         containerColor = Color(0xFF43A047).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF43A047),
@@ -185,7 +182,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.rutinas_titulo),
-                        descripcion = stringResource(R.string.rutinas_proximamente),
                         icono = Icons.Default.FitnessCenter,
                         containerColor = Color(0xFF1E88E5).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF1E88E5),
@@ -196,7 +192,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.home_economia_titulo),
-                        descripcion = stringResource(R.string.home_economia_desc),
                         icono = Icons.Default.AccountBalance,
                         containerColor = Color(0xFFFB8C00).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFFFB8C00),
@@ -207,7 +202,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.home_ajustes_titulo),
-                        descripcion = stringResource(R.string.home_ajustes_desc),
                         icono = Icons.Default.Settings,
                         containerColor = Color(0xFF78909C).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF78909C),
@@ -218,7 +212,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.home_notificaciones_titulo),
-                        descripcion = stringResource(R.string.home_notificaciones_desc),
                         icono = Icons.Default.Notifications,
                         containerColor = Color(0xFFE91E63).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFFE91E63),
@@ -229,7 +222,6 @@ fun HomeScreen(
                 item {
                     MenuCard(
                         titulo = stringResource(R.string.home_solicitudes_titulo),
-                        descripcion = stringResource(R.string.home_solicitudes_desc),
                         icono = Icons.Default.Email,
                         containerColor = Color(0xFF00ACC1).copy(alpha = 0.12f),
                         iconContainerColor = Color(0xFF00ACC1),

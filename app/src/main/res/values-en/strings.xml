@@ -45,7 +45,6 @@
     <string name="auth_error_credenciales">Incorrect email or password</string>
     <string name="auth_error_cuenta_desactivada">This account is disabled</string>
     <string name="auth_error_usuario_sin_perfil">The user has no profile in the database</string>
-    <string name="auth_error_no_pertenece_a_app">This account does not belong to the client app</string>
     <string name="auth_error_no_crear_cuenta">Could not create the account</string>
     <string name="auth_error_no_perfil_usuario">Could not create the user profile: %1$s</string>
     <string name="auth_error_no_iniciar_sesion">Could not sign in</string>

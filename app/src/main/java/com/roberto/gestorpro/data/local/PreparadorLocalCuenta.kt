@@ -203,6 +203,24 @@ class PreparadorLocalCuenta @Inject constructor(
     }
 
     /**
+     * limpiarTodoLocal
+     * ----------------
+     * Limpieza COMPLETA de la caché local tras eliminar la cuenta/negocio de
+     * forma remota: Room (clearAllTables), ficheros locales (fotos/logos),
+     * identidad de DataStore (sin tocar theme_mode/idioma) y marcadores de
+     * propietario/caché hidratada. Se invoca SOLO tras confirmar el borrado
+     * remoto.
+     */
+    suspend fun limpiarTodoLocal() {
+        withContext(Dispatchers.IO) {
+            database.clearAllTables()
+            limpiarFicherosLocales()
+        }
+        preferences.limpiarCuentaCompleta()
+        movimientoRepository.resetEstadoEnMemoria()
+    }
+
+    /**
      * limpiarFicherosLocales
      * ----------------------
      * Borra el contenido de las carpetas internas de fotos de clientes y de

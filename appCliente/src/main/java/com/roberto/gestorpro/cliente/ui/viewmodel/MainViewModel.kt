@@ -34,6 +34,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -386,6 +388,10 @@ class MainViewModel @Inject constructor(
                     .getHttpsCallable("eliminarMiCuenta")
                     .call(null)
                     .esperar()
+                // Solo tras el éxito remoto: limpiar datos locales identificables
+                // (DataStore + ficheros/cachés) antes de cerrar sesión.
+                preferencesRepository.limpiarDatosPersonales()
+                limpiarArchivosLocales()
                 // signOut síncrono dentro de la misma corrutina (sin wrapper
                 // que lance otra corrutina y devuelva de inmediato).
                 autenticacionRepository.cerrarSesion()
@@ -396,6 +402,31 @@ class MainViewModel @Inject constructor(
             } finally {
                 _eliminandoCuenta.value = false
             }
+        }
+    }
+
+    /**
+     * limpiarArchivosLocales
+     * ----------------------
+     * Borra las fotos/logos/cachés locales del dispositivo asociados a la
+     * cuenta eliminada (foto de perfil, caché de fotos de cliente, logo del
+     * centro y fotos temporales de cámara). No borra las carpetas en sí.
+     */
+    private suspend fun limpiarArchivosLocales() {
+        withContext(Dispatchers.IO) {
+            runCatching {
+                listOf(
+                    File(context.filesDir, "fotos_perfil"),
+                    File(context.filesDir, "fotos_clientes"),
+                    File(context.filesDir, "logos_negocio"),
+                    File(context.cacheDir, "fotos_camara")
+                ).forEach { carpeta ->
+                    carpeta.listFiles()?.forEach { archivo ->
+                        runCatching { archivo.delete() }
+                    }
+                }
+            }
+            Unit
         }
     }
 

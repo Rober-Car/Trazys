@@ -20,7 +20,6 @@ import com.roberto.gestorpro.cliente.ui.auth.CompletarPerfilScreen
 import com.roberto.gestorpro.cliente.ui.auth.EleccionInicioScreen
 import com.roberto.gestorpro.cliente.ui.configuracion.ConfiguracionScreen
 import com.roberto.gestorpro.cliente.ui.configuracion.EliminarCuentaScreen
-import com.roberto.gestorpro.cliente.ui.configuracion.InformacionLegalScreen
 import com.roberto.gestorpro.cliente.ui.configuracion.PoliticaPrivacidadScreen
 import com.roberto.gestorpro.cliente.ui.configuracion.TerminosDeUsoScreen
 import com.roberto.gestorpro.cliente.ui.configuracion.NotificacionesScreen

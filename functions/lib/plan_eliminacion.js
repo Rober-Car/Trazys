@@ -28,6 +28,7 @@ const MOVIMIENTOS = "movimientos";
 const SOLICITUDES = "solicitudes";
 const NOTIFICACIONES = "notificaciones";
 const NOTIFICACIONES_BUZON = "notificaciones_por_destinatario";
+const DENUNCIAS = "denuncias";
 const DISPOSITIVOS = "dispositivos";
 
 function esAdmin(data) {
@@ -80,6 +81,23 @@ function rutaIndice(negocioId, dni) {
   return `${INDICES_CLIENTES}/${negocioId}_${dni}`;
 }
 
+/**
+ * Operaciones de rastro personal de un usuario que SIEMPRE deben ejecutarse al
+ * eliminar su cuenta, exista o no ficha `clientes/{clienteId}`:
+ *  - perfil pendiente `perfiles_pendientes/{uid}`;
+ *  - denuncias donde el uid es denunciante;
+ *  - denuncias donde el uid es denunciado.
+ */
+function operacionesRastroPersonal(uid) {
+  return {
+    perfilPendiente: `${PERFILES_PENDIENTES}/${uid}`,
+    denuncias: [
+      { coleccion: DENUNCIAS, campo: "denuncianteUid", valor: uid },
+      { coleccion: DENUNCIAS, campo: "usuarioDenunciadoUid", valor: uid },
+    ],
+  };
+}
+
 /** Rutas fijas a borrar para un ADMIN/negocio (codigo puede ser null). */
 function rutasFijasAdmin(negocioId, codigo) {
   const rutas = [
@@ -104,6 +122,7 @@ function coleccionesConNegocioId() {
     SOLICITUDES,
     NOTIFICACIONES,
     NOTIFICACIONES_BUZON,
+    DENUNCIAS,
     CLIENTES_PRIVADOS,
   ];
 }
@@ -144,6 +163,7 @@ module.exports = {
   SOLICITUDES,
   NOTIFICACIONES,
   NOTIFICACIONES_BUZON,
+  DENUNCIAS,
   DISPOSITIVOS,
   esAdmin,
   esCliente,
@@ -151,6 +171,7 @@ module.exports = {
   fichaPerteneceAlUsuario,
   rutasFijasCliente,
   rutaIndice,
+  operacionesRastroPersonal,
   rutasFijasAdmin,
   coleccionesConNegocioId,
   rutasStorageCliente,

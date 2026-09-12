@@ -428,4 +428,26 @@ class PreferencesRepository @Inject constructor(
             preferences.remove(ID_CLIENTE_SESION_KEY)
         }
     }
+
+    /**
+     * limpiarCuentaCompleta
+     * ---------------------
+     * Limpieza total de la identidad local tras eliminar la cuenta/negocio:
+     * identidad del negocio, id de cliente de sesión, tipo de usuario,
+     * aceptación de términos y marcadores de propietario/caché hidratada. NO
+     * borra theme_mode ni idioma (preferencias del dispositivo).
+     */
+    suspend fun limpiarCuentaCompleta() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(NOMBRE_NEGOCIO_KEY)
+            preferences.remove(LOGO_NEGOCIO_KEY)
+            preferences.remove(ID_CLIENTE_SESION_KEY)
+            preferences.remove(TIPO_USUARIO_KEY)
+            preferences.remove(TERMINOS_UID_KEY)
+            preferences.remove(TERMINOS_VERSION_KEY)
+            preferences.remove(TERMINOS_FECHA_KEY)
+            preferences.remove(UID_PROPIETARIO_KEY)
+            preferences.remove(CACHE_HIDRATADA_UID_KEY)
+        }
+    }
 }

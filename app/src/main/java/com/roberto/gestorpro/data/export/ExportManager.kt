@@ -417,7 +417,10 @@ object ExportManager {
                 servicios = datos.servicios ?: emptyList(),
                 clientes = datos.clientes ?: emptyList(),
                 sesiones = datos.sesiones ?: emptyList(),
-                movimientos = datos.movimientos ?: emptyList(),
+                // Backups antiguos sin los campos de identidad histórica: Gson
+                // puede dejarlos null; se normalizan a "".
+                movimientos = (datos.movimientos ?: emptyList())
+                    .map { it.normalizarIdentidadHistorica() },
                 gastos = datos.gastos ?: emptyList(),
                 reservas = datos.reservas ?: emptyList(),
                 mediaFotos = media
@@ -458,7 +461,9 @@ object ExportManager {
                 if (it.idServicio !in idServicios) errores += "sesión ${it.idSesion} sin su servicio"
             }
             contenido.movimientos.forEach {
-                if (it.idCliente !in idClientes) errores += "movimiento ${it.idMovimiento} sin su cliente"
+                // Los movimientos son histórico económico AUTÓNOMO del centro:
+                // NO se exige que exista su ficha `clientes/{idCliente}` (puede
+                // haberse eliminado la cuenta conservando el histórico).
                 it.servicios.forEach { idServ ->
                     if (idServ !in idServicios) errores += "movimiento ${it.idMovimiento} referencia a servicio inexistente"
                 }
@@ -473,6 +478,17 @@ object ExportManager {
 
     private fun <T> tieneDuplicados(lista: List<T>): Boolean =
         lista.size != lista.toSet().size
+
+    /**
+     * Normaliza los campos de identidad histórica del movimiento. Los backups
+     * anteriores a esta versión no los traen y Gson puede deserializarlos como
+     * null aunque el tipo sea String: se convierten a "".
+     */
+    private fun MovimientoEntity.normalizarIdentidadHistorica(): MovimientoEntity = copy(
+        nombreCliente = nombreCliente.orEmpty(),
+        apellidosCliente = apellidosCliente.orEmpty(),
+        dniCliente = dniCliente.orEmpty()
+    )
 
     // =========================================================
     // Aplicación en Room (normalizando negocioId)

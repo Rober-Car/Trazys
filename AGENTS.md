@@ -2,6 +2,290 @@
 
 Lee este archivo completo antes de modificar el proyecto.
 
+> ## 🟢 ACTUALIZACIÓN 2026-09-12 (3) — REGLA DE TRABAJO: HISTÓRICO ECONÓMICO AUTÓNOMO (VIGENTE)
+>
+> **Decisión cerrada (SUSTITUYE la opción "anonimizar movimientos"):** los movimientos económicos son
+> **histórico del centro** y NO se eliminan ni anonimizan al eliminar un CLIENTE. Conservan
+> `nombreCliente`, `apellidosCliente` y `dniCliente` **históricos** (fotografía en el momento del
+> movimiento) además de `idCliente`. Los datos históricos **no se actualizan** cuando cambia la ficha.
+> La **ficha `clientes/{clienteId}` SÍ se elimina**.
+>
+> **Implicaciones de trabajo (obligatorias al implementar):**
+> - Un movimiento debe poder mostrarse como histórico económico **sin depender** de que exista
+>   `clientes/{id}`. No introducir dependencias nuevas de la ficha en el flujo de Economía.
+> - Los campos históricos del movimiento son **inmutables**: al editar un movimiento NO se refrescan desde
+>   la ficha actual; al **crear/renovar** se captura la identidad **actual** del cliente en ese instante.
+> - La hidratación y el export **no deben descartar** movimientos sin ficha.
+> - Estado: **DECISIÓN cerrada; IMPLEMENTADO LOCALMENTE: SÍ (sin commit). NO desplegado.** No hay backfill,
+>   ni centinela 0, ni anonimización (base de datos limpiada; sin movimientos históricos reales que migrar).
+> - **Correcciones post-auditoría (2026-09-12):** CLIENTE sin ficha elimina `perfiles_pendientes` y denuncias
+>   incondicionalmente; `MovimientoEntity` con `@ColumnInfo(defaultValue = "")` coherente con la migración
+>   20→21 (esquemas exportados en `app/schemas`); limpieza de ficheros del CLIENTE en `Dispatchers.IO`.
+>   Tests: migración Room **1/1** (Robolectric), Functions **83/83**, Rules **229/229**.
+> - **Privacidad/términos/web (2026-09-12):** documentación legal CLIENTE (ES/EN), ADMIN (embebida) y web
+>   actualizadas para reflejar Storage, denuncias y la **conservación del histórico económico** con
+>   identidad histórica; **NO** se afirman plazos concretos ni "se eliminan todos los datos". Data Safety
+>   preparado en `CONTEXTO_PROYECTO.md`. **NO desplegado.**
+> - **`eliminarMiCuenta` DESPLEGADA y VERIFICADA en producción (2026-09-12):** `--only
+>   functions:eliminarMiCuenta` (v2, europe-west1, nodejs20). Prueba real con cuentas desechables: se
+>   eliminan Auth/usuarios/perfiles_pendientes/ficha/dispositivos/agenda/reservas/solicitudes/buzón/
+>   clientes_privados/índices/denuncias y la foto de Storage; **se conservan los movimientos** (identidad
+>   histórica intacta). El movimiento de prueba `777000001` fue eliminado (2026-09-12); producción limpia.
+>   **Web legal DESPLEGADA y VERIFICADA (2026-09-12):** `--only hosting`; `/privacidad`, `/terminos` y
+>   `/eliminar-cuenta` con HTTP 200 y contenido nuevo. **La app Android nueva NO está desplegada** (AAB no generado).
+> - **Auditoría Functions programadas/baja (2026-09-12):** `procesarProgramadas` es **necesaria** (las
+>   notificaciones PROGRAMADAS no se envían sin ella; pendiente de deploy); `bajaConfirmada` es **redundante**
+>   (la app crea BAJA_CONFIRMADA y `notificacionInmediata` la envía). **Ninguna está desplegada.**
+> - **Notificaciones programadas DESPLEGADAS (2026-09-12):** índice
+>   `notificaciones(estado ASC, fechaProgramada ASC)` **READY**; `procesarProgramadas` **desplegada**
+>   (v2, scheduled, europe-west1, nodejs20). Verificado en producción: PROGRAMADA → ENVIADA (~3 min), buzón
+>   creado, sin duplicados y sin reenvío en el segundo ciclo. **Push pendiente de verificar en dispositivo
+>   real.** `bajaConfirmada`: **NO desplegar** (POST-BETA).
+> - **Bug crash fecha PROGRAMADA (2026-09-12):** `CrearNotificacionScreen` formateaba con `dd/MM/aaaa HH:mm`
+>   (patrón inválido → `IllegalArgumentException: Too many pattern letters: a`); corregido a `dd/MM/yyyy HH:mm`
+>   + test `FormatoFechaProgramadaTest`. **Corregido localmente; NO desplegado.**
+> - **Auditoría final pre-Play (2026-09-12):** Rules local==prod, 6 índices READY, 7 Functions desplegadas
+>   (`bajaConfirmada` NO), Hosting legal 200, tests verdes, release firmado sin secretos. **APTO PARA GENERAR
+>   AAB DEFINITIVOS.** Pendiente: Play Console (Data Safety, App Access, ficha) y limpieza de temporales.
+> - **Limpieza de temporales (2026-09-12):** eliminados 25 archivos temporales/diagnóstico versionados
+>   (`build_*.txt`, `files.txt`, `structure.txt`, `app_kt_files.txt`, `firestore-tests/firestore-debug.log`).
+>   Sin cambios de código/funcionalidad. No commit.
+> - **Auditoría profunda de limpieza (2026-09-12):** solo inventario; **no se eliminaron archivos**. Pendiente
+>   revisión de candidatos (sin consumidores, legacy `ui/clases`+Room, helpers de Functions solo testeados,
+>   funciones de Rules sin uso, tests plantilla/obsoletos, strings/dependencias sin uso). `bajaConfirmada`
+>   POST-BETA.
+> - **Limpieza segura (2026-09-12):** eliminados candidatos sin consumidores (composables/ViewModel/función,
+>   tests obsoletos/plantilla, exports de Functions sin consumidor, 11 strings). Conservados Room legacy,
+>   `bajaConfirmada` (POST-BETA) y `firestore.rules`. Tests verdes. No commit.
+> - **AAB DEFINITIVOS — regeneración final (2026-09-12):** incluyen el branding final. ADMIN
+>   `app-release.aab` (19.431.333 B, SHA-256 `08E8FC12…`) y CLIENTE `appCliente-release.aab` (18.494.068 B,
+>   SHA-256 `C107B7EC…`); firma release correcta (`jarsigner` "jar verified"), sin `debug.keystore`.
+>   **NO publicado** (solo local). Sin deploy ni commit.
+> - **RELEASE CANDIDATE (2026-09-12):** commit `Release beta 1.0`. ADMIN 1.0/versionCode 1; CLIENTE
+>   1.0/versionCode 1. AAB definitivos generados y verificados localmente. **NO publicados en Google Play.**
+> - **BRANDING (2026-09-12):** iconos launcher ADMIN **T+A** / CLIENTE **T+c** (fondo `#1E88E5`,
+>   adaptive + monochrome + PNG Play 512×512) validados visualmente; wordmark `trazys_logo` integrado en
+>   Login ADMIN y Login CLIENTE; logo/nombre del centro eliminados del Login CLIENTE y **conservados en
+>   Home CLIENTE**. Implementado localmente. **NO desplegado. AAB definitivo pendiente de regenerar.**
+> - **Cards de las Home sin descripciones (2026-09-12):** decisión cerrada: los cards muestran **solo
+>   icono + título**. HOME ADMIN `MenuCard` y HOME CLIENTE `HomeClientMenuCard` (privada) simplificadas
+>   (140 dp, bloque centrado, título 2 líneas sin truncar). Cabecera del Home CLIENTE (logo + nombre del
+>   centro) intacta; `MenuCard` de `:appCliente` (Cuenta) sin tocar. No desplegado.
+>
+> > El bloque siguiente (2026-09-12 (2)) contiene las **reglas operativas** (deploy/validación) y sigue
+> > vigente en todo lo que no contradiga este bloque.
+
+> ## ⚪ ACTUALIZACIÓN 2026-09-12 (2) — REGLAS OPERATIVAS + ESTADO TRAS AUDITORÍA PRE-PLAY — SUPERSEDIDO EN LO RELATIVO AL HISTÓRICO ECONÓMICO POR EL BLOQUE SUPERIOR
+>
+> **Este bloque es el vigente y SUPERSEDE a los checkpoints inferiores.** El detalle técnico completo vive
+> en `CONTEXTO_PROYECTO.md`; las decisiones en `CONVERSACION_EXPORTADA.md`. Aquí van las **reglas de
+> trabajo** y un resumen mínimo de estado (no duplicar estado extenso aquí).
+>
+> ### Estado resumido (detalle en `CONTEXTO_PROYECTO.md`)
+> - **HEAD `59834dd`** (`master`, `origin/master` al día). **Working tree con cambios SIN commit:**
+>   `firestore.rules`, `storage.rules`, `firestore-tests/firestore.rules.test.cjs`, `AGENTS.md`,
+>   `CONTEXTO_PROYECTO.md`, `CONVERSACION_EXPORTADA.md`. NO revertir, NO limpiar, NO commit sin pedirlo.
+> - **Correcciones H1–H5 implementadas Y DESPLEGADAS** (Firestore/Storage Rules). Suite Rules **229/229**.
+> - **Functions desplegadas:** `cancelarReserva`, `eliminarMiCuenta`, `entradaMorosidad`,
+>   `notificacionInmediata`, `recordatorioMorosidad`, `reservar` (v2, europe-west1, nodejs20).
+>   **NO desplegadas (solo locales):** `procesarProgramadas`, `bajaConfirmada`.
+> - **Firestore Rules, Storage Rules e índices: local == producción** (verificado por API/CLI 2026-09-12).
+> - **Proyecto APTO PARA PREPARAR AAB**; pendientes necesarios antes de subir (ver `CONTEXTO_PROYECTO.md`).
+>
+> ### Reglas operativas (obligatorias)
+> 1. **Antes de tocar Rules:** leer el bloque `match` completo y sus helpers; cambiar lo mínimo; añadir/ajustar
+>    tests en `firestore-tests/firestore.rules.test.cjs`; ejecutar `npm --prefix firestore-tests test`
+>    (todo verde) y `git diff --check`.
+> 2. **Antes de desplegar:** ejecutar la suite completa; desplegar SOLO el target autorizado
+>    (`firestore:rules` o `storage`). **Nunca** Functions/Storage/Hosting/índices sin autorización expresa.
+> 3. **Verificación post-deploy obligatoria:** confirmar el release activo y que el SHA-256 del ruleset
+>    desplegado coincide con el archivo local. Método: API `firebaserules.googleapis.com`
+>    `releases/{release}` → `rulesets/{name}`; comparar SHA-256 normalizando CRLF→LF y leyendo el local
+>    como **UTF-8** (no con el codepage ANSI de PowerShell, que da falsos negativos).
+> 4. **Storage no está en `firebase.json`:** para desplegar Storage usar un target temporal o una config
+>    temporal y borrarla después; no dejar artefactos. (Recomendado, cuando se autorice: añadir
+>    `"storage": { "rules": "storage.rules" }` a `firebase.json`.)
+> 5. **No reabrir sin incidencia reproducible:** morosidad por fecha (depende SOLO de `fechaFinActual <
+>    ahora`, no de PAGADO/PENDIENTE ni `fechaPago`), regla de combinación de actividades, canales FCM
+>    (CLIENTE vs ADMIN), VÍA 2 de clientes (acotada por H1), lectura de `servicios` activos **no
+>    contratados** para el Horario (H6), nomenclatura técnica (`negocioId`, `NegocioRepository`,
+>    `negocios`, `negocios_publicos`).
+> 6. **Validación de build:** `:app` y `:appCliente` con `testDebugUnitTest`; para release usar
+>    `compileReleaseKotlin` (R8 desactivado). No generar el AAB definitivo sin autorización.
+> 7. **I18n:** el CLIENTE (`:appCliente`) está prácticamente cerrado (ES/EN en `values`/`values-en`, legal
+>    en `legal.xml`); el ADMIN NO (solo Home+Centro+Rutinas). No continuar i18n ADMIN sin instrucción.
+> 8. **Tests:** no crear tests Android nuevos salvo petición; la red de seguridad son Rules/Functions.
+>    Mantener verdes Rules (229) y Functions.
+> 9. **Datos de producción:** no borrar ni migrar datos sin aprobación. Todo deploy requiere autorización
+>    expresa y verificación posterior.
+> 10. **Documentación:** al cerrar una tarea, actualizar `CONTEXTO_PROYECTO.md` (estado) y
+>     `CONVERSACION_EXPORTADA.md` (decisiones); `AGENTS.md` solo si cambian reglas/arquitectura.
+> 11. **Firma release (dos keystores):** `:app` usa `keystore-admin.properties` y `:appCliente` usa
+>     `keystore-cliente.properties` (ambos en la raíz, **gitignored**), con
+>     `storeFile`/`storePassword`/`keyAlias`/`keyPassword`. Nunca commitear keystores, contraseñas, alias
+>     ni rutas. Si el `.properties` del módulo no existe, su variante release queda **sin firmar** (debug
+>     sigue funcionando). No crear keystores, ni firmar, ni generar AAB sin autorización expresa.
+
+> ## ⚪ CHECKPOINT 2026-09-12 (1) — CONTEXTO DE CONTINUIDAD (CIERRE DE BETA) — SUPERSEDIDO POR EL BLOQUE SUPERIOR
+>
+> **HEAD del desarrollador: `59834dd "Nueva funcionalidad horario"` (rama `master`, `origin/master` al
+> día; en ese momento working tree LIMPIO).** Este bloque SUPERSEDE a todos los checkpoints inferiores y resume el
+> estado real de la beta. **Regla general:** el proyecto está en fase de **cierre de BETA**. NO abrir
+> funcionalidades nuevas salvo las expresamente indicadas, NO hacer refactors generales, NO tocar
+> funcionalidades ya verificadas, NO hacer commit ni deploy salvo indicación expresa.
+>
+> ### 1. Estado general (implementado y probado)
+> Reservas de clientes; regla de combinación de actividades el mismo día; asistentes de sesiones;
+> horario del centro; horario de actividades; excepciones/días especiales del horario; notificaciones
+> automáticas; FCM CLIENTE y FCM ADMIN; morosidad por fecha y por deuda pendiente; solicitud de baja;
+> baja aceptada; baja rechazada; eliminación de notificaciones del buzón CLIENTE; fecha de baja
+> seleccionable; ordenación A-Z/Z-A de clientes; mejoras visuales de reservas y asistentes; organización
+> de Home ADMIN/CLIENTE; reorganización Centro/Ajustes ADMIN; gran parte de la internacionalización.
+>
+> ### 2. Home CLIENTE
+> 6 cards en este orden: **1) Reservas, 2) Rutinas, 3) Horario del centro, 4) Actividades, 5) Ajustes,
+> 6) Notificaciones.**
+> - "Actividades" antiguo se renombró visualmente a "Reservas"; internamente se mantienen
+>   `Routes.CLASES`/`ClasesScreen`. **NO renombrar archivos/clases/rutas por este motivo.**
+> - "Actividades" ahora significa exclusivamente horario habitual de actividades.
+> - "Rutinas" es una pantalla vacía/placeholder, reservada para futuras actualizaciones.
+> - Las descripciones del Home CLIENTE se acortaron para evitar cortes.
+>
+> ### 3. Centro ADMIN
+> Home ADMIN: cards **"Centro"** y **"Rutinas"**. "Centro" agrupa: Centro/datos del centro, Horario del
+> centro y Horario de actividades. La sección NEGOCIO se retiró de Ajustes (Ajustes queda para
+> configuración de la app y administración). En la UI visible se sustituyó "Negocio" por "Centro";
+> **NO** cambiar nomenclatura técnica (`negocioId`, `NegocioRepository`, colecciones `negocios`/
+> `negocios_publicos`, rutas/funciones internas). Pantallas bajo `ui/gestioncentro/`.
+>
+> ### 4. Horario
+> Implementado y funcionando. Modelo final: `TramoHorario(apertura, cierre)`, `HorarioNegocio`,
+> excepciones/días especiales y horario de actividades **separado** de las sesiones.
+> - **Centro:** varios tramos por día (p. ej. 10:00-13:00 + 17:00-22:00); "Aplicar a toda la semana"
+>   global + edición individual por día; días especiales por fecha con **prioridad** sobre el semanal;
+>   independiente de las sesiones.
+> - **CLIENTE:** Horario del centro y Actividades son DOS pantallas independientes; selector de días
+>   horizontal; diseño visual (no tabla estilo Word/Excel) con varios tramos visibles.
+> - **ADMIN:** horario semanal, aplicación global, días especiales y horario de actividades con
+>   selección de actividad existente.
+> - El horario de actividades **NO** deriva de las sesiones: modificar una sesión no lo modifica.
+> - Rules de Horario **ya desplegadas** (última comprobación: local/remoto coinciden).
+>
+> ### 5. Reservas + asistentes
+> Las reservas del CLIENTE usan Cloud Functions callable **`reservar`** y **`cancelarReserva`**. Las
+> Rules ya **no** permiten escritura directa del CLIENTE sobre reservas, plazas de sesiones ni agenda.
+> Se creó **agenda por cliente/día** para controlar la combinación de actividades.
+> - Regla de combinación: A+B permitidas si ambas permiten combinar; si la nueva actividad **no**
+>   permite combinar y ya hay otra reserva ese día → bloquear; si alguna actividad existente ese día no
+>   permite combinar → bloquear.
+> - ADMIN: en `EditarServicioScreen` switch **"Permitir combinar con otras actividades el mismo día"**,
+>   guardado en Servicio/Firestore.
+> - Asistentes: solo **nombres** (sin apellidos, fotos, teléfono ni email); ya no dentro de la tarjeta;
+>   pantalla independiente `AsistentesSesionScreen` accesible desde la reserva; card + lista con iconos
+>   de persona de colores variados/deterministas.
+>
+> ### 6. Notificaciones / FCM
+> Los problemas principales de FCM se consideran **solucionados** y se probaron en real. Corregido:
+> registro del token CLIENTE y ADMIN; Rules de dispositivos; envío de push a ADMIN y CLIENTE;
+> notificación de baja aceptada, baja rechazada, cambio de horario, morosidad y recordatorio de
+> morosidad.
+> - **Rutas de dispositivos:** CLIENTE `clientes/{clienteId}/dispositivos/{token}`; ADMIN
+>   `usuarios/{uid}/dispositivos/{token}`. **No mezclar canales:** `enviarFCMaClientes` → CLIENTE,
+>   `enviarFCMaAdmin` → ADMIN.
+> - **SOLICITUD_BAJA:** aparece en ADMIN y ya tiene canal de push al ADMIN.
+> - **BAJA_CONFIRMADA:** notificación + push al CLIENTE.
+> - **SOLICITUD_RECHAZADA:** notificación + push al CLIENTE; tipo interno propio
+>   (`SOLICITUD_RECHAZADA`), semántica independiente de BAJA_CONFIRMADA.
+> - **CLIENTE puede eliminar notificaciones:** solo `notificaciones_por_destinatario`; jamás las
+>   globales.
+>
+> ### 7. Morosidad
+> Regla de negocio DEFINITIVA:
+> - **ACTIVO:** MOROSO si existe deuda pendiente **o** `fechaFinActual < ahora`.
+> - **BAJA:** con deuda pendiente → BAJA + MOROSO; sin deuda → BAJA + NO MOROSO.
+> - **REACTIVACIÓN:** no debe heredar la morosidad por fecha del período anterior; sin deuda y sin nuevo
+>   período vencido → ACTIVO + NO MOROSO; con deuda → ACTIVO + MOROSO; un movimiento NUEVO creado
+>   después de la baja/reactivación y con `fechaFin` vencida → vuelve a MOROSO por fecha.
+> - Para ello se añadió **`MovimientoEntity.fechaRegistro`** y la **migración Room 19→20**. La etapa se
+>   basa en `fechaRegistro >= fechaBaja`; los movimientos antiguos (fechaRegistro 0) quedan fuera de la
+>   etapa actual.
+> - La morosidad **por fecha NO depende de PAGADO/PENDIENTE**; los impagos los gestiona el ADMIN. **No**
+>   usar `fechaPago` para decidir la morosidad por fecha.
+> - **Notificaciones de morosidad sin la palabra "morosidad"** en títulos visibles al cliente:
+>   entrada ES "Pago vencido" / EN "Payment overdue"; recordatorio ES "Recordatorio de pago vencido" /
+>   EN "Overdue payment reminder".
+> - Funciones **`entradaMorosidad`** y **`recordatorioMorosidad`** desplegadas como scheduled Functions
+>   en `europe-west1`. La entrada funciona por **barrido programado diario**; no depende de que
+>   `clientes/{id}` cambie. Corregida la **idempotencia**: una notificación procesada sin dispositivo
+>   puede reintentarse cuando el dispositivo aparece.
+>
+> ### 8. Baja + fecha de baja
+> El ADMIN puede seleccionar la **fecha efectiva de baja**: perfil → selector de fecha; baja masiva →
+> una fecha para todo el lote; por defecto HOY; no se permiten fechas futuras. La fecha elegida se
+> guarda como `fechaBaja`. **Las reservas futuras NO usan la fecha histórica elegida:** siguen
+> cancelándose con el momento actual. BAJA_CONFIRMADA usa la fecha efectiva elegida.
+> - Limitación conocida: `AñadirClienteScreen` tiene código preparado para fecha de baja, pero la UI no
+>   tiene ruta activa para cambiar ACTIVO/BAJA desde ahí. **NO reabrir este flujo** salvo petición
+>   explícita.
+>
+> ### 9. Clientes ADMIN
+> La lista tiene ordenación **A→Z / Z→A**. **NO** existe filtro por letra ni tira A-Z. El criterio
+> sigue siendo apellidos y después nombre. La búsqueda y los filtros existentes se mantienen.
+>
+> ### 10. Perfil económico
+> En `PerfilClienteAdministradorScreen`, además de Deuda total, se muestra el **motivo de morosidad**:
+> "Pago vencido", "Pago pendiente" o ambos, calculado de `morosoPorFecha` y `morosoPorDeuda`. **No** se
+> almacena un campo adicional para esto.
+>
+> ### 11. UI reservas
+> La tarjeta RESERVADA se mejoró visualmente: azul corporativo, badge "Reservada", "Ver asistentes" en
+> azul y "Cancelar reserva" con estilo de peligro. **No** modificar la lógica de reservas por temas
+> visuales.
+>
+> ### 12. Internacionalización
+> - **CLIENTE (`:appCliente`) prácticamente cerrada:** Home, Centro, Reservas, Notificaciones, FCM,
+>   horarios, legal, errores/fallbacks y documentos legales. Recursos ES/EN sincronizados. Términos y
+>   Privacidad en `values/legal.xml` y `values-en/legal.xml` (misma estructura; español íntegro y
+>   versión inglesa completa). Corregidos los fallbacks de `e.message` visibles. "Rutinas" es placeholder
+>   y no requiere trabajo.
+> - **ADMIN (`:app`) NO terminado:** solo Home + Centro + Rutinas. **NO continuar** la i18n del ADMIN
+>   salvo nueva instrucción.
+>
+> ### 13. Notificaciones automáticas
+> Switches actuales: Morosidad, Recordatorio de morosidad, Baja confirmada, Baja rechazada y Cambio de
+> horario. La configuración de notificaciones ya se puede guardar correctamente (Rules de
+> `configuracion_notificaciones` corregidas).
+> - **Functions desplegadas actualmente** (todas en `europe-west1`): `cancelarReserva`,
+>   `eliminarMiCuenta`, `entradaMorosidad`, `notificacionInmediata`, `recordatorioMorosidad`,
+>   `reservar`. (`functions/index.js` también define `procesarProgramadas` y `bajaConfirmada`.)
+>
+> ### 14. Pruebas / despliegues recientes
+> Despliegues controlados de: Firestore Rules, `reservar`, `cancelarReserva`, `entradaMorosidad`,
+> `recordatorioMorosidad`, `notificacionInmediata`. Probado en producción: reservas, cancelaciones,
+> asistentes, horarios, notificaciones, FCM CLIENTE, FCM ADMIN, morosidad, recordatorios, cambio de
+> horario, bajas aceptadas/rechazadas y eliminación de notificaciones. Los últimos informes tenían tests
+> verdes en Functions, Rules, `:app` y `:appCliente`.
+>
+> ### 15. Working tree
+> En ese momento el working tree estaba **LIMPIO** en `59834dd` (el desarrollador commiteó la tanda de
+> horario). **Estado actual: hay cambios SIN commit (H1–H5 + documentación); ver bloque superior.**
+> Históricamente hubo muchos cambios sin commit; **NO** asumir que un archivo reciente es
+> trabajo nuevo, **NO** revertir, **NO** limpiar/resetear, **NO** hacer commit. Existe
+> `firestore-tests/firestore-debug.log` (artefacto del emulador) que genera ruido de whitespace.
+>
+> ### 16. Pendiente inmediato (antes de nuevas funcionalidades)
+> 1. Comprobar manualmente que la última tanda sigue funcionando; en especial: fecha de baja, baja
+>    masiva, A-Z/Z-A, eliminar + denunciar, morosidad después de reactivar, nuevo movimiento vencido
+>    después de reactivar, FCM ADMIN y FCM CLIENTE.
+> 2. Después: revisión final de la beta, auditoría final de i18n CLIENTE, limpieza de pendientes y
+>    preparación del commit final.
+> 3. **NO** volver a modificar sistemas ya validados sin una incidencia reproducible.
+>
+> ### 17. Regla crítica para continuar
+> Ante una nueva petición: identificar exactamente qué archivo y capa afecta; si afecta a morosidad,
+> reservas, FCM, Rules o Functions, **auditar antes de modificar**; no hacer cambios globales; usar
+> implementaciones muy acotadas; validar siempre build + tests + Rules cuando corresponda.
+
 > ## ⚠️ CHECKPOINT 2026-09-11 — RESERVAS (FASES 1–4) + MOROSIDAD AUTOMÁTICA + LOCALIZACIÓN DE NOTIFICACIONES + RULES/FUNCTIONS/ÍNDICE DESPLEGADOS (REANUDAR AQUÍ)
 >
 > **HEAD del desarrollador: `7cf9a7d "Nueva funcionalidad horario"` (rama `master`).** El horario

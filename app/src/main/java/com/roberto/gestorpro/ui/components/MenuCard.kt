@@ -27,11 +27,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
+/**
+ * MenuCard
+ * --------
+ * Tarjeta de acceso rápido de la Home ADMIN. Muestra únicamente un icono
+ * y un título (sin descripción). El icono y el título forman un bloque
+ * centrado verticalmente dentro de una altura fija de 140.dp.
+ */
 @Composable
 fun MenuCard(
     titulo: String,
-    descripcion: String,
     icono: ImageVector,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     iconContainerColor: Color = MaterialTheme.colorScheme.primaryContainer,
@@ -53,13 +60,14 @@ fun MenuCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
             ) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = iconContainerColor,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -71,21 +79,17 @@ fun MenuCard(
                     }
                 }
 
-                Column {
-                    Text(
-                        text = titulo,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = descripcion,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = titulo,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 22.sp,
+                    maxLines = 2,
+                    minLines = 2
+                )
             }
             if (badge != null && badge > 0) {
                 MenuCardBadge(

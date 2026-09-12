@@ -54,6 +54,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -101,19 +102,11 @@ fun HomeScreen(
     val textoNoVinculadoDesc = stringResource(R.string.home_no_vinculado_descripcion)
     val textoVincularCentro = stringResource(R.string.home_vincular_centro)
     val textoCardActividades = stringResource(R.string.home_card_actividades)
-    val textoCardActividadesDesc = stringResource(R.string.home_card_actividades_descripcion)
     val textoCardHorario = stringResource(R.string.home_card_horario)
-    val textoCardHorarioDesc = stringResource(R.string.home_card_horario_descripcion)
     val textoCardRutinas = stringResource(R.string.home_card_rutinas)
-    val textoCardRutinasDesc = stringResource(R.string.home_card_rutinas_descripcion)
     val textoCardActividadesHorario = stringResource(R.string.home_card_horario_actividades)
-    val textoCardActividadesHorarioDesc =
-        stringResource(R.string.home_card_horario_actividades_descripcion)
     val textoCardAjustes = stringResource(R.string.home_card_ajustes)
-    val textoCardAjustesDesc = stringResource(R.string.home_card_ajustes_descripcion)
     val textoCardNotificaciones = stringResource(R.string.home_card_notificaciones)
-    val textoCardNotificacionesDesc =
-        stringResource(R.string.home_card_notificaciones_descripcion)
     val textoAvisoRenovacion = stringResource(R.string.home_aviso_renovacion_contacto)
     val textoAvisoSolicitarBaja = stringResource(R.string.home_aviso_solicitar_baja)
 
@@ -302,7 +295,6 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardActividades,
-                        descripcion = textoCardActividadesDesc,
                         icono = Icons.Default.FitnessCenter,
                         color = Color(0xFFFB8C00),
                         onClick = { navController.navigate(Routes.CLASES) }
@@ -311,7 +303,6 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardRutinas,
-                        descripcion = textoCardRutinasDesc,
                         icono = Icons.Default.FitnessCenter,
                         color = Color(0xFF26A69A),
                         onClick = { navController.navigate(Routes.RUTINAS) }
@@ -320,7 +311,6 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardHorario,
-                        descripcion = textoCardHorarioDesc,
                         icono = Icons.Default.Schedule,
                         color = Color(0xFF1E88E5),
                         onClick = { navController.navigate(Routes.HORARIO_CENTRO) }
@@ -329,7 +319,6 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardActividadesHorario,
-                        descripcion = textoCardActividadesHorarioDesc,
                         icono = Icons.Default.EventNote,
                         color = Color(0xFF1E88E5),
                         onClick = { navController.navigate(Routes.HORARIO_ACTIVIDADES) }
@@ -338,7 +327,6 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardAjustes,
-                        descripcion = textoCardAjustesDesc,
                         icono = Icons.Default.Settings,
                         color = Color(0xFF78909C),
                         onClick = { navController.navigate(Routes.CONFIGURACION) }
@@ -347,7 +335,6 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardNotificaciones,
-                        descripcion = textoCardNotificacionesDesc,
                         icono = Icons.Default.Notifications,
                         color = Color(0xFF7E57C2),
                         badge = noLeidas,
@@ -365,15 +352,14 @@ fun HomeScreen(
  * Tarjeta de navegación del Home de GestorPro Cliente.
  *
  * Comparte el mismo concepto visual que la MenuCard de GestorPro Admin:
- * composición vertical (icono arriba en contenedor coloreado, título y
- * descripción debajo), proporción compacta y bordes suaves. Es un componente
+ * composición vertical (icono arriba en contenedor coloreado y título debajo),
+ * sin descripción, proporción compacta y bordes suaves. Es un componente
  * privado del Home para no alterar la MenuCard compartida (usada en otras
  * pantallas como Cuenta).
  */
 @Composable
 private fun HomeClientMenuCard(
     titulo: String,
-    descripcion: String,
     icono: ImageVector,
     color: Color = Color(0xFF1E88E5),
     badge: Int? = null,
@@ -383,7 +369,7 @@ private fun HomeClientMenuCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(168.dp),
+            .height(140.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.12f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -393,8 +379,9 @@ private fun HomeClientMenuCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
             ) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
@@ -411,22 +398,17 @@ private fun HomeClientMenuCard(
                     }
                 }
 
-                Column {
-                    Text(
-                        text = titulo,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = descripcion,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = titulo,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 22.sp,
+                    maxLines = 2,
+                    minLines = 2
+                )
             }
             if (badge != null && badge > 0) {
                 HomeMenuBadge(

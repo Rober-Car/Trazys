@@ -155,9 +155,13 @@ private fun terminosDeUsoTexto(): String =
         "eliminación de la cuenta, además de las consecuencias legales que correspondan.\n\n" +
         "8. Eliminación de cuenta\n" +
         "Puedes eliminar tu cuenta desde la aplicación (Configuración > Eliminar mi cuenta / " +
-        "Eliminar cuenta y centro). El CLIENTE elimina su cuenta y datos personales; el ADMIN " +
-        "elimina su cuenta y todo su centro. El histórico económico del centro se conserva según " +
-        "lo indicado en la aplicación.\n\n" +
+        "Eliminar cuenta y centro). El CLIENTE elimina su cuenta, su ficha operativa y los datos " +
+        "personales asociados (perfil, foto, reservas, solicitudes, notificaciones y denuncias " +
+        "vinculadas a su cuenta); no obstante, determinados registros económicos del centro " +
+        "pueden conservarse durante el tiempo necesario para cumplir obligaciones legales, " +
+        "fiscales o contables o para el ejercicio o defensa de reclamaciones, y pueden incluir el " +
+        "nombre, apellidos y DNI históricos del movimiento. El ADMIN elimina su cuenta y todo su " +
+        "centro, incluidos sus datos operativos y su histórico económico.\n\n" +
         "9. Limitaciones y responsabilidad\n" +
         "Trazys se presta en el estado en que se encuentra. El responsable no responde de los daños " +
         "derivados del mal uso de la aplicación ni de los datos que el ADMIN introduce de sus clientes, " +

@@ -240,7 +240,9 @@ service cloud.firestore {
     // =========================================================
 
     match /negocios_publicos/{negocioId} {
-      allow get, list: if autenticado();
+      // Solo lectura puntual por documentId. NO se permite list/enumeracion
+      // (el documento contiene codigoMaestro, credencial de vinculacion).
+      allow get: if autenticado();
 
       allow create: if esAdmin()
         && request.resource.data.keys()
@@ -545,6 +547,17 @@ service cloud.firestore {
         && request.resource.data.firebaseUid == request.auth.uid
         && request.resource.data.dni is string
         && request.resource.data.serviciosContratados is list
+        // La VIA 2 legitima nace con los valores iniciales que fija la app:
+        // estado REGISTRADO, sin servicios contratados y sin fechas. La
+        // activacion y la asignacion de servicios las realiza despues el ADMIN.
+        // Sin estas condiciones un CLIENTE podria autoproclamarse ACTIVO y
+        // asignarse servicios para reservar saltandose al ADMIN.
+        && request.resource.data.estado == "REGISTRADO"
+        && request.resource.data.serviciosContratados.size() == 0
+        && request.resource.data.fechaAlta == null
+        && request.resource.data.fechaBaja == null
+        && request.resource.data.fechaInicioActual == null
+        && request.resource.data.fechaFinActual == null
         && creacionDirectaValida(
              request.resource.data.idCliente,
              request.resource.data.negocioId
@@ -1148,6 +1161,10 @@ service cloud.firestore {
              "motivo"
            ])
         && request.resource.data.idSolicitud is string
+        // El campo idSolicitud debe coincidir con el documentId: el ADMIN
+        // localiza la solicitud por idSolicitud. Evita documentos fantasma con
+        // un idSolicitud distinto del path.
+        && request.resource.data.idSolicitud == solicitudId
         && request.resource.data.fechaSolicitud is timestamp
         && (!("motivo" in request.resource.data.keys())
             || request.resource.data.motivo is string)
@@ -1249,9 +1266,11 @@ service cloud.firestore {
 
       // El CLIENTE crea una ÚNICA notificación de aviso al ADMIN cuando acaba
       // de vincularse (tipo VINCULACION). Se limita a su propia ficha y negocio,
-      // con campos controlados y documentId determinista; si el documento ya
-      // existe (reintento) se comporta como update y queda denegado (no se
-      // duplica). No abre escritura genérica de notificaciones al cliente.
+      // con campos controlados y documentId determinista OBLIGATORIO
+      // `vinculacion_{negocioId}_{clienteId}` (el mismo que genera la app); si
+      // el documento ya existe (reintento) se comporta como update y queda
+      // denegado (no se duplica). Esto impide crear documentos VINCULACION con
+      // IDs arbitrarios para hacer spam de avisos/push al ADMIN.
       allow create: if esCliente()
         && usuarioActual().clienteId is int
         && usuarioActual().negocioId is string
@@ -1270,6 +1289,10 @@ service cloud.firestore {
         && request.resource.data.clienteId == usuarioActual().clienteId
         && string(request.resource.data.clienteId) == string(usuarioActual().clienteId)
         && request.resource.data.tipo == "VINCULACION"
+        && notificacionId == "vinculacion_"
+             + request.resource.data.negocioId
+             + "_"
+             + string(request.resource.data.clienteId)
         && request.resource.data.origen == "AUTOMATICA"
         && request.resource.data.modoDestino == "INDIVIDUAL"
         && request.resource.data.titulo is string

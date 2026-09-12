@@ -1,6 +1,6 @@
 "use strict";
 
-const { getFirestore, Timestamp } = require("firebase-admin/firestore");
+const { getFirestore } = require("firebase-admin/firestore");
 
 /**
  * firestore.js
@@ -53,4 +53,4 @@ function timestampAms(valor) {
   return null;
 }
 
-module.exports = { db, Timestamp, leerCliente, leerConfiguracion, timestampAms };
+module.exports = { db, leerCliente, leerConfiguracion, timestampAms };

@@ -193,6 +193,10 @@ class HidratacionMapeadoresTest {
         movimiento!!.let {
             assertEquals(1_500_000_000, it.idMovimiento)
             assertEquals(9, it.idCliente)
+            // Documento sin identidad histórica → campos vacíos (compatibilidad).
+            assertEquals("", it.nombreCliente)
+            assertEquals("", it.apellidosCliente)
+            assertEquals("", it.dniCliente)
             assertEquals(listOf(1, 2), it.servicios)
             assertEquals(fecha(1, 9), it.fechaInicio)
             assertEquals(fecha(30, 9), it.fechaFin)
@@ -203,6 +207,48 @@ class HidratacionMapeadoresTest {
             assertEquals(MetodoPago.BIZUM, it.metodoPago)
             assertEquals("Cuota septiembre", it.observaciones)
         }
+    }
+
+    @Test
+    fun movimiento_conIdentidadHistorica_la_conserva() {
+        val datos = mapOf(
+            "idMovimiento" to 8L,
+            "negocioId" to negocio,
+            "idCliente" to 9L,
+            "nombreCliente" to "Marta",
+            "apellidosCliente" to "Ruiz",
+            "dniCliente" to "87654321X",
+            "fechaInicio" to fecha(1, 9),
+            "fechaFin" to fecha(30, 9),
+            "precioFinal" to 10.0,
+            "estado" to EstadoMovimiento.PENDIENTE.name
+        )
+        val movimiento = HidratacionMapeadores.movimientoDeDocumento(datos, negocio)
+        assertNotNull(movimiento)
+        assertEquals("Marta", movimiento!!.nombreCliente)
+        assertEquals("Ruiz", movimiento.apellidosCliente)
+        assertEquals("87654321X", movimiento.dniCliente)
+    }
+
+    @Test
+    fun movimiento_conIdentidadHistoricaNull_la_normalizaAVacio() {
+        val datos = mapOf(
+            "idMovimiento" to 9L,
+            "negocioId" to negocio,
+            "idCliente" to 9L,
+            "nombreCliente" to null,
+            "apellidosCliente" to null,
+            "dniCliente" to null,
+            "fechaInicio" to fecha(1, 9),
+            "fechaFin" to fecha(30, 9),
+            "precioFinal" to 10.0,
+            "estado" to EstadoMovimiento.PENDIENTE.name
+        )
+        val movimiento = HidratacionMapeadores.movimientoDeDocumento(datos, negocio)
+        assertNotNull(movimiento)
+        assertEquals("", movimiento!!.nombreCliente)
+        assertEquals("", movimiento.apellidosCliente)
+        assertEquals("", movimiento.dniCliente)
     }
 
     @Test

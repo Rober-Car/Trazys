@@ -17,6 +17,7 @@ const {
 } = require("./plan_morosidad");
 const { decidirCreacionNotificacion, decidirEntregaAutomatica } = require("./idempotencia");
 const { esNotificacionInmediataProcesable, esAvisoAlAdmin } = require("./plan_inmediata");
+const { esProgramadaProcesable } = require("./plan_programadas");
 const {
   idNotificacionBaja,
   idNotificacionMorosidad,
@@ -320,6 +321,8 @@ async function procesarProgramadas() {
   for (const doc of snapshot.docs) {
     const notificacionId = doc.id;
     const datos = doc.data();
+    // Guard defensivo (la query ya filtra por estado/fecha): parte pura testeable.
+    if (!esProgramadaProcesable(datos, ahora.getTime())) continue;
     const negocioId = datos.negocioId;
     if (!negocioId) continue;
     try {

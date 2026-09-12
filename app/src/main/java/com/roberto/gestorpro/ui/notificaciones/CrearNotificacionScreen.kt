@@ -737,8 +737,10 @@ private fun resumenDeDestino(
     }
 }
 
-private fun formatoFechaProgramada(millis: Long): String {
-    val formatter = DateTimeFormatter.ofPattern("dd/MM/aaaa HH:mm")
+internal fun formatoFechaProgramada(millis: Long): String {
+    // El patrón debe usar `yyyy` (año). `aaaa` NO es válido en DateTimeFormatter
+    // ("Too many pattern letters: a") y provocaba el cierre de la app.
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
     return Instant.ofEpochMilli(millis)
         .atZone(ZoneId.systemDefault())
         .format(formatter)

@@ -67,6 +67,27 @@ test("rutaIndice concatena negocio+dni", () => {
   );
 });
 
+test("operacionesRastroPersonal: perfil pendiente + denuncias (denunciante y denunciado)", () => {
+  const rastro = plan.operacionesRastroPersonal(UID_CLIENTE);
+  assert.equal(rastro.perfilPendiente, `perfiles_pendientes/${UID_CLIENTE}`);
+  assert.deepEqual(rastro.denuncias, [
+    { coleccion: "denuncias", campo: "denuncianteUid", valor: UID_CLIENTE },
+    { coleccion: "denuncias", campo: "usuarioDenunciadoUid", valor: UID_CLIENTE },
+  ]);
+});
+
+test("CLIENTE sin ficha: el rastro personal (perfil + denuncias) se cubre sin clienteId", () => {
+  // El CLIENTE pendiente tiene clienteId=null: no hay ficha que borrar, pero
+  // el rastro personal SIEMPRE debe cubrirse (lo garantiza la rama CLIENTE).
+  assert.deepEqual(
+    plan.rutasFijasCliente(UID_CLIENTE, null),
+    [`usuarios/${UID_CLIENTE}`, `perfiles_pendientes/${UID_CLIENTE}`]
+  );
+  const rastro = plan.operacionesRastroPersonal(UID_CLIENTE);
+  assert.equal(rastro.perfilPendiente, `perfiles_pendientes/${UID_CLIENTE}`);
+  assert.equal(rastro.denuncias.length, 2);
+});
+
 test("rutasFijasAdmin: incluye negocio, publico, config, codigo y usuario (codigo opcional)", () => {
   assert.deepEqual(plan.rutasFijasAdmin(UID_ADMIN, "654321"), [
     `negocios/${UID_ADMIN}`,
@@ -93,10 +114,12 @@ test("coleccionesConNegocioId y Storage del cliente/logo", () => {
     "solicitudes",
     "notificaciones",
     "notificaciones_por_destinatario",
+    "denuncias",
     "clientes_privados",
   ]) {
     assert.ok(cols.includes(c), `falta ${c}`);
   }
+  assert.equal(plan.DENUNCIAS, "denuncias");
   assert.deepEqual(plan.rutasStorageCliente(42), ["clientes/42/foto.jpg"]);
   assert.equal(plan.rutaStorageLogo(UID_ADMIN), `negocios/${UID_ADMIN}/logo.jpg`);
   assert.equal(plan.rutaDispositivos("clientes", 42), "clientes/42/dispositivos");

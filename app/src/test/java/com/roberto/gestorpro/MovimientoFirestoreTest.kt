@@ -31,10 +31,16 @@ class MovimientoFirestoreTest {
         metodoPago: MetodoPago? = null,
         observaciones: String? = null,
         precioFinal: Double = 42.5,
-        fechaRegistro: Long = fechaIni
+        fechaRegistro: Long = fechaIni,
+        nombreCliente: String = "Ana",
+        apellidosCliente: String = "Lopez",
+        dniCliente: String = "12345678Z"
     ): MovimientoEntity = MovimientoEntity(
         idMovimiento = idMovimiento,
         idCliente = 3,
+        nombreCliente = nombreCliente,
+        apellidosCliente = apellidosCliente,
+        dniCliente = dniCliente,
         servicios = servicios,
         fechaInicio = fechaIni,
         fechaFin = fechaFin,
@@ -60,6 +66,9 @@ class MovimientoFirestoreTest {
         assertEquals(movimiento.idMovimiento, mapa["idMovimiento"])
         assertEquals(negocioId, mapa["negocioId"])
         assertEquals(movimiento.idCliente, mapa["idCliente"])
+        assertEquals(movimiento.nombreCliente, mapa["nombreCliente"])
+        assertEquals(movimiento.apellidosCliente, mapa["apellidosCliente"])
+        assertEquals(movimiento.dniCliente, mapa["dniCliente"])
         assertEquals(movimiento.servicios, mapa["servicios"])
         assertEquals(movimiento.precioFinal, mapa["precioFinal"])
         assertEquals(movimiento.estado.name, mapa["estado"])
@@ -260,11 +269,28 @@ class MovimientoFirestoreTest {
         assertNull(mapa["fechaFinActual"])
     }
 
+    // 8. La identidad histórica (nombre/apellidos/DNI) se publica tal cual.
+    @Test
+    fun identidadHistorica_se_publica_en_el_documento() {
+        val mov = movimiento(
+            nombreCliente = "Marta",
+            apellidosCliente = "Ruiz",
+            dniCliente = "87654321X"
+        )
+        val mapa = MovimientoFirestore.documentoDe(mov, "negocio-admin-1")
+        assertEquals("Marta", mapa["nombreCliente"])
+        assertEquals("Ruiz", mapa["apellidosCliente"])
+        assertEquals("87654321X", mapa["dniCliente"])
+    }
+
     companion object {
         private val EXPECTED_KEYS = listOf(
             "idMovimiento",
             "negocioId",
             "idCliente",
+            "nombreCliente",
+            "apellidosCliente",
+            "dniCliente",
             "servicios",
             "fechaInicio",
             "fechaFin",

@@ -50,6 +50,4 @@ function esNotificacionInmediataProcesable(datos) {
 module.exports = {
   esNotificacionInmediataProcesable,
   esAvisoAlAdmin,
-  TIPOS_BAJA_PRECONFIGURADA,
-  TIPOS_AVISO_ADMIN,
 };

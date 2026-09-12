@@ -40,6 +40,14 @@
         { "fieldPath": "idServicio", "order": "ASCENDING" },
         { "fieldPath": "negocioId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "notificaciones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "fechaProgramada", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

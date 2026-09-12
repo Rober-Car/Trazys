@@ -1643,7 +1643,13 @@ fun PerfilClienteScreen(
                                         text = "Aceptar",
                                         enabled = duracionRenovacion > 0,
                                         onClick = {
-                                            movimientoViewModel.renovarMovimiento(aRenovar, renovarDesdeHoy)
+                                            movimientoViewModel.renovarMovimiento(
+                                                aRenovar,
+                                                renovarDesdeHoy,
+                                                cliente?.nombre.orEmpty(),
+                                                cliente?.apellidos.orEmpty(),
+                                                cliente?.dni.orEmpty()
+                                            )
                                             mostrarDialogoRenovar = false
                                         }
                                     )
@@ -1970,6 +1976,11 @@ fun PerfilClienteScreen(
 
                                             val movimiento = MovimientoEntity(
                                                 idCliente = idCliente,
+                                                // Fotografía histórica de la identidad
+                                                // del cliente en el momento de crear.
+                                                nombreCliente = cliente?.nombre.orEmpty(),
+                                                apellidosCliente = cliente?.apellidos.orEmpty(),
+                                                dniCliente = cliente?.dni.orEmpty(),
                                                 servicios = idsServiciosMovimiento.distinct(),
                                                 fechaInicio = fechaInicioMovimiento!!,
                                                 fechaFin = fechaFinMovimiento!!,

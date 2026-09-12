@@ -345,7 +345,13 @@ class MovimientoViewModel @Inject constructor(
      * @param empezarHoy Boolean → true si el nuevo periodo debe empezar hoy;
      *        false si debe empezar en la fechaFin del último movimiento.
      */
-    fun renovarMovimiento(ultimo: MovimientoEntity, empezarHoy: Boolean) {
+    fun renovarMovimiento(
+        ultimo: MovimientoEntity,
+        empezarHoy: Boolean,
+        nombreCliente: String,
+        apellidosCliente: String,
+        dniCliente: String
+    ) {
 
         /**
          * viewModelScope.launch
@@ -403,6 +409,12 @@ class MovimientoViewModel @Inject constructor(
              */
             val movimientoRenovado = ultimo.copy(
                 idMovimiento = 0,
+                // Renovar crea un NUEVO período: se captura la identidad ACTUAL
+                // del cliente en este instante (nueva fotografía histórica), no
+                // la del movimiento anterior.
+                nombreCliente = nombreCliente,
+                apellidosCliente = apellidosCliente,
+                dniCliente = dniCliente,
                 fechaInicio = nuevaFechaInicio,
                 fechaFin = nuevaFechaInicio + duracion,
                 estado = EstadoMovimiento.PAGADO,

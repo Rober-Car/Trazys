@@ -170,7 +170,7 @@ fun ServiciosScreen(
                 AppNavigationBackButton(onClick = { navController.popBackStack() })
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Servicios",
+                    text = "Actividades",
                     style = MaterialTheme.typography.titleLarge
                 )
             }

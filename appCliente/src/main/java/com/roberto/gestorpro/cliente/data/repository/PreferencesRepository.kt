@@ -222,4 +222,26 @@ class PreferencesRepository @Inject constructor(
             preferences[NOTIFICACIONES_ACTIVADAS_KEY] = activas
         }
     }
+
+    /**
+     * limpiarDatosPersonales
+     * ----------------------
+     * Limpieza total de los datos locales identificables tras eliminar la
+     * cuenta: id de cliente, negocio, DNI pendiente, nombre/logo del negocio,
+     * preferencia de notificaciones y aceptación de términos. NO borra
+     * theme_mode ni idioma (preferencias del dispositivo).
+     */
+    suspend fun limpiarDatosPersonales() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(ID_CLIENTE_KEY)
+            preferences.remove(NEGOCIO_ID_KEY)
+            preferences.remove(DNI_PENDIENTE_KEY)
+            preferences.remove(NOMBRE_NEGOCIO_KEY)
+            preferences.remove(LOGO_NEGOCIO_KEY)
+            preferences.remove(NOTIFICACIONES_ACTIVADAS_KEY)
+            preferences.remove(TERMINOS_UID_KEY)
+            preferences.remove(TERMINOS_VERSION_KEY)
+            preferences.remove(TERMINOS_FECHA_KEY)
+        }
+    }
 }

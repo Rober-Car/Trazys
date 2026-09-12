@@ -336,11 +336,23 @@ class MovimientoRepository @Inject constructor(
      * llamador aporta su propio contexto de Mutex/IO/errores).
      */
     private suspend fun actualizarMovimientoCore(movimiento: MovimientoEntity) {
-        // Editar NUNCA cambia la fecha de creación: si la entidad entrante no la
-        // trae (0), se conserva la almacenada.
+        // Editar NUNCA cambia la fecha de creación ni la identidad histórica:
+        // si la entidad entrante no trae fechaRegistro (0) se conserva la
+        // almacenada, y los campos históricos (nombre/apellidos/DNI) se
+        // conservan SIEMPRE desde el movimiento existente (son una fotografía
+        // del momento de creación, inmutables al editar).
         val existente = movimientoDao.obtenerMovimientoPorId(movimiento.idMovimiento)
-        val aGuardar = if (existente != null && movimiento.fechaRegistro == 0L) {
-            movimiento.copy(fechaRegistro = existente.fechaRegistro)
+        val aGuardar = if (existente != null) {
+            movimiento.copy(
+                fechaRegistro = if (movimiento.fechaRegistro == 0L) {
+                    existente.fechaRegistro
+                } else {
+                    movimiento.fechaRegistro
+                },
+                nombreCliente = existente.nombreCliente,
+                apellidosCliente = existente.apellidosCliente,
+                dniCliente = existente.dniCliente
+            )
         } else {
             movimiento
         }

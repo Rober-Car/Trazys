@@ -105,6 +105,7 @@ fun PoliticaPrivacidadScreen(
                             "• Notificaciones enviadas y, en su caso, identificadores de " +
                             "dispositivo de los clientes para gestionar el envío de " +
                             "notificaciones.\n" +
+                            "• Denuncias de contenido o de usuarios y su estado de revisión.\n" +
                             "• Gastos y datos de gestión que registres en la aplicación.\n\n" +
                             "En todo caso, los datos de tus clientes se tratan únicamente para " +
                             "gestionar tu centro y nunca se ceden para publicidad."
@@ -158,7 +159,9 @@ fun PoliticaPrivacidadScreen(
                             "aplicación.\n" +
                             "• Firebase Cloud Messaging (FCM): se utiliza para registrar los " +
                             "identificadores de dispositivo de los clientes y gestionar sus " +
-                            "notificaciones.\n\n" +
+                            "notificaciones.\n" +
+                            "• Firebase Storage: almacenamiento seguro de las fotografías de " +
+                            "perfil de los clientes y del logo del centro.\n\n" +
                             "Google puede tratar datos fuera del Espacio Económico Europeo. Cuando " +
                             "ello resulte necesario, se aplicarán las garantías previstas por la " +
                             "normativa de protección de datos, incluidas, en su caso, las " +
@@ -173,7 +176,17 @@ fun PoliticaPrivacidadScreen(
                             "cumplir las finalidades para las que fueron recabados y mientras " +
                             "exista una relación con el usuario, y posteriormente durante los " +
                             "plazos necesarios para atender las obligaciones legales y posibles " +
-                            "responsabilidades que puedan derivarse del tratamiento."
+                            "responsabilidades que puedan derivarse del tratamiento.\n\n" +
+                            "Al eliminar la cuenta de un cliente, se suprimen su ficha " +
+                            "operativa y los datos personales asociados. No obstante, el " +
+                            "histórico económico del centro puede conservar determinados " +
+                            "registros con datos identificativos (nombre, apellidos y DNI " +
+                            "históricos del movimiento) durante el tiempo necesario para " +
+                            "cumplir obligaciones legales, fiscales o contables o para el " +
+                            "ejercicio o defensa de reclamaciones, según resulte aplicable.\n\n" +
+                            "Al eliminar tu cuenta de administrador se elimina el centro y sus " +
+                            "datos operativos, incluido el histórico económico del centro, " +
+                            "salvo lo que deba conservarse por las obligaciones anteriores."
                     )
                 }
 

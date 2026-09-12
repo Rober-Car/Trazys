@@ -379,66 +379,11 @@ class ClienteRemotoRepository @Inject constructor(
     }
 
     /**
-     * Replica las fechas del movimiento actual en la ficha pública del cliente.
-     * Los movimientos siguen siendo exclusivamente locales del ADMIN.
-     */
-    suspend fun actualizarPeriodoActualRemoto(
-        idCliente: Int,
-        fechaInicioActual: Long?,
-        fechaFinActual: Long?
-    ): ResultadoAutenticacion {
-        val uid = auth.currentUser?.uid
-            ?: return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
-        if (uid.isBlank()) {
-            return ResultadoAutenticacion(false, "No hay ningún usuario autenticado")
-        }
-
-        return try {
-            db.collection(COLECCION_CLIENTES)
-                .document(idCliente.toString())
-                .update(
-                    mapOf(
-                        "fechaInicioActual" to fechaInicioActual?.let { timestampDe(it) },
-                        "fechaFinActual" to fechaFinActual?.let { timestampDe(it) }
-                    )
-                )
-                .esperar()
-            Log.i(
-                TAG,
-                "Periodo de cliente sincronizado: idCliente=$idCliente " +
-                    "fechaInicioActual=$fechaInicioActual " +
-                    "fechaFinActual=$fechaFinActual resultado=OK"
-            )
-            ResultadoAutenticacion(true, "Periodo sincronizado")
-        } catch (e: FirebaseFirestoreException) {
-            Log.e(
-                TAG,
-                "Error en periodo de cliente: idCliente=$idCliente " +
-                    "fechaInicioActual=$fechaInicioActual " +
-                    "fechaFinActual=$fechaFinActual codigo=${e.code}",
-                e
-            )
-            ResultadoAutenticacion(false, mensajeDe(e))
-        } catch (e: Exception) {
-            Log.e(
-                TAG,
-                "Error en periodo de cliente: idCliente=$idCliente " +
-                    "fechaInicioActual=$fechaInicioActual " +
-                    "fechaFinActual=$fechaFinActual",
-                e
-            )
-            ResultadoAutenticacion(false, mensajeDe(e))
-        }
-    }
-
-    /**
      * actualizarResumenEconomicoRemoto
      * --------------------------------
      * Publica el RESUMEN ECONÓMICO completo del cliente en su ficha pública
      * `clientes/{idCliente}` con un `update()` (merge): moroso, deuda,
      * fechaEntradaMorosidad, fechaInicioActual, fechaFinActual y exentoMorosidad.
-     * Sustituye a la antigua publicación exclusiva del período
-     * (`actualizarPeriodoActualRemoto`), que queda obsoleta.
      */
     suspend fun actualizarResumenEconomicoRemoto(
         idCliente: Int,

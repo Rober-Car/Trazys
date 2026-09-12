@@ -446,6 +446,28 @@ object AppModule {
     }
 
     /**
+     * MIGRACION_20_21
+     * ---------------
+     * Movimiento: fotografía histórica de la identidad del cliente
+     * (`nombreCliente`, `apellidosCliente`, `dniCliente`). Los movimientos
+     * existentes quedan con "" (son datos de prueba; NO se hace backfill desde
+     * la tabla `cliente`). ALTER simple con DEFAULT ''.
+     */
+    internal val MIGRACION_20_21 = object : Migration(20, 21) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE `movimiento` ADD COLUMN `nombreCliente` TEXT NOT NULL DEFAULT ''"
+            )
+            db.execSQL(
+                "ALTER TABLE `movimiento` ADD COLUMN `apellidosCliente` TEXT NOT NULL DEFAULT ''"
+            )
+            db.execSQL(
+                "ALTER TABLE `movimiento` ADD COLUMN `dniCliente` TEXT NOT NULL DEFAULT ''"
+            )
+        }
+    }
+
+    /**
      * provideFirebaseAuth
      * -------------------
      * ✔ TIPO: método (fun) de Hilt con anotación @Provides y @Singleton → FirebaseAuth
@@ -514,7 +536,8 @@ object AppModule {
                 MIGRACION_16_17,
                 MIGRACION_17_18,
                 MIGRACION_18_19,
-                MIGRACION_19_20
+                MIGRACION_19_20,
+                MIGRACION_20_21
             )
 
         return databaseBuilder.build()

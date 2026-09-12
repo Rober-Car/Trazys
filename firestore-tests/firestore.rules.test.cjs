@@ -414,6 +414,117 @@ test("PRUEBA 5: VIA 2 - un CLIENTE crea su ficha con codigo maestro + DNI", asyn
     );
 });
 
+// H1: la VIA 2 legitima nace con estado REGISTRADO, serviciosContratados []
+// y fechas null. Un CLIENTE no puede autoproclamarse ACTIVO ni asignarse
+// servicios/fechas al crear su propia ficha. La coherencia de firebaseUid,
+// negocioId/idCliente/dni y el flujo legitimo se cubren en PRUEBA 5.
+test("PRUEBA 5B: VIA 2 - la ficha del CLIENTE nace REGISTRADA, sin servicios ni fechas", async () => {
+    const clienteUid = "cliente-via2-h1-test";
+    const dni = "33333333C";
+    const negocioId = "negocio-via2-h1";
+    let siguienteId = 75000000000;
+
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+
+        await setDoc(doc(database, "usuarios", clienteUid), {
+            rol: "CLIENTE",
+            activo: true,
+            clienteId: null,
+            negocioId: null
+        });
+
+        await setDoc(doc(database, "perfiles_pendientes", clienteUid), {
+            nombre: "Luis",
+            apellidos: "Garcia",
+            dni,
+            telefono: "633333333",
+            email: "luis@test.com",
+            foto: "",
+            fechaNacimiento: 0
+        });
+
+        await setDoc(doc(database, "negocios_publicos", negocioId), {
+            nombre: "Gimnasio H1",
+            codigoMaestro: "MAESTRO-H1"
+        });
+    });
+
+    const database = testEnvironment.authenticatedContext(clienteUid).firestore();
+
+    // Batch de VIA 2 con los valores iniciales legitimos, sobreescribibles
+    // por `extra` para forzar cada caso DENY.
+    function batchVia2(idCliente, extra = {}) {
+        const batch = writeBatch(database);
+        batch.set(
+            doc(database, "clientes", String(idCliente)),
+            fichaCliente(idCliente, negocioId, clienteUid, dni, {
+                estado: "REGISTRADO",
+                ...extra
+            })
+        );
+        batch.set(
+            doc(database, "indices_clientes", indiceId(negocioId, dni)),
+            { negocioId, dni, clienteId: idCliente }
+        );
+        batch.update(doc(database, "usuarios", clienteUid), {
+            clienteId: idCliente,
+            negocioId
+        });
+        return batch;
+    }
+
+    // DENY: estado ACTIVO (el agujero H1).
+    await assertFails(batchVia2(siguienteId++, { estado: "ACTIVO" }).commit());
+    // DENY: cualquier estado distinto de REGISTRADO.
+    await assertFails(batchVia2(siguienteId++, { estado: "ARCHIVADO" }).commit());
+    // DENY: serviciosContratados con elementos.
+    await assertFails(
+        batchVia2(siguienteId++, { serviciosContratados: [1] }).commit()
+    );
+    // DENY: fechaAlta no null.
+    await assertFails(
+        batchVia2(siguienteId++, { fechaAlta: 1700000000000 }).commit()
+    );
+    // DENY: fechaBaja no null.
+    await assertFails(
+        batchVia2(siguienteId++, { fechaBaja: 1700000000000 }).commit()
+    );
+    // DENY: fechaInicioActual no null.
+    await assertFails(
+        batchVia2(siguienteId++, { fechaInicioActual: 1700000000000 }).commit()
+    );
+    // DENY: fechaFinActual no null.
+    await assertFails(
+        batchVia2(siguienteId++, { fechaFinActual: 1700000000000 }).commit()
+    );
+    // DENY: firebaseUid ajeno (coherencia con la cuenta autenticada).
+    await assertFails(
+        batchVia2(siguienteId++, { firebaseUid: "otro-uid" }).commit()
+    );
+
+    // ALLOW: flujo legitimo exacto de VIA 2 (REGISTRADO, [], fechas null).
+    const idValido = siguienteId++;
+    await assertSucceeds(batchVia2(idValido).commit());
+
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        const usuario = await getDoc(doc(database, "usuarios", clienteUid));
+        const ficha = await getDoc(doc(database, "clientes", String(idValido)));
+
+        assert.strictEqual(usuario.data().clienteId, idValido);
+        assert.strictEqual(usuario.data().negocioId, negocioId);
+        assert.strictEqual(ficha.data().firebaseUid, clienteUid);
+        assert.strictEqual(ficha.data().dni, dni);
+        assert.strictEqual(ficha.data().estado, "REGISTRADO");
+        assert.deepStrictEqual(ficha.data().serviciosContratados, []);
+        assert.strictEqual(ficha.data().fechaAlta, null);
+        assert.strictEqual(ficha.data().fechaBaja, null);
+        assert.strictEqual(ficha.data().fechaInicioActual, null);
+        assert.strictEqual(ficha.data().fechaFinActual, null);
+    });
+});
+
 test("PRUEBA 6: VIA 1 - un CLIENTE vincula una ficha creada por el ADMIN", async () => {
     const adminUid = "admin-via1-test";
     const clienteUid = "cliente-via1-test";
@@ -1104,11 +1215,11 @@ test("PRUEBA 12: concurrencia - dos CLIENTES con el mismo DNI no duplican ficha"
     const dbA = testEnvironment.authenticatedContext(clienteA).firestore();
     const dbB = testEnvironment.authenticatedContext(clienteB).firestore();
 
-    // A crea la ficha + indice + usuarios.
+    // A crea la ficha + indice + usuarios (valores legitimos de VIA 2).
     const batchA = writeBatch(dbA);
     batchA.set(
         doc(dbA, "clientes", "500"),
-        fichaCliente(500, negocioId, clienteA, dni)
+        fichaCliente(500, negocioId, clienteA, dni, { estado: "REGISTRADO" })
     );
     batchA.set(
         doc(dbA, "indices_clientes", indiceId(negocioId, dni)),
@@ -1124,7 +1235,7 @@ test("PRUEBA 12: concurrencia - dos CLIENTES con el mismo DNI no duplican ficha"
     const batchB = writeBatch(dbB);
     batchB.set(
         doc(dbB, "clientes", "501"),
-        fichaCliente(501, negocioId, clienteB, dni)
+        fichaCliente(501, negocioId, clienteB, dni, { estado: "REGISTRADO" })
     );
     batchB.set(
         doc(dbB, "indices_clientes", indiceId(negocioId, dni)),
@@ -1218,10 +1329,21 @@ test("PRUEBA 15: negocios_publicos es legible por cualquier autenticado", async 
         });
     });
 
+    // GET puntual por documentId: permitido a cualquier autenticado (CLIENTE).
     const database = testEnvironment.authenticatedContext(CLIENTE_UID).firestore();
-
     await assertSucceeds(
         getDoc(doc(database, "negocios_publicos", negocioId))
+    );
+
+    // GET puntual: tambien permitido a un ADMIN autenticado.
+    const databaseAdmin = testEnvironment.authenticatedContext("admin-publico-15").firestore();
+    await assertSucceeds(
+        getDoc(doc(databaseAdmin, "negocios_publicos", negocioId))
+    );
+
+    // LIST/ENUMERACION: prohibido (el documento contiene codigoMaestro).
+    await assertFails(
+        getDocs(query(collection(database, "negocios_publicos")))
     );
 
     const databaseAnonima = testEnvironment.unauthenticatedContext().firestore();
@@ -1256,6 +1378,58 @@ test("PRUEBA 16: un CLIENTE no puede modificar negocios_publicos", async () => {
     );
     await assertFails(
         deleteDoc(doc(database, "negocios_publicos", negocioId))
+    );
+});
+
+test("PRUEBA 15B: negocios_publicos - CREATE/UPDATE solo del ADMIN propietario; otro ADMIN DENY", async () => {
+    // CREATE del ADMIN nuevo (sin negocio) con su codigo maestro -> ALLOW.
+    const nuevo = "admin-publico-15b-nuevo";
+    const codigoNuevo = "C15BN";
+    await sembrarAdminSinNegocio(nuevo);
+    const dbNuevo = testEnvironment.authenticatedContext(nuevo).firestore();
+    await assertSucceeds(batchCrearNegocioConCodigo(dbNuevo, nuevo, codigoNuevo));
+
+    // UPDATE del ADMIN propietario -> ALLOW.
+    const dueno = "admin-publico-15b-owner";
+    const otro = "admin-publico-15b-otro";
+    await sembrarAdminConNegocio(dueno, "C15B");
+    await sembrarAdminConNegocio(otro, "C15BO");
+    const dbDueno = testEnvironment.authenticatedContext(dueno).firestore();
+    await assertSucceeds(
+        updateDoc(doc(dbDueno, "negocios_publicos", dueno), {
+            nombre: "Centro actualizado"
+        })
+    );
+
+    // Otro ADMIN no puede actualizar el negocios_publicos ajeno -> DENY.
+    const dbOtro = testEnvironment.authenticatedContext(otro).firestore();
+    await assertFails(
+        updateDoc(doc(dbOtro, "negocios_publicos", dueno), {
+            nombre: "Hackeado"
+        })
+    );
+    // Otro ADMIN no puede crear un negocios_publicos nuevo -> DENY.
+    await assertFails(
+        setDoc(
+            doc(dbOtro, "negocios_publicos", "negocio-falso-15b"),
+            docPublico("C15BX")
+        )
+    );
+});
+
+test("PRUEBA 15C: la vinculacion por codigo maestro (lecturas por ID) sigue permitida", async () => {
+    const admin = "admin-publico-15c";
+    const codigo = "C15C";
+    await sembrarAdminConNegocio(admin, codigo);
+    const dbCliente = testEnvironment.authenticatedContext(CLIENTE_UID).firestore();
+
+    // Paso 1: resolver el negocio por codigos_maestros/{codigo}.
+    await assertSucceeds(getDoc(doc(dbCliente, "codigos_maestros", codigo)));
+    // Paso 2: leer el negocios_publicos/{negocioId} puntual (cross-check).
+    await assertSucceeds(getDoc(doc(dbCliente, "negocios_publicos", admin)));
+    // La enumeracion de negocios_publicos sigue prohibida.
+    await assertFails(
+        getDocs(query(collection(dbCliente, "negocios_publicos")))
     );
 });
 
@@ -1458,6 +1632,8 @@ test("PRUEBA 19: Storage - el ADMIN propietario sube su logo y el resto no puede
     const negocioA = "negocio-logo-a";
     const ruta = "negocios/negocio-logo-a/logo.jpg";
     const bytes = new Uint8Array([1, 2, 3, 4]);
+    const metadatosImagen = { contentType: "image/jpeg" };
+    const grande = new Uint8Array(10 * 1024 * 1024 + 1).fill(13);
 
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
         const database = context.firestore();
@@ -1486,24 +1662,24 @@ test("PRUEBA 19: Storage - el ADMIN propietario sube su logo y el resto no puede
     const storageCliente = testEnvironment.authenticatedContext(clienteUid).storage();
     const storageNoAuth = testEnvironment.unauthenticatedContext().storage();
 
-    // 1. ADMIN propietario puede subir su logo.
+    // 1. ADMIN propietario puede subir su logo (imagen valida <= 10 MB).
     await assertSucceeds(
-        uploadBytes(storageRef(storageAdminA, ruta), bytes)
+        uploadBytes(storageRef(storageAdminA, ruta), bytes, metadatosImagen)
     );
 
     // 2. ADMIN de otro negocio no puede escribir en ese logo.
     await assertFails(
-        uploadBytes(storageRef(storageAdminB, ruta), bytes)
+        uploadBytes(storageRef(storageAdminB, ruta), bytes, metadatosImagen)
     );
 
     // 3. CLIENTE no puede escribir el logo.
     await assertFails(
-        uploadBytes(storageRef(storageCliente, ruta), bytes)
+        uploadBytes(storageRef(storageCliente, ruta), bytes, metadatosImagen)
     );
 
     // 4. Usuario no autenticado no puede escribir.
     await assertFails(
-        uploadBytes(storageRef(storageNoAuth, ruta), bytes)
+        uploadBytes(storageRef(storageNoAuth, ruta), bytes, metadatosImagen)
     );
 
     // 5. CLIENTE autenticado puede leer el logo.
@@ -1518,12 +1694,34 @@ test("PRUEBA 19: Storage - el ADMIN propietario sube su logo y el resto no puede
 
     // 7. El ADMIN propietario puede reemplazar su logo (misma ruta).
     await assertSucceeds(
-        uploadBytes(storageRef(storageAdminA, ruta), bytes)
+        uploadBytes(storageRef(storageAdminA, ruta), bytes, metadatosImagen)
     );
 
     // 8. El ADMIN propietario puede leer su logo.
     await assertSucceeds(
         getBytes(storageRef(storageAdminA, ruta))
+    );
+
+    // 9. H4: archivo que NO es imagen (application/pdf) rechazado.
+    await assertFails(
+        uploadBytes(storageRef(storageAdminA, ruta), bytes, {
+            contentType: "application/pdf"
+        })
+    );
+
+    // 10. H4: imagen > 10 MB rechazada.
+    await assertFails(
+        uploadBytes(storageRef(storageAdminA, ruta), grande, metadatosImagen)
+    );
+
+    // 11. El ADMIN propietario puede eliminar su logo (delete sigue permitido).
+    await assertSucceeds(
+        deleteObject(storageRef(storageAdminA, ruta))
+    );
+
+    // 12. Tras eliminar, el ADMIN de otro negocio sigue sin poder escribir.
+    await assertFails(
+        uploadBytes(storageRef(storageAdminB, ruta), bytes, metadatosImagen)
     );
 });
 
@@ -3683,6 +3881,28 @@ test("PRUEBA 99: un CLIENTE crea su solicitud de baja -> ALLOW", async () => {
     );
 });
 
+test("PRUEBA 99B: un CLIENTE no puede crear una solicitud con idSolicitud distinto del documentId -> DENY", async () => {
+    const clienteUid = "cliente-sol-99b";
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(doc(database, "usuarios", clienteUid), {
+            rol: "CLIENTE",
+            activo: true,
+            clienteId: 991,
+            negocioId: NEGOCIO_A
+        });
+        await setDoc(doc(database, "clientes", "991"), fichaCliente(991, NEGOCIO_A, clienteUid, "99100099A"));
+    });
+    const database = testEnvironment.authenticatedContext(clienteUid).firestore();
+    // documentId != campo idSolicitud (el resto de campos es correcto).
+    await assertFails(
+        setDoc(
+            doc(database, "solicitudes", "baja_991_1700000000000"),
+            solicitudDoc("id_incoherente_991", NEGOCIO_A, 991, clienteUid)
+        )
+    );
+});
+
 test("PRUEBA 100: un CLIENTE no puede crear una solicitud para otro cliente -> DENY", async () => {
     const clienteUid = "cliente-sol-100";
     await testEnvironment.withSecurityRulesDisabled(async (context) => {
@@ -4346,7 +4566,9 @@ test("PRUEBA 124: un CLIENTE ACTIVO con deuda (moroso=true) lee sesiones (ALLOW)
 // =========================================================
 // Al vincularse (ficha propia + negocio propio), el CLIENTE crea UN aviso
 // idempotente `notificaciones/vinculacion_{negocioId}_{clienteId}` con tipo
-// VINCULACION. No puede crear notificaciones de otro negocio, con otro tipo, ni
+// VINCULACION. El documentId DEBE ser exactamente ese ID determinista (H3), para
+// impedir crear documentos VINCULACION con IDs arbitrarios (spam de avisos/push
+// al ADMIN). No puede crear notificaciones de otro negocio, con otro tipo, ni
 // duplicar el aviso (si el documento ya existe, la escritura es un update y se
 // deniega). No se abre escritura genÃ©rica de notificaciones al cliente.
 
@@ -4377,6 +4599,69 @@ test("PRUEBA 125: un CLIENTE vinculado crea el aviso VINCULACION de su negocio -
     });
     const database = testEnvironment.authenticatedContext(clienteUid).firestore();
     await assertSucceeds(
+        setDoc(
+            doc(database, "notificaciones", notifId),
+            notificacionVinculacionDoc(NEGOCIO_A, clienteId)
+        )
+    );
+});
+
+test("PRUEBA 125B: un CLIENTE NO puede crear VINCULACION con un ID aleatorio -> DENY", async () => {
+    const clienteUid = "cliente-vinculacion-125b";
+    const clienteId = 6051;
+    const notifId = `vinculacion_aleatoria_${clienteId}`;
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(doc(database, "usuarios", clienteUid), {
+            rol: "CLIENTE", activo: true, clienteId, negocioId: NEGOCIO_A
+        });
+        await setDoc(doc(database, "clientes", String(clienteId)), fichaCliente(clienteId, NEGOCIO_A, clienteUid, "60510000X"));
+    });
+    const database = testEnvironment.authenticatedContext(clienteUid).firestore();
+    await assertFails(
+        setDoc(
+            doc(database, "notificaciones", notifId),
+            notificacionVinculacionDoc(NEGOCIO_A, clienteId)
+        )
+    );
+});
+
+test("PRUEBA 125C: un CLIENTE NO puede crear VINCULACION con el ID determinista de otro negocio -> DENY", async () => {
+    const clienteUid = "cliente-vinculacion-125c";
+    const clienteId = 6052;
+    // ID construido con OTRO negocio; el payload es del negocio propio.
+    const notifId = `vinculacion_${NEGOCIO_B}_${clienteId}`;
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(doc(database, "usuarios", clienteUid), {
+            rol: "CLIENTE", activo: true, clienteId, negocioId: NEGOCIO_A
+        });
+        await setDoc(doc(database, "clientes", String(clienteId)), fichaCliente(clienteId, NEGOCIO_A, clienteUid, "60520000X"));
+    });
+    const database = testEnvironment.authenticatedContext(clienteUid).firestore();
+    await assertFails(
+        setDoc(
+            doc(database, "notificaciones", notifId),
+            notificacionVinculacionDoc(NEGOCIO_A, clienteId)
+        )
+    );
+});
+
+test("PRUEBA 125D: un CLIENTE NO puede crear VINCULACION con el ID determinista de otro cliente -> DENY", async () => {
+    const clienteUid = "cliente-vinculacion-125d";
+    const clienteId = 6053;
+    const otroClienteId = 9999;
+    // ID construido con OTRO cliente; el payload usa el cliente propio.
+    const notifId = `vinculacion_${NEGOCIO_A}_${otroClienteId}`;
+    await testEnvironment.withSecurityRulesDisabled(async (context) => {
+        const database = context.firestore();
+        await setDoc(doc(database, "usuarios", clienteUid), {
+            rol: "CLIENTE", activo: true, clienteId, negocioId: NEGOCIO_A
+        });
+        await setDoc(doc(database, "clientes", String(clienteId)), fichaCliente(clienteId, NEGOCIO_A, clienteUid, "60530000X"));
+    });
+    const database = testEnvironment.authenticatedContext(clienteUid).firestore();
+    await assertFails(
         setDoc(
             doc(database, "notificaciones", notifId),
             notificacionVinculacionDoc(NEGOCIO_A, clienteId)

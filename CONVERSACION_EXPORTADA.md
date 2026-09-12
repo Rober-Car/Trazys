@@ -1,5 +1,256 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
+> ## 📝 REGISTRO DE DECISIONES 2026-09-12 (3) — HISTÓRICO ECONÓMICO AUTÓNOMO (SUSTITUYE "ANONIMIZAR MOVIMIENTOS")
+>
+> ### Decisión (cerrada)
+> - **Se SUSTITUYE explícitamente la opción C2 "anonimizar movimientos"** del diseño previo de eliminación.
+> - Los **movimientos económicos NO se eliminan** al eliminar un CLIENTE: pertenecen al histórico económico
+>   del centro (facturación, contabilidad, obligaciones fiscales, comprobaciones/reclamaciones).
+> - **NO se anonimizan**; **NO** se sustituye `idCliente` por 0; **NO** se elimina el nombre/DNI.
+> - Cada movimiento conserva una **fotografía histórica**: `nombreCliente`, `apellidosCliente`,
+>   `dniCliente`, además de `idCliente`.
+> - **Inmutabilidad histórica:** si el cliente cambia después sus datos, los movimientos anteriores **no**
+>   cambian. Al crear/renovar se captura la identidad **del momento**.
+> - Los movimientos pasan a ser **registros históricos autónomos** respecto de `clientes/{clienteId}`.
+> - La **ficha personal `clientes/{clienteId}` SÍ se elimina** al eliminar la cuenta CLIENTE.
+> - Conservación: "durante el plazo que resulte aplicable conforme a las obligaciones legales/fiscales
+>   correspondientes" (plazo concreto sin decidir).
+>
+> ### Motivo
+> El histórico económico pertenece al centro y debe sobrevivir a la baja del cliente sin quedar ligado a
+> una ficha personal, que se elimina por privacidad.
+>
+> ### Estado
+> - **DECISIÓN: cerrada.** **IMPLEMENTADO LOCALMENTE: SÍ (sin commit). NO desplegado.**
+> - **SUPERSEDIDO:** backfill de movimientos antiguos, centinela 0 y anonimización. La base de datos Firebase
+>   se limpió para empezar con datos nuevos: no hay movimientos históricos reales que migrar; no existe
+>   backfill; no se usa centinela; no se anonimizan movimientos.
+> - **PENDIENTE:** documentación legal/Data Safety (no en esta tanda) y deploy de Functions si se autoriza.
+>
+> ### Diseño implementado (local, sin commit)
+> - Añadir a `MovimientoEntity`: `nombreCliente`, `apellidosCliente`, `dniCliente` (String, default `""`).
+> - Migración Room **20→21** (3 columnas TEXT NOT NULL DEFAULT ''), **sin backfill**: los movimientos
+>   existentes quedan con "".
+> - Captura en la creación (perfil del cliente) y en renovación (identidad actual); **inmutable al editar**.
+> - `MovimientoFirestore`/`HidratacionMapeadores`: publicar/leer los 3 campos (default "" para antiguos).
+> - `HidratadorCacheLocal`: **no descartar** movimientos sin ficha.
+> - `EconomiaScreen`/`EconomiaViewModel`: mostrar el nombre desde el propio movimiento (fallback a la
+>   ficha solo para antiguos); búsqueda por los campos históricos.
+> - `ExportManager`: permitir movimientos sin ficha; incluir los campos nuevos.
+> - `eliminarMiCuenta` (CLIENTE): eliminar la ficha completa (no mínima), `indices_clientes`, denuncias,
+>   `perfiles_pendientes`, y **no tocar** los movimientos. ADMIN: además, borrar `usuarios/{uid}/dispositivos`.
+> - Rules `movimientos` sin `hasOnly` → añadir campos no requiere cambio de Rules.
+>
+> ### Correcciones post-auditoría pre-deploy (2026-09-12)
+> - **CLIENTE sin ficha:** `perfiles_pendientes/{uid}` + denuncias (denunciante/denunciado) se eliminan
+>   **incondicionalmente** en la rama CLIENTE (`borrarRastroPersonalDelUsuario`). Antes se saltaban por el
+>   early return de `borrarCliente` con `clienteId == null`.
+> - **Room 20→21:** `@ColumnInfo(defaultValue = "")` en los 3 campos (coherente con la migración);
+>   esquemas exportados en `app/schemas`; test de migración Robolectric **1/1**.
+> - **I/O CLIENTE:** limpieza de ficheros en `Dispatchers.IO`.
+> - **Estado:** corregido y validado localmente; **NO desplegado, NO commit**.
+>
+> ### Fase 3 — Privacidad, términos y web (2026-09-12)
+> - **Decisión:** alinear la documentación legal y la web con el comportamiento técnico ya implementado:
+>   la cuenta/ficha operativa se elimina; el histórico económico del centro se conserva (con nombre,
+>   apellidos y DNI históricos del movimiento) durante el tiempo necesario para obligaciones legales,
+>   fiscales o contables o para reclamaciones; las denuncias asociadas se eliminan; se limpian los datos
+>   locales identificables.
+> - **Motivo:** evitar promesas falsas ("se eliminan todos tus datos") y reflejar Firebase Storage,
+>   denuncias y la conservación del histórico sin inventar plazos.
+> - **Implementado (local, sin commit):** `appCliente` `values/legal.xml` + `values-en/legal.xml` (ES/EN
+>   con paridad 25/25); ADMIN `PoliticaPrivacidadScreen.kt` + `TerminosDeUsoScreen.kt`; web
+>   `/privacidad`, `/terminos`, `/eliminar-cuenta`. Preparada la declaración de **Data Safety** en
+>   `CONTEXTO_PROYECTO.md`. **NO desplegado.**
+> - **No reabrir:** no afirmar plazos de conservación concretos ni "se eliminan todos los datos"; el
+>   histórico económico se conserva con identidad histórica.
+>
+> ### Deploy de `eliminarMiCuenta` y verificación real (2026-09-12)
+> - **Desplegada SOLO `eliminarMiCuenta`** (`--only functions:eliminarMiCuenta`), v2, europe-west1, nodejs20;
+>   el resto de Functions sin cambios. Sin commit.
+> - **Verificación en producción con 2 cuentas desechables:** se eliminaron Auth, `usuarios`,
+>   `perfiles_pendientes`, `clientes` (ficha), dispositivos, agenda, reservas, solicitudes, buzón,
+>   `clientes_privados`, `indices_clientes` y denuncias; **se conservó el movimiento** con su identidad
+>   histórica y todos los campos económicos; la foto de Storage se eliminó.
+> - **Decisión:** los movimientos NO se borran ni anonimizan al eliminar CLIENTE (histórico del centro).
+> - **Limpieza (2026-09-12):** el movimiento de prueba `777000001` fue eliminado tras verificar su
+>   `negocioId`; producción limpia de ese dato de prueba.
+> - **Web legal desplegada (2026-09-12):** `--only hosting`; `/privacidad`, `/terminos` y `/eliminar-cuenta`
+>   verificadas (HTTP 200) con el contenido nuevo (Storage, denuncias, histórico económico). Sin commit.
+> - **Auditoría Functions programadas/baja (2026-09-12):** `procesarProgramadas` y `bajaConfirmada` existen
+>   en local pero **no están desplegadas**. `procesarProgramadas` es **necesaria** (las notificaciones
+>   PROGRAMADAS del ADMIN se quedan sin enviar sin ella; decisión: desplegar para beta, frecuencia 2 min
+>   ajustable después). `bajaConfirmada` **no es necesaria** (la app ya crea BAJA_CONFIRMADA y
+>   `notificacionInmediata` la envía; decisión: no desplegar / retirar post-beta).
+> - **Notificaciones programadas — preparación (2026-09-12):** añadido el índice
+>   `notificaciones(estado ASC, fechaProgramada ASC)`; extraída la parte pura `plan_programadas.js` con
+>   tests (`functions/test/plan_programadas.test.js`). `procesarProgramadas` sigue **SIN desplegar**
+>   (pendiente índice + deploy + prueba real); `bajaConfirmada` **NO desplegar** (POST-BETA). Sin commit.
+> - **Deploy notificaciones programadas (2026-09-12):** índice `notificaciones(estado,fechaProgramada)`
+>   desplegado y **READY**; `procesarProgramadas` desplegada (v2, scheduled, europe-west1, nodejs20).
+>   Prueba real (cuenta desechable): PROGRAMADA → ENVIADA en ~3 min, buzón creado, sin duplicados y sin
+>   reenvío en el segundo ciclo; push pendiente de verificar en dispositivo real. `bajaConfirmada` **NO**
+>   desplegada. Sin commit.
+> - **Bug crash fecha PROGRAMADA (2026-09-12):** `CrearNotificacionScreen.formatoFechaProgramada` usaba
+>   `ofPattern("dd/MM/aaaa HH:mm")` → `IllegalArgumentException: Too many pattern letters: a`. Corregido a
+>   `dd/MM/yyyy HH:mm` + test de regresión `FormatoFechaProgramadaTest`. Corregido localmente; **NO desplegado**.
+> - **Auditoría final pre-Google Play (2026-09-12):** producción con Rules local==prod, 6 índices READY,
+>   7 Functions desplegadas (`bajaConfirmada` NO), Hosting legal HTTP 200; tests Functions 90/90 y Rules
+>   229/229; Android test+assemble OK; release firmado vía properties gitignored y sin secretos.
+>   **APTO PARA GENERAR AAB DEFINITIVOS.** Pendiente Play Console (Data Safety, App Access, ficha) y
+>   limpieza de temporales.
+> - **Limpieza de temporales (2026-09-12):** eliminados 25 archivos temporales/diagnóstico versionados
+>   (`build_*.txt`, `files.txt`, `structure.txt`, `app_kt_files.txt`, `firestore-tests/firestore-debug.log`).
+>   Sin cambios de funcionalidad. Tests verdes. **Sin commit.**
+> - **Auditoría profunda de limpieza (2026-09-12):** solo inventario; **no se eliminaron archivos**. Pendiente
+>   revisión de candidatos (composables/ViewModel sin consumidores, clúster legacy `ui/clases` + Room legacy,
+>   helpers de Functions solo testeados, 2 funciones de Rules sin uso, tests plantilla/obsoletos, strings sin
+>   uso, dependencias sin uso directo). `bajaConfirmada` sigue POST-BETA.
+> - **Limpieza segura de candidatos sin consumidores (2026-09-12):** eliminados composables/ViewModel/función
+>   (`ServicioItem`, `ResumenCard`, `MovimientoItem`, `GastoViewModel`, `AyudaContextual`,
+>   `InformacionLegalScreen`, `actualizarPeriodoActualRemoto`, composable `DialogoSeleccionarClientes`),
+>   tests obsoletos/plantilla, exports de Functions sin consumidor y 11 strings sin uso. Conservados Room
+>   legacy, `bajaConfirmada` (POST-BETA) y `firestore.rules`. Tests/build verdes. Sin commit.
+> - **AAB definitivos — regeneración final (2026-09-12):** incluyen el branding final (iconos T+A / T+c,
+>   adaptive + monochrome, PNG Play 512×512, wordmark en los Login, Homes sin descripciones). ADMIN
+>   `app-release.aab` (SHA-256 `08E8FC12…`, 19.431.333 B) y CLIENTE `appCliente-release.aab` (SHA-256
+>   `C107B7EC…`, 18.494.068 B). Firma release correcta (`jarsigner` "jar verified"), sin `debug.keystore`.
+>   **NO publicado** en Google Play. Sin deploy ni commit.
+> - **Release Candidate (2026-09-12):** commit "Release beta 1.0". Versiones ADMIN 1.0/versionCode 1 y
+>   CLIENTE 1.0/versionCode 1. AAB definitivos generados y verificados localmente. **NO publicados en
+>   Google Play.**
+> - **Branding/iconos (2026-09-12):** iconos launcher ADMIN **T+A** y CLIENTE **T+c** (fondo `#1E88E5`,
+>   adaptive + monochrome + PNG Play 512×512), validados visualmente; wordmark `trazys_logo` integrado en
+>   **Login ADMIN** y **Login CLIENTE**; logo/nombre del centro eliminados del Login CLIENTE y conservados
+>   en Home CLIENTE. Implementado localmente. **AAB pendiente de regenerar.**
+> - **Cards de las Home sin descripciones (2026-09-12):** decisión cerrada: "Los cards de las Home muestran
+>   únicamente icono + título". HOME ADMIN: `MenuCard` simplificada (icono + título, 140 dp, bloque centrado).
+>   HOME CLIENTE: componente privado `HomeClientMenuCard` (icono + título, 168→140 dp). Cabecera del Home
+>   CLIENTE (logo + nombre del centro) intacta. `MenuCard` de `:appCliente` (Cuenta) no modificada.
+>   Implementado localmente.
+> - **Pendiente:** regenerar AAB (iconos/wordmark); subir a Play Console; Data Safety/App Access/ficha.
+>
+> ### No reabrir
+> - No volver a proponer anonimizar movimientos ni borrarlos al eliminar CLIENTE (salvo nueva decisión).
+
+> ## 📝 REGISTRO DE DECISIONES 2026-09-12 (2) — AUDITORÍA PRE-PLAY + CORRECCIONES H1–H5
+>
+> ### Objetivo
+> Cerrar la beta y preparar la primera subida a Google Play, corrigiendo los hallazgos de seguridad de
+> Rules detectados en auditoría, sin reabrir funcionalidad ya validada.
+>
+> ### Decisiones y acciones (implementadas y DESPLEGADAS)
+> - **H1 (autocreación indebida de cliente):** se decidió que la VÍA 2 legítima debe nacer con
+>   `estado=REGISTRADO`, `serviciosContratados=[]` y fechas nulas; la activación y asignación de servicios
+>   son del ADMIN. Motivo: un CLIENTE podía autoproclamarse ACTIVO y asignarse servicios para reservar
+>   saltándose al ADMIN. Implementado en la Rule; **desplegado**. **No reabrir** (la VÍA 2 sigue existiendo).
+> - **H2 (enumeración de centros):** se decidió eliminar `list` de `negocios_publicos` y mantener solo
+>   `get` por documentId. Motivo: `codigoMaestro` es credencial y el flujo real no necesita listar.
+>   Implementado; **desplegado**. Se decidió NO tocar aún la exposición de `codigoMaestro` vía `get`.
+> - **H3 (spam de VINCULACION):** se decidió exigir el documentId determinista
+>   `vinculacion_{negocioId}_{clienteId}` que ya usa la app. Implementado; **desplegado**.
+> - **H4 (logo sin validar):** se decidió aplicar `esImagenValida()` (image/*, ≤10 MB) al write del logo,
+>   preservando delete. Implementado; **desplegado**.
+> - **H5 (solicitud fantasma):** se decidió exigir `idSolicitud == solicitudId`. Motivo: el ADMIN localiza
+>   por `idSolicitud`; un desajuste dejaba solicitudes irresolubles y permitía inconsistencias cruzadas.
+>   Implementado; **desplegado**.
+> - **H6 (acceso a servicios):** se decidió **NO** restringir a `servicioContratadoPorCliente` porque el
+>   Horario de Actividades necesita leer servicios activos **no contratados**; la auditoría era incorrecta
+>   en ese punto. **No reabrir** salvo nueva evidencia.
+>
+> ### Infraestructura de firma release (2026-09-12)
+> - **Decisión:** configurar la firma release con **dos keystores independientes** (uno por app), sin
+>   crear el keystore desde el repo ni guardar secretos. `:app` carga `keystore-admin.properties` y
+>   `:appCliente` carga `keystore-cliente.properties` (raíz, gitignored) con
+>   `storeFile`/`storePassword`/`keyAlias`/`keyPassword`, cargados por Gradle solo si existen.
+> - **Motivo:** aislar las claves de ADMIN y CLIENTE y permitir generar AAB firmados más adelante sin
+>   exponer credenciales y sin romper el desarrollo (si falta el `.properties`, release queda sin firmar
+>   y debug sigue funcionando).
+> - **Implementado:** `.gitignore` (exclusiones de `*.jks`/`*.keystore`/`*.p12`/`*.pepk`/`keystore.properties`/
+>   `keystore-admin.properties`/`keystore-cliente.properties`/`.env`) + `signingConfigs.release` por módulo.
+>   **Sin commit.**
+> - **Estado:** los dos keystores de upload **existen fuera del repositorio** (rutas, alias y contraseñas
+>   NO se registran aquí); los `.properties` **aún no existen** y **no se ha generado ningún AAB**.
+> - **No reabrir:** las credenciales, alias, rutas y keystores nunca se versionan.
+>
+> ### Pruebas realizadas
+> - Suite Rules **229/229**; `git diff --check` limpio; `compileReleaseKotlin` de ambos módulos OK.
+> - Verificación post-deploy: release activo y SHA-256 local == desplegado (Firestore y Storage).
+>
+> ### Deploy realizado
+> - **SÍ** (autorizado): Firestore Rules (ruleset `e26df359…`, `2026-09-12T09:49:34Z`) y Storage Rules
+>   (ruleset `5a690741…`, `2026-09-12T09:40:25Z`). Functions/índices/hosting NO se tocaron en esta tanda.
+>
+> ### Decisiones que NO deben volver a cuestionarse (salvo nueva evidencia)
+> - Morosidad por fecha depende SOLO de `fechaFinActual < ahora` (no de PAGADO/PENDIENTE ni `fechaPago`).
+> - Regla de combinación de actividades (`permiteCombinarDia`).
+> - Canales FCM separados (CLIENTE vs ADMIN).
+> - VÍA 2 de clientes legítima (ahora acotada por H1).
+> - Horario de actividades independiente de las sesiones y visible para servicios no contratados (H6).
+> - Nomenclatura técnica `negocioId`/`negocios`/`negocios_publicos` aunque la UI diga "Centro".
+>
+> ### Pendiente pre-Play (no reabrir aquí)
+> - Firma de release (`signingConfig`), `procesarProgramadas` (programadas), borrado de cuenta
+>   (`perfiles_pendientes`, `denuncias`, dispositivos ADMIN), textos legales/Data Safety, cuentas de
+>   prueba y metadatos de Play.
+
+> ## 🟢 CONTEXTO DE CONTINUIDAD 2026-09-12 (1) — CIERRE DE BETA — SUPERSEDIDO POR EL BLOQUE SUPERIOR
+>
+> **HEAD del desarrollador: `59834dd "Nueva funcionalidad horario"` (rama `master`, `origin/master` al
+> día; en ese momento working tree LIMPIO).** Este bloque SUPERSEDE a todos los inferiores. Proyecto en fase de
+> **cierre de BETA**: NO abrir funcionalidades nuevas salvo indicación expresa, NO refactors generales,
+> NO tocar lo ya verificado, NO commit/deploy sin autorización. Detalle completo en el CHECKPOINT
+> 2026-09-12 de `AGENTS.md`.
+>
+> - **Estado general:** reservas de clientes; combinación de actividades el mismo día; asistentes de
+>   sesiones; horario del centro y de actividades; excepciones/días especiales; notificaciones
+>   automáticas; FCM CLIENTE y ADMIN; morosidad por fecha y por deuda; solicitud de baja; baja
+>   aceptada; baja rechazada; eliminación de notificaciones del buzón CLIENTE; fecha de baja
+>   seleccionable; ordenación A-Z/Z-A; mejoras visuales de reservas/asistentes; organización de Home
+>   ADMIN/CLIENTE; reorganización Centro/Ajustes ADMIN; gran parte de la i18n.
+> - **Home CLIENTE — 6 cards en orden:** 1) Reservas, 2) Rutinas, 3) Horario del centro, 4) Actividades,
+>   5) Ajustes, 6) Notificaciones. "Actividades" antiguo → "Reservas" (internamente `Routes.CLASES`/
+>   `ClasesScreen`; NO renombrar). "Actividades" = solo horario habitual; "Rutinas" = placeholder.
+> - **Centro ADMIN:** cards "Centro" y "Rutinas"; "Centro" agrupa datos del centro + horario del centro
+>   + horario de actividades. NEGOCIO retirado de Ajustes. UI visible "Negocio"→"Centro" sin cambiar
+>   nomenclatura técnica. Pantallas en `ui/gestioncentro/`.
+> - **Horario:** `TramoHorario(apertura,cierre)` + `HorarioNegocio` + días especiales; varios tramos por
+>   día; "Aplicar a toda la semana"; días especiales con prioridad sobre el semanal; independiente de
+>   las sesiones. CLIENTE con dos pantallas separadas (Horario del centro / Actividades), selector
+>   horizontal y diseño visual. Rules desplegadas.
+> - **Reservas:** callables `reservar`/`cancelarReserva`; Rules sin escritura directa del CLIENTE sobre
+>   reservas/plazas/agenda; agenda por cliente/día para la combinación de actividades; switch
+>   "Permitir combinar..." en `EditarServicioScreen`; asistentes solo con nombres en
+>   `AsistentesSesionScreen`.
+> - **FCM:** dispositivos CLIENTE `clientes/{clienteId}/dispositivos/{token}` y ADMIN
+>   `usuarios/{uid}/dispositivos/{token}`; no mezclar canales; SOLICITUD_BAJA con push al ADMIN;
+>   BAJA_CONFIRMADA y SOLICITUD_RECHAZADA con notificación+push al CLIENTE; el CLIENTE solo elimina
+>   `notificaciones_por_destinatario`.
+> - **Morosidad (DEFINITIVA):** ACTIVO → MOROSO con deuda pendiente o `fechaFinActual < ahora`; BAJA →
+>   MOROSO solo con deuda; REACTIVACIÓN sin heredar la morosidad por fecha del período anterior
+>   (`MovimientoEntity.fechaRegistro` + migración Room 19→20; etapa `fechaRegistro >= fechaBaja`). La
+>   morosidad por fecha no depende de PAGADO/PENDIENTE ni `fechaPago`. Títulos sin "morosidad": ES
+>   "Pago vencido" / "Recordatorio de pago vencido"; EN "Payment overdue" / "Overdue payment reminder".
+>   `entradaMorosidad`/`recordatorioMorosidad` scheduled en `europe-west1` (barrido diario; idempotencia
+>   con reintento cuando aparece el dispositivo).
+> - **Baja:** fecha efectiva seleccionable (perfil y baja masiva; por defecto HOY; sin futuras) →
+>   `fechaBaja`; las reservas futuras se cancelan con el momento actual; BAJA_CONFIRMADA usa la fecha
+>   efectiva.
+> - **Clientes ADMIN:** ordenación A→Z/Z→A; sin filtro por letra ni tira A-Z.
+> - **Perfil económico:** motivo de morosidad ("Pago vencido"/"Pago pendiente"/ambos) desde
+>   `morosoPorFecha`/`morosoPorDeuda`, sin campo adicional.
+> - **i18n:** CLIENTE prácticamente cerrada (ES/EN sincronizados; legal en `values/legal.xml` y
+>   `values-en/legal.xml`). ADMIN NO terminado (Home + Centro + Rutinas); NO continuar sin instrucción.
+> - **Notificaciones automáticas (switches):** Morosidad, Recordatorio de morosidad, Baja confirmada,
+>   Baja rechazada y Cambio de horario; guardado de configuración corregido.
+> - **Functions desplegadas** (`europe-west1`): `cancelarReserva`, `eliminarMiCuenta`,
+>   `entradaMorosidad`, `notificacionInmediata`, `recordatorioMorosidad`, `reservar`.
+> - **Working tree LIMPIO en `59834dd` en ese momento. Estado actual: cambios SIN commit (H1–H5 + docs);
+>   ver bloque superior.** NO revertir/limpiar/resetear/commit. Pendiente inmediato:
+>   prueba manual de la última tanda (fecha de baja, baja masiva, A-Z/Z-A, eliminar + denunciar,
+>   morosidad tras reactivar, nuevo movimiento vencido tras reactivar, FCM ADMIN y CLIENTE) y revisión
+>   final de beta + commit final.
+
 > **🟢 ÚLTIMA ACTUALIZACIÓN (2026-09-10, FUNCIONALIDAD HORARIO + FIX PERMISOS + DEPLOY PENDIENTE):**
 > **HEAD del desarrollador: `75d0eb2 "otros"` (rama `master`).** Working tree con 25 cambios **SIN commit**
 > (**NO revertir**). Resumen de esta tanda (compila; tests OK; Rules **204/204**):

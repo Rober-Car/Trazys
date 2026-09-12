@@ -7,13 +7,15 @@ service firebase.storage {
     // Ruta definitiva: negocios/{negocioId}/logo.jpg
     //   - READ : cualquier usuario autenticado (ADMIN o CLIENTE).
     //   - WRITE: solamente el ADMIN propietario del negocio.
+    //   Solo imágenes (image/*) y máx. 10 MB cuando hay recurso nuevo.
     // =========================================================
 
     match /negocios/{negocioId}/logo.jpg {
       allow read: if request.auth != null;
 
       allow write: if request.auth != null
-        && esAdminDelNegocio(negocioId);
+        && esAdminDelNegocio(negocioId)
+        && (request.resource == null || esImagenValida());
     }
 
     // =========================================================

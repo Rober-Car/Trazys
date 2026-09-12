@@ -239,12 +239,15 @@ fun EconomiaScreen(
             filtrados.filter { item ->
                 when (item) {
                     is ItemEconomia.Ingreso -> {
-                        val nombreCliente = clientesMap[item.movimiento.idCliente].orEmpty().lowercase()
+                        val nombreCliente = item.movimiento.nombreHistorico()
+                            .ifBlank { clientesMap[item.movimiento.idCliente].orEmpty() }
+                            .lowercase()
                         val nombreServicios = item.movimiento.servicios
                             .mapNotNull { serviciosMap[it] }
                             .joinToString(" ")
                             .lowercase()
                         nombreCliente.contains(busqueda) ||
+                                item.movimiento.dniCliente.lowercase().contains(busqueda) ||
                                 nombreServicios.contains(busqueda) ||
                                 item.movimiento.servicios.joinToString(" ").contains(busqueda)
                     }
@@ -545,7 +548,8 @@ fun EconomiaScreen(
                     when (item) {
                         is ItemEconomia.Ingreso -> ItemMovimiento(
                             movimiento = item.movimiento,
-                            nombreCliente = clientesMap[item.movimiento.idCliente].orEmpty(),
+                            nombreCliente = item.movimiento.nombreHistorico()
+                                .ifBlank { clientesMap[item.movimiento.idCliente].orEmpty() },
                             nombreServicios = item.movimiento.servicios
                                 .mapNotNull { serviciosMap[it] }
                                 .joinToString(" + ")
@@ -1014,6 +1018,19 @@ fun FilterChipEconomia(
 /* ============================================================
  * ============ COMPONENTE: Fila de movimiento ==============
  * ============================================================ */
+/**
+ * nombreHistorico
+ * ---------------
+ * Nombre del cliente almacenado en el PROPIO movimiento (fotografía histórica).
+ * Es la fuente principal de Economía; la ficha `clientes/{id}` solo se usa como
+ * respaldo para movimientos antiguos sin identidad histórica.
+ */
+private fun MovimientoEntity.nombreHistorico(): String =
+    listOf(nombreCliente, apellidosCliente)
+        .filter { it.isNotBlank() }
+        .joinToString(" ")
+        .trim()
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ItemMovimiento(

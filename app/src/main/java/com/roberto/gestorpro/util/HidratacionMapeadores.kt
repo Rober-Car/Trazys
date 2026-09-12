@@ -128,6 +128,11 @@ object HidratacionMapeadores {
         return MovimientoEntity(
             idMovimiento = idMovimiento,
             idCliente = idCliente,
+            // Fotografía histórica: campo ausente/null → "" (compatibilidad con
+            // documentos anteriores a la versión con identidad histórica).
+            nombreCliente = comoString(datos["nombreCliente"]),
+            apellidosCliente = comoString(datos["apellidosCliente"]),
+            dniCliente = comoString(datos["dniCliente"]),
             servicios = comoListaDeEnteros(datos["servicios"]),
             fechaInicio = fechaInicio,
             fechaFin = fechaFin,
@@ -183,4 +188,7 @@ object HidratacionMapeadores {
 
     private fun comoListaDeEnteros(valor: Any?): List<Int> =
         (valor as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: emptyList()
+
+    /** Texto seguro: ausencia/null → "". */
+    private fun comoString(valor: Any?): String = valor as? String ?: ""
 }

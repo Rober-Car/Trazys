@@ -1,0 +1,677 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 20,
+    "identityHash": "29e7f935f4e4395a83991ecb99a74302",
+    "entities": [
+      {
+        "tableName": "cliente",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idCliente` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nombre` TEXT NOT NULL, `apellidos` TEXT NOT NULL, `dni` TEXT NOT NULL, `telefono` TEXT NOT NULL, `email` TEXT, `foto` TEXT NOT NULL, `fechaNacimiento` INTEGER, `fechaRegistro` INTEGER NOT NULL, `fechaAlta` INTEGER, `fechaBaja` INTEGER, `estado` TEXT NOT NULL, `observaciones` TEXT, `negocioId` TEXT, `serviciosContratados` TEXT NOT NULL, `firebaseUid` TEXT, `moroso` INTEGER NOT NULL, `fechaEntradaMorosidad` INTEGER, `exentoMorosidad` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idCliente",
+            "columnName": "idCliente",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "apellidos",
+            "columnName": "apellidos",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dni",
+            "columnName": "dni",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "foto",
+            "columnName": "foto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaNacimiento",
+            "columnName": "fechaNacimiento",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaAlta",
+            "columnName": "fechaAlta",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fechaBaja",
+            "columnName": "fechaBaja",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "serviciosContratados",
+            "columnName": "serviciosContratados",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firebaseUid",
+            "columnName": "firebaseUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "moroso",
+            "columnName": "moroso",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaEntradaMorosidad",
+            "columnName": "fechaEntradaMorosidad",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "exentoMorosidad",
+            "columnName": "exentoMorosidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idCliente"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cliente_dni",
+            "unique": true,
+            "columnNames": [
+              "dni"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cliente_dni` ON `${TABLE_NAME}` (`dni`)"
+          }
+        ]
+      },
+      {
+        "tableName": "movimiento",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idMovimiento` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `idCliente` INTEGER NOT NULL, `servicios` TEXT NOT NULL, `fechaInicio` INTEGER NOT NULL, `fechaFin` INTEGER NOT NULL, `precioFinal` REAL NOT NULL, `estado` TEXT NOT NULL, `fechaPago` INTEGER, `metodoPago` TEXT, `observaciones` TEXT, `fechaRegistro` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "idMovimiento",
+            "columnName": "idMovimiento",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idCliente",
+            "columnName": "idCliente",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "servicios",
+            "columnName": "servicios",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaInicio",
+            "columnName": "fechaInicio",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaFin",
+            "columnName": "fechaFin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precioFinal",
+            "columnName": "precioFinal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaPago",
+            "columnName": "fechaPago",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "metodoPago",
+            "columnName": "metodoPago",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idMovimiento"
+          ]
+        }
+      },
+      {
+        "tableName": "gasto",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idGasto` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `concepto` TEXT NOT NULL, `importe` REAL NOT NULL, `fecha` INTEGER NOT NULL, `observaciones` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "idGasto",
+            "columnName": "idGasto",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "concepto",
+            "columnName": "concepto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importe",
+            "columnName": "importe",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idGasto"
+          ]
+        }
+      },
+      {
+        "tableName": "clase",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idClase` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `negocioId` TEXT NOT NULL, `nombre` TEXT NOT NULL, `servicio` TEXT NOT NULL, `diasSemana` TEXT NOT NULL, `horaInicio` TEXT NOT NULL, `duracionMinutos` INTEGER NOT NULL, `capacidadMaxima` INTEGER NOT NULL, `horaAperturaReservas` TEXT NOT NULL, `fechaInicio` INTEGER NOT NULL, `fechaFin` INTEGER NOT NULL, `activa` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idClase",
+            "columnName": "idClase",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "servicio",
+            "columnName": "servicio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diasSemana",
+            "columnName": "diasSemana",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaInicio",
+            "columnName": "horaInicio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duracionMinutos",
+            "columnName": "duracionMinutos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacidadMaxima",
+            "columnName": "capacidadMaxima",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaAperturaReservas",
+            "columnName": "horaAperturaReservas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaInicio",
+            "columnName": "fechaInicio",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaFin",
+            "columnName": "fechaFin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activa",
+            "columnName": "activa",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idClase"
+          ]
+        }
+      },
+      {
+        "tableName": "sesion_clase",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idSesion` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `negocioId` TEXT NOT NULL, `idClase` INTEGER NOT NULL, `servicio` TEXT NOT NULL, `fecha` INTEGER NOT NULL, `plazasDisponibles` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idSesion",
+            "columnName": "idSesion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idClase",
+            "columnName": "idClase",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "servicio",
+            "columnName": "servicio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plazasDisponibles",
+            "columnName": "plazasDisponibles",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idSesion"
+          ]
+        }
+      },
+      {
+        "tableName": "reserva",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idReserva` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `negocioId` TEXT NOT NULL, `idSesion` INTEGER NOT NULL, `idCliente` INTEGER NOT NULL, `fechaReserva` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idReserva",
+            "columnName": "idReserva",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idSesion",
+            "columnName": "idSesion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idCliente",
+            "columnName": "idCliente",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaReserva",
+            "columnName": "fechaReserva",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idReserva"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_reserva_idSesion_idCliente",
+            "unique": true,
+            "columnNames": [
+              "idSesion",
+              "idCliente"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_reserva_idSesion_idCliente` ON `${TABLE_NAME}` (`idSesion`, `idCliente`)"
+          }
+        ]
+      },
+      {
+        "tableName": "solicitud",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idSolicitud` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `negocioId` TEXT NOT NULL, `idCliente` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `estado` TEXT NOT NULL, `detalle` TEXT NOT NULL, `fechaCreacion` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idSolicitud",
+            "columnName": "idSolicitud",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idCliente",
+            "columnName": "idCliente",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detalle",
+            "columnName": "detalle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCreacion",
+            "columnName": "fechaCreacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idSolicitud"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_solicitud_idCliente",
+            "unique": false,
+            "columnNames": [
+              "idCliente"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_solicitud_idCliente` ON `${TABLE_NAME}` (`idCliente`)"
+          }
+        ]
+      },
+      {
+        "tableName": "servicio",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idServicio` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `negocioId` TEXT NOT NULL, `nombre` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `activo` INTEGER NOT NULL, `precio` REAL NOT NULL, `permiteCombinarDia` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idServicio",
+            "columnName": "idServicio",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precio",
+            "columnName": "precio",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "permiteCombinarDia",
+            "columnName": "permiteCombinarDia",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idServicio"
+          ]
+        }
+      },
+      {
+        "tableName": "sesion",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idSesion` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `negocioId` TEXT NOT NULL, `idServicio` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, `hora` TEXT NOT NULL, `duracionMinutos` INTEGER NOT NULL, `capacidad` INTEGER NOT NULL, `plazasDisponibles` INTEGER NOT NULL, `horaDesdeReserva` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "idSesion",
+            "columnName": "idSesion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "negocioId",
+            "columnName": "negocioId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idServicio",
+            "columnName": "idServicio",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hora",
+            "columnName": "hora",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duracionMinutos",
+            "columnName": "duracionMinutos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "capacidad",
+            "columnName": "capacidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plazasDisponibles",
+            "columnName": "plazasDisponibles",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaDesdeReserva",
+            "columnName": "horaDesdeReserva",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "idSesion"
+          ]
+        }
+      },
+      {
+        "tableName": "eliminacion_pendiente",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idMovimiento` INTEGER NOT NULL, `idCliente` INTEGER NOT NULL, PRIMARY KEY(`idMovimiento`))",
+        "fields": [
+          {
+            "fieldPath": "idMovimiento",
+            "columnName": "idMovimiento",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idCliente",
+            "columnName": "idCliente",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idMovimiento"
+          ]
+        }
+      },
+      {
+        "tableName": "servicio_desactivacion_pendiente",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`idServicio` INTEGER NOT NULL, `desde` INTEGER NOT NULL, PRIMARY KEY(`idServicio`))",
+        "fields": [
+          {
+            "fieldPath": "idServicio",
+            "columnName": "idServicio",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "desde",
+            "columnName": "desde",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "idServicio"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '29e7f935f4e4395a83991ecb99a74302')"
+    ]
+  }
+}

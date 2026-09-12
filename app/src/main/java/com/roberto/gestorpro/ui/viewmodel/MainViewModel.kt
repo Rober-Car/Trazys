@@ -491,9 +491,10 @@ class MainViewModel @Inject constructor(
                     .getHttpsCallable("eliminarMiCuenta")
                     .call(null)
                     .esperar()
-                // signOut síncrono y limpieza de identidad en la misma corrutina.
+                // Solo tras el éxito remoto: limpieza local completa (Room,
+                // ficheros y DataStore) y cierre de sesión en la misma corrutina.
                 autenticacionRepository.cerrarSesion()
-                preferencesRepository.limpiarIdentidadNegocio()
+                preparadorLocalCuenta.limpiarTodoLocal()
                 _nombreNegocio.value = ""
                 _logoNegocio.value = ""
                 _idClienteSesion.value = null

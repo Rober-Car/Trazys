@@ -45,7 +45,6 @@
     <string name="auth_error_credenciales">Email o contraseña incorrectos</string>
     <string name="auth_error_cuenta_desactivada">Esta cuenta está desactivada</string>
     <string name="auth_error_usuario_sin_perfil">El usuario no tiene perfil en la base de datos</string>
-    <string name="auth_error_no_pertenece_a_app">Esta cuenta no pertenece a la app de clientes</string>
     <string name="auth_error_no_crear_cuenta">No se pudo crear la cuenta</string>
     <string name="auth_error_no_perfil_usuario">No se pudo crear el perfil del usuario: %1$s</string>
     <string name="auth_error_no_iniciar_sesion">No se pudo iniciar sesión</string>
@@ -59,7 +58,7 @@
     <!-- ===== Home (ADMIN) ===== -->
     <string name="home_panel_principal">Panel principal</string>
     <string name="home_accesos_rapidos">Accesos rápidos</string>
-    <string name="home_centro_desc">Identidad y horarios</string>
+    <string name="home_centro_desc">Datos y horarios</string>
     <string name="home_clientes_titulo">Clientes</string>
     <string name="home_clientes_desc">Gestión de clientes</string>
     <string name="home_actividades_titulo">Actividades</string>
@@ -68,7 +67,7 @@
     <string name="home_economia_desc">Balance y datos</string>
     <string name="home_ajustes_titulo">Ajustes</string>
     <string name="home_ajustes_desc">Configuración</string>
-    <string name="home_notificaciones_titulo">Notificaciones enviadas</string>
+    <string name="home_notificaciones_titulo">Notificaciones</string>
     <string name="home_notificaciones_desc">Envía avisos a tus clientes</string>
     <string name="home_solicitudes_titulo">Solicitudes de baja</string>
     <string name="home_solicitudes_desc">Solicitudes pendientes</string>

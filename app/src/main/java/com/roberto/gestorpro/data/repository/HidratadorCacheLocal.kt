@@ -230,13 +230,11 @@ class HidratadorCacheLocal @Inject constructor(
         if (remotos.isNotEmpty()) {
             withContext(Dispatchers.IO) {
                 database.withTransaction {
-                    val clienteDao = database.clienteDao()
                     val movimientoDao = database.movimientoDao()
                     for (movimiento in remotos) {
-                        // Solo movimientos de clientes existentes (defensa).
-                        if (clienteDao.obtenerClientePorIdDao(movimiento.idCliente) == null) {
-                            continue
-                        }
+                        // Los movimientos son histórico económico AUTÓNOMO del
+                        // centro: se conservan aunque su cliente ya no exista
+                        // (p. ej. cuenta eliminada). No se descartan huérfanos.
                         if (movimientoDao.obtenerMovimientoPorId(movimiento.idMovimiento) == null) {
                             movimientoDao.insertarMovimiento(movimiento)
                         }
@@ -263,6 +261,13 @@ class HidratadorCacheLocal @Inject constructor(
      */
     private suspend fun recalcularMorosidad(clientesAfectados: Set<Int>) {
         for (idCliente in clientesAfectados) {
+            // La morosidad es un dato del CLIENTE: solo se recalcula si la ficha
+            // existe. Un movimiento histórico sin ficha (cuenta eliminada) no
+            // debe provocar recálculo ni publicación de resumen.
+            val existe = withContext(Dispatchers.IO) {
+                database.clienteDao().obtenerClientePorIdDao(idCliente) != null
+            }
+            if (!existe) continue
             try {
                 movimientoRepository.recalcularMorosidadDeCliente(idCliente)
             } catch (e: Exception) {

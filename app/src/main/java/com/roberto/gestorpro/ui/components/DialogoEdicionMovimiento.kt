@@ -462,6 +462,11 @@ fun DialogoEdicionMovimiento(
                             val movimientoActualizado = MovimientoEntity(
                                 idMovimiento = movimiento.idMovimiento,
                                 idCliente = movimiento.idCliente,
+                                // Identidad histórica INMUTABLE: se conserva la
+                                // del movimiento original (no se edita aquí).
+                                nombreCliente = movimiento.nombreCliente,
+                                apellidosCliente = movimiento.apellidosCliente,
+                                dniCliente = movimiento.dniCliente,
                                 // Servicios: activos marcados + fijos históricos
                                 // (de baja/eliminados) que se conservan. Si el
                                 // movimiento histórico no tenía servicios, se

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Símbolo Trazys">
+  <defs>
+    <linearGradient id="trazysBlue" x1="8%" y1="6%" x2="94%" y2="96%">
+      <stop offset="0" stop-color="#2E9BF2"/>
+      <stop offset="1" stop-color="#0E6FD3"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#trazysBlue)" transform="translate(0,18)">
+    <rect x="71" y="100" width="370" height="68" rx="32" transform="rotate(-10 256 134)"/>
+    <path d="M180 150 H300 C312 200 292 332 180 412 Z"/>
+  </g>
+</svg>

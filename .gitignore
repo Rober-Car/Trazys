@@ -24,3 +24,13 @@ firestore-tests/auditoria_backfill_indices.cjs
 functions/node_modules/
 
 .idea/shelf/
+
+# Firma release: credenciales y keystores (NUNCA versionar)
+*.jks
+*.keystore
+*.p12
+*.pepk
+keystore.properties
+keystore-admin.properties
+keystore-cliente.properties
+.env

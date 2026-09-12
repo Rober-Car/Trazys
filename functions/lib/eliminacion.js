@@ -83,6 +83,20 @@ async function retirarAsistentesDeReservas(clienteId, negocioId) {
   }
 }
 
+/**
+ * Rastro personal del usuario que SIEMPRE se elimina al borrar su cuenta,
+ * exista o no ficha: `perfiles_pendientes/{uid}` y denuncias donde el uid es
+ * denunciante o denunciado. Se ejecuta de forma incondicional en la rama
+ * CLIENTE de `eliminarMiCuenta` (cubre también al CLIENTE sin ficha).
+ */
+async function borrarRastroPersonalDelUsuario(uid) {
+  const rastro = plan.operacionesRastroPersonal(uid);
+  await borrarDoc(rastro.perfilPendiente);
+  for (const d of rastro.denuncias) {
+    await borrarPorIgualdad(d.coleccion, d.campo, d.valor);
+  }
+}
+
 async function borrarStorage(rutas) {
   const bucket = getStorage().bucket();
   for (const ruta of rutas) {
@@ -103,6 +117,7 @@ async function borrarCliente(uid, clienteId, negocioId) {
 
   const refFicha = db().doc(`${plan.CLIENTES}/${clienteId}`);
   const ficha = await refFicha.get();
+  let dni = null;
   if (ficha.exists) {
     const datos = ficha.data();
     if (!plan.fichaPerteneceAlUsuario(datos, uid)) {
@@ -111,17 +126,10 @@ async function borrarCliente(uid, clienteId, negocioId) {
         "La ficha no pertenece a este usuario"
       );
     }
-    // Conservar el histórico mínimo y DESVINCULAR la cuenta:
-    // idCliente, negocioId, nombre, apellidos, dni, firebaseUid=null, foto="".
-    await refFicha.set({
-      idCliente: clienteId,
-      negocioId: negocioId,
-      nombre: datos.nombre || "",
-      apellidos: datos.apellidos || "",
-      dni: datos.dni || "",
-      firebaseUid: null,
-      foto: "",
-    });
+    dni = datos.dni ? String(datos.dni).toUpperCase() : null;
+    // La ficha personal se ELIMINA por completo (ya no se conserva una ficha
+    // mínima). El histórico económico vive en los movimientos, que no se tocan.
+    await refFicha.delete();
   }
 
   // Ámbito personal / actividad que ya no corresponde a la cuenta.
@@ -136,8 +144,13 @@ async function borrarCliente(uid, clienteId, negocioId) {
   await borrarPorIgualdad(plan.SOLICITUDES, "idCliente", clienteId);
   await borrarPorIgualdad(plan.NOTIFICACIONES_BUZON, "clienteId", clienteId);
   await borrarDoc(`${plan.CLIENTES_PRIVADOS}/${clienteId}`);
+  // Índice negocio+DNI: se elimina con la ficha (ya no se conserva).
+  if (dni && typeof negocioId === "string" && negocioId.length > 0) {
+    await borrarDoc(plan.rutaIndice(negocioId, dni));
+  }
   await borrarStorage(plan.rutasStorageCliente(clienteId));
-  // MOVIMIENTOS: no se tocan. ÍNDICE: se conserva (permite VÍA 1 futura).
+  // MOVIMIENTOS: NO se tocan. Son histórico económico autónomo del centro y
+  // conservan la identidad histórica (nombre/apellidos/DNI) del movimiento.
 }
 
 /** Fase ADMIN: borra el negocio completo y sus fotos/logo. */
@@ -180,6 +193,9 @@ async function borrarNegocio(uid, negocioId) {
     await borrarPorIgualdad(coleccion, "negocioId", negocioId);
   }
 
+  // Dispositivos FCM del propio ADMIN (subcolección de usuarios/{uid}).
+  await borrarSubcoleccion(plan.rutaDispositivos(plan.USUARIOS, negocioId));
+
   // Documentos fijos del negocio + usuarios/{uid} + codigo.
   for (const ruta of plan.rutasFijasAdmin(negocioId, codigo)) {
     await borrarDoc(ruta);
@@ -218,9 +234,11 @@ async function eliminarMiCuenta(request) {
         objetivo.clienteId,
         objetivo.negocioId
       );
+      // Incondicional: cubre también al CLIENTE sin ficha (clienteId == null).
+      await borrarRastroPersonalDelUsuario(uid);
     } else {
       // Sin documento de usuario (o rol desconocido): limpiar residuo posible.
-      await borrarDoc(`${plan.PERFILES_PENDIENTES}/${uid}`);
+      await borrarRastroPersonalDelUsuario(uid);
     }
 
     // usuarios/{uid} se borra al final, justo antes de Auth.

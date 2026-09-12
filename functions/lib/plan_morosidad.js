@@ -51,7 +51,6 @@ function configRecordatorioActivo(config) {
 }
 
 module.exports = {
-  ESTADO_ACTIVO,
   debeNotificarMorosidadPorFecha,
   configMorosidadActiva,
   configRecordatorioActivo,
