@@ -614,7 +614,10 @@ fun PerfilClienteScreen(
         observacionesMovimiento = ""
         fechaInicioMovimiento = null
         fechaFinMovimiento = null
-        movimientoPagado = false
+        // Un movimiento NUEVO comienza marcado como PAGADO por defecto; el ADMIN
+        // puede desactivarlo si el cliente no ha pagado. Al guardar, la fecha de
+        // pago se resuelve como HOY (misma lógica de MovimientoPago).
+        movimientoPagado = true
         fechaPagoMovimiento = null
         metodoPagoMovimientoNombre = null
         errorServicioMovimiento = false

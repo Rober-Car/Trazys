@@ -3,20 +3,19 @@ package com.roberto.gestorpro.util
 /**
  * RetiradaNotificacionReglas
  * ---------------------------
- * Regla pura de la moderación UGC (FASE 2C-3): ¿una notificación del ADMIN
- * puede RETIRARSE desde la gestión de notificaciones?
+ * Regla pura de ELIMINACIÓN de notificaciones desde la gestión de
+ * notificaciones del ADMIN.
  *
- * La retirada elimina `notificaciones/{id}` y sus buzones derivados en
- * `notificaciones_por_destinatario`. Para no interferir con el resto del
- * sistema, SOLO es retirable una notificación MANUAL que ya está publicada o
- * en proceso de entrega:
+ * La eliminación borra `notificaciones/{id}` y sus buzones derivados en
+ * `notificaciones_por_destinatario`. Puede aplicarse tanto a notificaciones
+ * MANUALES como AUTOMÁTICAS/PRECONFIGURADAS (BAJA_CONFIRMADA, MOROSIDAD,
+ * recordatorio de morosidad, SOLICITUD_BAJA, VINCULACION...) que ya estén
+ * publicadas o en proceso de entrega:
  *
- *  - origen MANUAL (nunca AUTOMATICA/PRECONFIGURADA: BAJA_CONFIRMADA,
- *    SOLICITUD_BAJA, VINCULACION...);
  *  - estado PENDIENTE (inmediata ya con buzones, pendiente del push de la
  *    Cloud Function) o ENVIADA (ya entregada).
  *
- * Las programadas aún no ejecutadas (estado PROGRAMADA) NO se retiran con
+ * Las programadas aún no ejecutadas (estado PROGRAMADA) NO se eliminan con
  * esta acción: se cancelan con la cancelación de programación existente.
  * ERROR/CANCELADA tampoco: nunca llegaron a estar disponibles.
  */
@@ -28,12 +27,10 @@ object RetiradaNotificacionReglas {
     /**
      * esRetirable
      * -----------
-     * ¿La notificación puede retirarse desde la moderación del ADMIN?
-     * El origen ausente se trata como MANUAL (igual que el resto de la app);
-     * el estado ausente no se considera publicado y por tanto no es retirable.
+     * ¿La notificación puede eliminarse desde la gestión de notificaciones?
+     * Depende SOLO de que esté publicada o en entrega (PENDIENTE/ENVIADA), con
+     * independencia de su origen (manual, automática o preconfigurada).
      */
-    fun esRetirable(origen: String?, estado: String?): Boolean {
-        val esManual = GateUgcNotificaciones.esPublicacionManual(origen)
-        return esManual && (estado == ESTADO_PENDIENTE || estado == ESTADO_ENVIADA)
-    }
+    fun esRetirable(estado: String?): Boolean =
+        estado == ESTADO_PENDIENTE || estado == ESTADO_ENVIADA
 }

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -38,6 +39,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -52,6 +56,7 @@ import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.data.repository.PreferencesRepository
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.ui.components.AppNavigationBackButton
+import com.roberto.gestorpro.cliente.ui.components.DialogoDenuncia
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 
 /**
@@ -68,6 +73,11 @@ fun ConfiguracionScreen(
 ) {
     val themeMode by mainViewModel.themeMode.collectAsStateWithLifecycle()
     val idioma by mainViewModel.idioma.collectAsStateWithLifecycle()
+    val idCliente by mainViewModel.idCliente.collectAsStateWithLifecycle()
+
+    // Diálogo de denuncia (contenido del centro / usuario ADMIN). Reutiliza el
+    // mismo diálogo y repositorio que el acceso contextual del Home.
+    var mostrarDenuncia by remember { mutableStateOf(false) }
 
     // Textos localizados del bloque de configuración.
     val textoAjustes = stringResource(R.string.config_titulo)
@@ -94,6 +104,18 @@ fun ConfiguracionScreen(
     val textoTerminosCondiciones = stringResource(R.string.config_terminos_condiciones)
     val textoEliminarMiCuenta = stringResource(R.string.eliminar_titulo)
     val textoEliminarDesc = stringResource(R.string.config_eliminar_cuenta_descripcion)
+    val textoDenunciar = stringResource(R.string.config_denunciar)
+    val textoDenunciarTitulo = stringResource(R.string.home_denunciar_titulo)
+
+    if (mostrarDenuncia) {
+        DialogoDenuncia(
+            titulo = textoDenunciarTitulo,
+            onDismiss = { mostrarDenuncia = false },
+            onEnviar = { motivo, descripcion ->
+                mainViewModel.denunciarLogoNegocio(motivo, descripcion)
+            }
+        )
+    }
 
     Scaffold { innerPadding ->
         Column(
@@ -312,6 +334,18 @@ fun ConfiguracionScreen(
                     label = textoTerminosCondiciones,
                     onClick = { navController.navigate(Routes.TERMINOS_CONDICIONES) }
                 )
+                // Acceso claro al sistema de denuncias (contenido del centro).
+                // Solo para clientes vinculados (sin vínculo no hay centro que
+                // denunciar). El acceso contextual se mantiene en Home y en el
+                // buzón de notificaciones.
+                if (idCliente != null) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    AjusteInformacionOption(
+                        icon = Icons.Filled.Flag,
+                        label = textoDenunciar,
+                        onClick = { mostrarDenuncia = true }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))

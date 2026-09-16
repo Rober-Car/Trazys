@@ -199,7 +199,7 @@
     <string name="home_card_notificaciones_descripcion">Your alerts</string>
 
     <!-- ===== Schedule (centre and activities) ===== -->
-    <string name="home_card_horario">Center schedule</string>
+    <string name="home_card_horario">Schedules</string>
     <string name="home_card_horario_descripcion">Opening hours</string>
     <string name="home_card_horario_actividades">Activities</string>
     <string name="home_card_horario_actividades_descripcion">Activity schedule</string>
@@ -224,8 +224,10 @@
     <string name="horario_dia_corto_sab">Sat</string>
     <string name="horario_dia_corto_dom">Sun</string>
     <string name="home_estado_pago_vencido">Payment overdue</string>
+    <string name="home_activo_hasta_fecha">Active until %1$s</string>
     <string name="home_prefijo_hasta">Until</string>
     <string name="home_prefijo_vencio">Ended on</string>
+    <string name="home_pago_vencido_fecha">Payment overdue on %1$s</string>
     <string name="home_prefijo_desde">Since</string>
     <string name="home_aviso_renovacion_contacto">To renew, contact your center.</string>
     <string name="home_aviso_solicitar_baja">Request cancellation here</string>
@@ -266,6 +268,7 @@
     <string name="config_idioma_es">Español</string>
     <string name="config_idioma_en">English</string>
     <string name="config_terminos_condiciones">Terms and conditions</string>
+    <string name="config_denunciar">Report content or user</string>
     <string name="config_eliminar_cuenta_descripcion">Permanently delete your account and your data</string>
 
     <!-- ===== Delete account ===== -->

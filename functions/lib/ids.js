@@ -44,6 +44,17 @@ function idNotificacionRecordatorioMorosidad(clienteId, periodo24h) {
 }
 
 /**
+ * idNotificacionApertura
+ * ----------------------
+ * ID determinista de la notificación de apertura de reservas: un documento por
+ * CLIENTE y OLEADA (bucket de 5 min). Reprocesar el mismo bucket no duplica el
+ * envío (mismo ID).
+ */
+function idNotificacionApertura(clienteId, bucketStart) {
+  return `apertura_${clienteId}_${bucketStart}`;
+}
+
+/**
  * idBuzon
  * -------
  * DocumentId determinista del buzón de un cliente:
@@ -67,6 +78,7 @@ module.exports = {
   idNotificacionBaja,
   idNotificacionMorosidad,
   idNotificacionRecordatorioMorosidad,
+  idNotificacionApertura,
   idBuzon,
   periodoDe24h,
 };

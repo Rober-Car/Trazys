@@ -22,8 +22,19 @@ const {
   idNotificacionBaja,
   idNotificacionMorosidad,
   idNotificacionRecordatorioMorosidad,
+  idNotificacionApertura,
   periodoDe24h,
 } = require("./ids");
+const {
+  TITULO_ES: TITULO_APERTURA_ES,
+  TITULO_EN: TITULO_APERTURA_EN,
+  cubosCerrados,
+  agruparAperturasPorNegocioYCubo,
+  puedeRecibirApertura,
+  serviciosDelClienteEnElBucket,
+  nombresOrdenados,
+  construirMensajeApertura,
+} = require("./plan_aperturas");
 
 /**
  * procesadores.js
@@ -38,6 +49,17 @@ const {
 
 const HORAS_RECORDATORIO = 24;
 const MILIS_HORA = 3600000;
+
+/** Tipo/origen de las notificaciones de apertura de reservas. */
+const TIPO_APERTURA_RESERVAS = "APERTURA_RESERVAS";
+const SUBTIPO_APERTURA = "APERTURA";
+
+/**
+ * Ventana de `fecha` (medianoche local de la sesión) que se consulta en el
+ * barrido de aperturas. La apertura siempre cae en el mismo día local de la
+ * sesión, por lo que las oleadas recientes están dentro de este margen.
+ */
+const VENTANA_FECHA_APERTURAS_MS = 26 * MILIS_HORA;
 
 /**
  * reclamarTransicion
@@ -359,6 +381,146 @@ async function procesarProgramadas() {
       logger.error("Error procesando programada", { notificacionId, error: e.message });
     }
   }
+
+  // El MISMO barrido de 2 minutos procesa también las APERTURAS de reservas
+  // (oleadas de 5 min ya cerradas). Aislado en try/catch para no afectar a las
+  // notificaciones programadas si fallara.
+  try {
+    await procesarAperturasReservas();
+  } catch (e) {
+    logger.error("Error en el barrido de aperturas de reservas", { error: e.message });
+  }
+}
+
+/**
+ * leerNombresServicios
+ * --------------------
+ * Resuelve { idServicio: nombre } para los servicios indicados (servicios/{id}).
+ */
+async function leerNombresServicios(idsServicio) {
+  const nombres = {};
+  for (const id of idsServicio) {
+    const snap = await db().collection("servicios").doc(String(id)).get();
+    if (snap.exists) {
+      const nombre = snap.data().nombre;
+      if (typeof nombre === "string" && nombre.length > 0) nombres[id] = nombre;
+    }
+  }
+  return nombres;
+}
+
+/**
+ * clientesConServicios
+ * --------------------
+ * Clientes que tienen contratado ALGUNO de los servicios indicados, consultando
+ * una sola vez por servicio con `array-contains` (campo indexado por defecto; no
+ * requiere índice compuesto). Deduplica por documentId. El filtro por negocio,
+ * estado ACTIVO y vinculación se aplica después, en memoria.
+ */
+async function clientesConServicios(idsServicio) {
+  const porId = new Map();
+  for (const id of idsServicio) {
+    const snap = await db()
+      .collection("clientes")
+      .where("serviciosContratados", "array-contains", Number(id))
+      .get();
+    for (const doc of snap.docs) {
+      if (!porId.has(doc.id)) porId.set(doc.id, doc.data());
+    }
+  }
+  return porId;
+}
+
+/**
+ * procesarAperturasReservas
+ * -------------------------
+ * Notifica a los clientes cuando se ABREN las reservas de sus actividades.
+ *
+ *  - Apertura = `fecha + horaDesdeReserva` (criterio del sistema). Las sesiones
+ *    sin `horaDesdeReserva` NO generan aviso.
+ *  - Agrupación: buckets de 5 min; se procesan SOLO los buckets CERRADOS
+ *    (`cubosCerrados`). Varias actividades del mismo bucket -> UNA notificación
+ *    por cliente.
+ *  - Destinatarios: clientes del negocio, estado ACTIVO, vinculados y con al
+ *    menos un servicio abierto contratado. Se calculan en el momento de procesar.
+ *  - Mensaje personalizado con los nombres de los servicios del cliente.
+ *  - Idempotencia: ID determinista `idNotificacionApertura(clienteId, bucket)` +
+ *    `crearYEnviarAutomatica` (crear/continuar/omitir + claim + buzón).
+ */
+async function procesarAperturasReservas() {
+  const ahora = Date.now();
+  const cubos = cubosCerrados(ahora);
+  if (cubos.length === 0) return;
+
+  const sesionesSnap = await db()
+    .collection("sesiones")
+    .where("fecha", ">=", ahora - VENTANA_FECHA_APERTURAS_MS)
+    .where("fecha", "<=", ahora)
+    .get();
+  const sesiones = sesionesSnap.docs.map((d) => d.data());
+
+  const grupos = agruparAperturasPorNegocioYCubo(sesiones, cubos);
+
+  let bucketsProcesados = 0;
+  let notificacionesIntentadas = 0;
+
+  for (const negocioId of Object.keys(grupos)) {
+    const porBucket = grupos[negocioId];
+    for (const bucketKey of Object.keys(porBucket)) {
+      const serviciosAbiertos = porBucket[bucketKey];
+      if (!serviciosAbiertos || serviciosAbiertos.length === 0) continue;
+      const bucketStart = Number(bucketKey);
+      try {
+        bucketsProcesados += 1;
+        const nombresPorId = await leerNombresServicios(serviciosAbiertos);
+        const clientes = await clientesConServicios(serviciosAbiertos);
+
+        for (const [documentoId, cliente] of clientes) {
+          if (cliente.negocioId !== negocioId) continue;
+          if (!puedeRecibirApertura(cliente)) continue;
+
+          const idsDelCliente = serviciosDelClienteEnElBucket(
+            cliente.serviciosContratados,
+            serviciosAbiertos
+          );
+          if (idsDelCliente.length === 0) continue;
+
+          const nombres = nombresOrdenados(idsDelCliente, nombresPorId);
+          if (nombres.length === 0) continue;
+
+          const clienteId = Number(cliente.idCliente ?? documentoId);
+          if (!Number.isInteger(clienteId)) continue;
+
+          notificacionesIntentadas += 1;
+          await crearYEnviarAutomatica({
+            notificacionId: idNotificacionApertura(clienteId, bucketStart),
+            negocioId,
+            clienteId,
+            titulo: TITULO_APERTURA_ES,
+            mensaje: construirMensajeApertura(nombres, "es"),
+            tipo: TIPO_APERTURA_RESERVAS,
+            origen: "PRECONFIGURADA",
+            tituloEn: TITULO_APERTURA_EN,
+            mensajeEn: construirMensajeApertura(nombres, "en"),
+            subtipo: SUBTIPO_APERTURA,
+          });
+        }
+      } catch (e) {
+        logger.error("Error procesando aperturas de reservas", {
+          negocioId,
+          bucketStart,
+          error: e.message,
+        });
+      }
+    }
+  }
+
+  logger.info("Barrido de aperturas de reservas", {
+    sesiones: sesiones.length,
+    cubos,
+    bucketsProcesados,
+    notificacionesIntentadas,
+  });
 }
 
 /**
@@ -527,4 +689,5 @@ module.exports = {
   procesarRecordatorioMorosidad,
   procesarEntradaMorosidad,
   procesarBajaConfirmada,
+  procesarAperturasReservas,
 };

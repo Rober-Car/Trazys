@@ -19,20 +19,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EventNote
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Icon
@@ -40,13 +35,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,7 +61,6 @@ import com.roberto.gestorpro.cliente.R
 import com.roberto.gestorpro.cliente.navigation.Routes
 import com.roberto.gestorpro.cliente.model.EstadoIndicadorCliente
 import com.roberto.gestorpro.cliente.ui.components.AppPrimaryButton
-import com.roberto.gestorpro.cliente.ui.components.DialogoDenuncia
 import com.roberto.gestorpro.cliente.ui.components.LogoNegocioAutenticado
 import com.roberto.gestorpro.cliente.ui.viewmodel.MainViewModel
 import com.roberto.gestorpro.cliente.ui.viewmodel.NotificacionesClienteViewModel
@@ -88,16 +82,10 @@ fun HomeScreen(
     val noLeidas = notificaciones.count { !it.leida }
     val vinculado = idCliente != null
 
-    var menuCentroAbierto by remember { mutableStateOf(false) }
-    var mostrarDenunciaLogo by remember { mutableStateOf(false) }
-
     // Textos localizados del bloque Home.
-    val textoDenunciarTitulo = stringResource(R.string.home_denunciar_titulo)
     val textoLogoCentro = stringResource(R.string.auth_logo_desc)
     val textoNombrePorDefecto = stringResource(R.string.auth_login_subtitulo_centro)
     val textoNombreApp = stringResource(R.string.app_name)
-    val textoMasOpciones = stringResource(R.string.home_mas_opciones_centro)
-    val textoDenunciarCentro = stringResource(R.string.home_denunciar_centro)
     val textoNoVinculado = stringResource(R.string.home_no_vinculado_titulo)
     val textoNoVinculadoDesc = stringResource(R.string.home_no_vinculado_descripcion)
     val textoVincularCentro = stringResource(R.string.home_vincular_centro)
@@ -109,16 +97,6 @@ fun HomeScreen(
     val textoCardNotificaciones = stringResource(R.string.home_card_notificaciones)
     val textoAvisoRenovacion = stringResource(R.string.home_aviso_renovacion_contacto)
     val textoAvisoSolicitarBaja = stringResource(R.string.home_aviso_solicitar_baja)
-
-    if (mostrarDenunciaLogo) {
-        DialogoDenuncia(
-            titulo = textoDenunciarTitulo,
-            onDismiss = { mostrarDenunciaLogo = false },
-            onEnviar = { motivo, descripcion ->
-                mainViewModel.denunciarLogoNegocio(motivo, descripcion)
-            }
-        )
-    }
 
     LifecycleResumeEffect(idCliente) {
         if (idCliente != null) {
@@ -136,12 +114,15 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                // El inset inferior se conserva; el superior pasa al interior
+                // del encabezado azul para que llegue hasta el borde superior.
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .background(Color(0xFF1E88E5))
+                    .padding(top = innerPadding.calculateTopPadding())
                     .padding(horizontal = 20.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -155,7 +136,7 @@ fun HomeScreen(
                                 LogoNegocioAutenticado(
                                     url = logoNegocio,
                                     contentDescription = textoLogoCentro,
-                                    tamano = 48.dp
+                                    tamano = 54.dp
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                             } else {
@@ -164,7 +145,7 @@ fun HomeScreen(
                                     contentDescription = textoLogoCentro,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
-                                        .size(48.dp)
+                                        .size(54.dp)
                                         .clip(CircleShape)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -175,39 +156,18 @@ fun HomeScreen(
                             text = nombreNegocio.ifBlank { textoNombrePorDefecto },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-
-                        Box {
-                            IconButton(onClick = { menuCentroAbierto = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = textoMasOpciones,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = menuCentroAbierto,
-                                onDismissRequest = { menuCentroAbierto = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(textoDenunciarCentro) },
-                                    onClick = {
-                                        menuCentroAbierto = false
-                                        mostrarDenunciaLogo = true
-                                    }
-                                )
-                            }
-                        }
                     }
                 } else {
                     Text(
                         text = textoNombreApp,
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
@@ -265,23 +225,6 @@ fun HomeScreen(
                 null -> null
             }
 
-            if (vinculado && estadoVisual != null) {
-                HomeClientEstadoIndicator(
-                    estado = estadoVisual,
-                    // Solo se muestra "Hasta/Venció/Desde" cuando existe una fecha
-                    // real. Si no hay período (fechaFinActual nula) no se inventa
-                    // texto "Fecha no disponible": se muestra únicamente el estado.
-                    fecha = estadoHome.fechaRelevante?.let(::formatearFecha),
-                    // El aviso de renovación y el enlace de baja solo se pintan
-                    // dentro del indicador cuando el estado es PAGO_VENCIDO.
-                    textoRenovacion = textoAvisoRenovacion,
-                    textoEnlaceBaja = textoAvisoSolicitarBaja,
-                    onSolicitarBaja = { navController.navigate(Routes.CUENTA) },
-                    modifier = Modifier.padding(horizontal = 20.dp)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
@@ -295,32 +238,28 @@ fun HomeScreen(
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardActividades,
-                        icono = Icons.Default.FitnessCenter,
-                        color = Color(0xFFFB8C00),
+                        imagenFondo = R.drawable.img_reservas2,
                         onClick = { navController.navigate(Routes.CLASES) }
                     )
                 }
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardRutinas,
-                        icono = Icons.Default.FitnessCenter,
-                        color = Color(0xFF26A69A),
+                        imagenFondo = R.drawable.img_rutinas,
                         onClick = { navController.navigate(Routes.RUTINAS) }
                     )
                 }
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardHorario,
-                        icono = Icons.Default.Schedule,
-                        color = Color(0xFF1E88E5),
+                        imagenFondo = R.drawable.img_horario,
                         onClick = { navController.navigate(Routes.HORARIO_CENTRO) }
                     )
                 }
                 item {
                     HomeClientMenuCard(
                         titulo = textoCardActividadesHorario,
-                        icono = Icons.Default.EventNote,
-                        color = Color(0xFF1E88E5),
+                        imagenFondo = R.drawable.img_actividades,
                         onClick = { navController.navigate(Routes.HORARIO_ACTIVIDADES) }
                     )
                 }
@@ -328,7 +267,7 @@ fun HomeScreen(
                     HomeClientMenuCard(
                         titulo = textoCardAjustes,
                         icono = Icons.Default.Settings,
-                        color = Color(0xFF78909C),
+                        color = Color(0xFF1E88E5),
                         onClick = { navController.navigate(Routes.CONFIGURACION) }
                     )
                 }
@@ -336,10 +275,29 @@ fun HomeScreen(
                     HomeClientMenuCard(
                         titulo = textoCardNotificaciones,
                         icono = Icons.Default.Notifications,
-                        color = Color(0xFF7E57C2),
+                        color = Color(0xFF1E88E5),
                         badge = noLeidas,
                         onClick = { navController.navigate(Routes.NOTIFICACIONES) }
                     )
+                }
+                // Estado del cliente al FINAL del Home (información secundaria),
+                // sin tarjeta: solo círculo + texto. Ocupa el ancho completo.
+                if (vinculado && estadoVisual != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        HomeClientEstadoIndicator(
+                            estado = estadoVisual,
+                            // Solo se muestra la fecha cuando existe un período
+                            // real; si no lo hay, no se inventa un texto.
+                            fecha = estadoHome.fechaRelevante?.let(::formatearFecha),
+                            // Aviso de renovación y enlace de baja (PAGO_VENCIDO).
+                            textoRenovacion = textoAvisoRenovacion,
+                            textoEnlaceBaja = textoAvisoSolicitarBaja,
+                            onSolicitarBaja = { navController.navigate(Routes.CUENTA) },
+                            // El grid ya aporta 16 dp arriba (spacedBy) y 12 dp
+                            // abajo (contentPadding); se iguala a ~20 dp ambos.
+                            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                        )
+                    }
                 }
             }
         }
@@ -360,55 +318,105 @@ fun HomeScreen(
 @Composable
 private fun HomeClientMenuCard(
     titulo: String,
-    icono: ImageVector,
+    icono: ImageVector? = null,
     color: Color = Color(0xFF1E88E5),
     badge: Int? = null,
+    @DrawableRes imagenFondo: Int? = null,
     onClick: () -> Unit
 ) {
+    // Con imagen: la fotografía ocupa toda la tarjeta, sin icono ni color de
+    // fondo sólido, con el título en blanco sobre un degradado inferior. Sin
+    // imagen: tarjeta compacta horizontal (icono a la izquierda, título a la
+    // derecha).
+    val conImagen = imagenFondo != null
     Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp),
+            .height(if (conImagen) 180.dp else 56.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.12f)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (conImagen) Color.Transparent else color
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = if (conImagen) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = color,
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icono,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+            if (conImagen) {
+                Image(
+                    painter = painterResource(id = imagenFondo),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                // Overlay/degradado oscuro en la parte inferior para asegurar
+                // la legibilidad del título sin alterar la imagen original.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(84.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.70f)
+                                )
+                            )
                         )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
+                )
                 Text(
                     text = titulo,
                     style = MaterialTheme.typography.titleMedium,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Color.White,
                     lineHeight = 22.sp,
                     maxLines = 2,
-                    minLines = 2
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 )
+            } else {
+                // Tarjeta compacta horizontal: icono a la izquierda, título a la
+                // derecha, ambos centrados verticalmente.
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White.copy(alpha = 0.22f),
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            if (icono != null) {
+                                Icon(
+                                    imageVector = icono,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Text(
+                        text = titulo,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
             if (badge != null && badge > 0) {
                 HomeMenuBadge(
@@ -462,11 +470,10 @@ private enum class EstadoVisualCliente {
 /**
  * HomeClientEstadoIndicator
  * -------------------------
- * Bloque visual, neutro y discreto, que muestra el estado del cliente en el
- * Home: una bola de color a la izquierda y el texto de estado (con protagonismo)
- * junto a la fecha (secundaria). El fondo es neutro; solo la bola y el título
- * adoptan el color semántico. El color y el texto dependen del ESTADO (enum),
- * nunca del texto traducido.
+ * Indicador visual del estado del cliente en el Home: sin tarjeta ni fondo,
+ * solo una pequeña bola de color a la izquierda y el texto de estado junto a la
+ * fecha (secundaria). La bola y el texto adoptan el color semántico del estado.
+ * El color y el texto dependen del ESTADO (enum), nunca del texto traducido.
  *
  * Cuando el estado es PAGO_VENCIDO, dentro del propio indicador se añade el
  * aviso de renovación (texto no clicable) y el enlace independiente para
@@ -497,43 +504,51 @@ private fun HomeClientEstadoIndicator(
     val titulo = stringResource(tituloRecurso)
     val prefijo = prefijoRecurso?.let { stringResource(it) }
 
-    Surface(
+    // Sin tarjeta ni fondo: solo el círculo indicador y el texto del estado,
+    // ambos con el color semántico del estado.
+    Row(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = color.copy(alpha = 0.08f),
-        border = BorderStroke(
-            1.dp,
-            if (estado == EstadoVisualCliente.PAGO_VENCIDO) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            }
-        )
+        verticalAlignment = Alignment.Top
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .background(color, CircleShape)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = color
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (prefijo != null && fecha != null) {
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .size(12.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Column {
+                if (estado == EstadoVisualCliente.ACTIVO && fecha != null) {
+                    // "Activo hasta el [fecha]" en una sola línea, todo en verde.
                     Text(
-                        text = "$prefijo $fecha",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = stringResource(R.string.home_activo_hasta_fecha, fecha),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = color
                     )
+                } else if (estado == EstadoVisualCliente.PAGO_VENCIDO && fecha != null) {
+                    // "Pago vencido el [fecha]" en una sola línea (misma fecha).
+                    Text(
+                        text = stringResource(R.string.home_pago_vencido_fecha, fecha),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = color
+                    )
+                } else {
+                    Text(
+                        text = titulo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = color
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    if (prefijo != null && fecha != null) {
+                        Text(
+                            text = "$prefijo $fecha",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 if (
@@ -559,7 +574,6 @@ private fun HomeClientEstadoIndicator(
                 }
             }
         }
-    }
 }
 
 private fun formatearFecha(millis: Long): String = Instant.ofEpochMilli(millis)

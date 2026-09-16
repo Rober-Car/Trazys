@@ -1,7 +1,6 @@
 package com.roberto.gestorpro
 
 import com.roberto.gestorpro.data.firebase.NotificacionRemotoRepository
-import com.roberto.gestorpro.util.GateUgcNotificaciones
 import com.roberto.gestorpro.util.RetiradaNotificacionReglas
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,129 +10,49 @@ import org.junit.Test
 /**
  * RetiradaNotificacionReglasTest
  * ------------------------------
- * Tests de la regla pura de retirada de notificaciones MANUALES (FASE 2C-3).
- *
- * Cubre: solo manuales ya publicadas (PENDIENTE/ENVIADA) son retirables; las
- * automáticas/preconfiguradas nunca; las programadas aún no ejecutadas se
- * gestionan con la cancelación existente; y el id determinista de buzón.
+ * Tests de la regla pura de ELIMINACIÓN de notificaciones: eliminables si están
+ * publicadas o en entrega (PENDIENTE/ENVIADA), con independencia del origen
+ * (manual, automática o preconfigurada). Las programadas sin publicar y los
+ * estados no disponibles no se eliminan. Incluye el id determinista de buzón.
  */
 class RetiradaNotificacionReglasTest {
 
-    // --- Manuales ya publicadas / en entrega: retirables ---
+    // --- Publicadas / en entrega: eliminables (cualquier origen) ---
 
     @Test
-    fun `manual inmediata pendiente - retirable`() {
-        assertTrue(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_MANUAL,
-                "PENDIENTE"
-            )
-        )
+    fun `pendiente - eliminable`() {
+        // Cubre también las automáticas/preconfiguradas (BAJA_CONFIRMADA,
+        // MOROSIDAD...) cuando están en proceso de entrega.
+        assertTrue(RetiradaNotificacionReglas.esRetirable("PENDIENTE"))
     }
 
     @Test
-    fun `manual enviada - retirable`() {
-        assertTrue(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_MANUAL,
-                "ENVIADA"
-            )
-        )
+    fun `enviada - eliminable`() {
+        assertTrue(RetiradaNotificacionReglas.esRetirable("ENVIADA"))
+    }
+
+    // --- Programadas aún no ejecutadas: NO se eliminan (usan cancelación) ---
+
+    @Test
+    fun `programada sin publicar - no eliminable`() {
+        assertFalse(RetiradaNotificacionReglas.esRetirable("PROGRAMADA"))
+    }
+
+    // --- Otros estados no publicados: no eliminables ---
+
+    @Test
+    fun `cancelada - no eliminable`() {
+        assertFalse(RetiradaNotificacionReglas.esRetirable("CANCELADA"))
     }
 
     @Test
-    fun `origen ausente se trata como manual pendiente - retirable`() {
-        assertTrue(RetiradaNotificacionReglas.esRetirable(null, "PENDIENTE"))
-    }
-
-    // --- Automáticas / preconfiguradas: nunca retirables ---
-
-    @Test
-    fun `automatica pendiente - bloqueada`() {
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_AUTOMATICA,
-                "PENDIENTE"
-            )
-        )
+    fun `error sin destinatarios - no eliminable`() {
+        assertFalse(RetiradaNotificacionReglas.esRetirable("ERROR"))
     }
 
     @Test
-    fun `automatica enviada - bloqueada`() {
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_AUTOMATICA,
-                "ENVIADA"
-            )
-        )
-    }
-
-    @Test
-    fun `preconfigurada enviada (baja confirmada) - bloqueada`() {
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_PRECONFIGURADA,
-                "ENVIADA"
-            )
-        )
-    }
-
-    @Test
-    fun `notificaciones automaticas no retirables - tipos protegidos`() {
-        // La retirada se decide por ORIGEN, no por tipo: una SOLICITUD_BAJA o
-        // BAJA_CONFIRMADA con origen automático/preconfigurado nunca es retirable.
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_AUTOMATICA,
-                "ENVIADA"
-            )
-        )
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_PRECONFIGURADA,
-                "PENDIENTE"
-            )
-        )
-    }
-
-    // --- Programadas aún no ejecutadas: NO se tocan ---
-
-    @Test
-    fun `manual programada sin publicar - no retirable (usa cancelacion)`() {
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_MANUAL,
-                "PROGRAMADA"
-            )
-        )
-    }
-
-    // --- Otros estados no publicados: no retirables ---
-
-    @Test
-    fun `manual cancelada - no retirable`() {
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_MANUAL,
-                "CANCELADA"
-            )
-        )
-    }
-
-    @Test
-    fun `manual en error sin destinatarios - no retirable`() {
-        assertFalse(
-            RetiradaNotificacionReglas.esRetirable(
-                GateUgcNotificaciones.ORIGEN_MANUAL,
-                "ERROR"
-            )
-        )
-    }
-
-    @Test
-    fun `estado ausente - no retirable`() {
-        assertFalse(RetiradaNotificacionReglas.esRetirable(GateUgcNotificaciones.ORIGEN_MANUAL, null))
-        assertFalse(RetiradaNotificacionReglas.esRetirable(null, null))
+    fun `estado ausente - no eliminable`() {
+        assertFalse(RetiradaNotificacionReglas.esRetirable(null))
     }
 
     // --- Id determinista de buzón ---

@@ -1,5 +1,6 @@
 package com.roberto.gestorpro.ui.notificaciones
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,20 +9,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,11 +38,14 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,9 +66,12 @@ import com.roberto.gestorpro.ui.components.AppNavigationBackButton
 import com.roberto.gestorpro.ui.components.AppSecondaryButton
 import com.roberto.gestorpro.ui.components.AppSemanticButton
 import com.roberto.gestorpro.ui.viewmodel.NotificacionesViewModel
+import com.roberto.gestorpro.util.FiltroNotificaciones
+import com.roberto.gestorpro.util.FiltroTipoNotificacion
 import com.roberto.gestorpro.util.RetiradaNotificacionReglas
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /**
@@ -85,6 +99,34 @@ fun GestionNotificacionesScreen(
 
     var notificacionACancelar by remember { mutableStateOf<NotificacionAdmin?>(null) }
     var notificacionARetirar by remember { mutableStateOf<NotificacionAdmin?>(null) }
+
+    // Filtros de la lista (tipo + rango de fechas), COMBINABLES. Se aplican en
+    // memoria sobre la lista ya cargada (que llega ordenada de reciente a
+    // antigua). No cambian la consulta ni añaden índices.
+    var filtroTipoNombre by rememberSaveable {
+        mutableStateOf(FiltroTipoNotificacion.TODOS.name)
+    }
+    val filtroTipo = FiltroTipoNotificacion.valueOf(filtroTipoNombre)
+    var fechaDesdeUtc by rememberSaveable { mutableStateOf<Long?>(null) }
+    var fechaHastaUtc by rememberSaveable { mutableStateOf<Long?>(null) }
+    var mostrarDatePickerDesde by rememberSaveable { mutableStateOf(false) }
+    var mostrarDatePickerHasta by rememberSaveable { mutableStateOf(false) }
+
+    val desdeInclusive = fechaDesdeUtc?.let(::inicioDiaLocal)
+    val hastaInclusive = fechaHastaUtc?.let(::finDiaLocal)
+    val notificacionesFiltradas = remember(
+        notificaciones,
+        filtroTipo,
+        desdeInclusive,
+        hastaInclusive
+    ) {
+        FiltroNotificaciones.filtrar(
+            notificaciones = notificaciones,
+            filtro = filtroTipo,
+            desdeInclusive = desdeInclusive,
+            hastaInclusive = hastaInclusive
+        )
+    }
 
     LaunchedEffect(Unit) {
         viewModel.cargarNotificaciones()
@@ -174,6 +216,19 @@ fun GestionNotificacionesScreen(
                 }
             }
 
+            FiltroNotificacionesBar(
+                filtroTipo = filtroTipo,
+                onFiltroTipo = { filtroTipoNombre = it.name },
+                fechaDesdeUtc = fechaDesdeUtc,
+                fechaHastaUtc = fechaHastaUtc,
+                onAbrirDesde = { mostrarDatePickerDesde = true },
+                onAbrirHasta = { mostrarDatePickerHasta = true },
+                onLimpiarFechas = {
+                    fechaDesdeUtc = null
+                    fechaHastaUtc = null
+                }
+            )
+
             when {
                 cargando && notificaciones.isEmpty() -> {
                     Box(
@@ -184,7 +239,7 @@ fun GestionNotificacionesScreen(
                     }
                 }
 
-                notificaciones.isEmpty() -> {
+                notificacionesFiltradas.isEmpty() -> {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -192,26 +247,35 @@ fun GestionNotificacionesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color.Gray.copy(alpha = 0.5f)
-                        )
-                        Spacer(modifier = Modifier.size(16.dp))
-                        Text(
-                            text = "No hay notificaciones enviadas.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text(
-                            text = "Pulsa + para crear la primera notificación",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
-                        )
+                        if (notificaciones.isEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = Color.Gray.copy(alpha = 0.5f)
+                            )
+                            Spacer(modifier = Modifier.size(16.dp))
+                            Text(
+                                text = "No hay notificaciones enviadas.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text(
+                                text = "Pulsa + para crear la primera notificación",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center
+                            )
+                        } else {
+                            Text(
+                                text = "No hay notificaciones que coincidan con los filtros.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
 
@@ -220,7 +284,7 @@ fun GestionNotificacionesScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         contentPadding = PaddingValues(16.dp)
                     ) {
-                        items(notificaciones, key = { it.id }) { notificacion ->
+                        items(notificacionesFiltradas, key = { it.id }) { notificacion ->
                             NotificacionAdminCard(
                                 notificacion = notificacion,
                                 lectura = lecturaPorNotificacion[notificacion.id],
@@ -270,17 +334,17 @@ fun GestionNotificacionesScreen(
     notificacionARetirar?.let { notificacion ->
         AlertDialog(
             onDismissRequest = { notificacionARetirar = null },
-            title = { Text("Retirar notificación") },
+            title = { Text("Eliminar notificación") },
             text = {
                 Text(
-                    "¿Retirar esta notificación?\n\n" +
+                    "¿Eliminar esta notificación?\n\n" +
                         "Dejará de estar disponible para los destinatarios y " +
                         "la acción es permanente."
                 )
             },
             confirmButton = {
                 AppDialogDangerConfirmButton(
-                    text = "Retirar",
+                    text = "Eliminar",
                     onClick = {
                         viewModel.retirarNotificacion(notificacion.id)
                         notificacionARetirar = null
@@ -295,6 +359,42 @@ fun GestionNotificacionesScreen(
             }
         )
     }
+
+    if (mostrarDatePickerDesde) {
+        val estado = rememberDatePickerState(initialSelectedDateMillis = fechaDesdeUtc)
+        DatePickerDialog(
+            onDismissRequest = { mostrarDatePickerDesde = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        fechaDesdeUtc = estado.selectedDateMillis
+                        mostrarDatePickerDesde = false
+                    }
+                ) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDatePickerDesde = false }) { Text("Cancelar") }
+            }
+        ) { DatePicker(state = estado) }
+    }
+
+    if (mostrarDatePickerHasta) {
+        val estado = rememberDatePickerState(initialSelectedDateMillis = fechaHastaUtc)
+        DatePickerDialog(
+            onDismissRequest = { mostrarDatePickerHasta = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        fechaHastaUtc = estado.selectedDateMillis
+                        mostrarDatePickerHasta = false
+                    }
+                ) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDatePickerHasta = false }) { Text("Cancelar") }
+            }
+        ) { DatePicker(state = estado) }
+    }
 }
 
 /**
@@ -305,9 +405,9 @@ fun GestionNotificacionesScreen(
  *
  * Acciones:
  *  - "Cancelar": solo PROGRAMADA activas (aún no enviadas).
- *  - "Retirar": solo notificaciones MANUALES ya publicadas/en entrega
- *    (moderación UGC). Nunca automáticas/preconfiguradas ni programadas
- *    aún no enviadas.
+ *  - "Eliminar": notificaciones ya publicadas/en entrega (PENDIENTE/ENVIADA),
+ *    tanto manuales como automáticas/preconfiguradas. Nunca programadas aún
+ *    no enviadas.
  */
 @Composable
 private fun NotificacionAdminCard(
@@ -407,11 +507,7 @@ private fun NotificacionAdminCard(
                         onClick = onCancelar
                     )
                 }
-            } else if (RetiradaNotificacionReglas.esRetirable(
-                    notificacion.origen,
-                    notificacion.estado
-                )
-            ) {
+            } else if (RetiradaNotificacionReglas.esRetirable(notificacion.estado)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -426,7 +522,7 @@ private fun NotificacionAdminCard(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     AppSemanticButton(
-                        text = "Retirar",
+                        text = "Eliminar",
                         color = Color.Red,
                         onClick = onRetirar
                     )
@@ -489,3 +585,138 @@ private fun formatoFecha(millis: Long): String {
         .atZone(ZoneId.systemDefault())
         .format(formatter)
 }
+
+/**
+ * FiltroNotificacionesBar
+ * -----------------------
+ * Barra compacta de filtros de la lista: chips de tipo (Todos / Individuales /
+ * Grupales / Automáticas) y dos selectores de fecha (Desde / Hasta). Los filtros
+ * se combinan entre sí.
+ */
+@Composable
+private fun FiltroNotificacionesBar(
+    filtroTipo: FiltroTipoNotificacion,
+    onFiltroTipo: (FiltroTipoNotificacion) -> Unit,
+    fechaDesdeUtc: Long?,
+    fechaHastaUtc: Long?,
+    onAbrirDesde: () -> Unit,
+    onAbrirHasta: () -> Unit,
+    onLimpiarFechas: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FiltroTipoNotificacion.entries.forEach { opcion ->
+                FilterChip(
+                    selected = filtroTipo == opcion,
+                    onClick = { onFiltroTipo(opcion) },
+                    label = {
+                        Text(
+                            text = etiquetaFiltroTipo(opcion),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF1E88E5),
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FechaFiltroChip(
+                etiqueta = "Desde",
+                fechaUtc = fechaDesdeUtc,
+                onClick = onAbrirDesde
+            )
+            FechaFiltroChip(
+                etiqueta = "Hasta",
+                fechaUtc = fechaHastaUtc,
+                onClick = onAbrirHasta
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            if (fechaDesdeUtc != null || fechaHastaUtc != null) {
+                TextButton(onClick = onLimpiarFechas) {
+                    Text("Limpiar fechas", style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FechaFiltroChip(
+    etiqueta: String,
+    fechaUtc: Long?,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = fechaUtc != null,
+        onClick = onClick,
+        label = {
+            Text(
+                text = fechaUtc?.let(::formatearSoloFecha) ?: etiqueta,
+                style = MaterialTheme.typography.labelMedium
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.DateRange,
+                contentDescription = etiqueta,
+                modifier = Modifier.size(16.dp)
+            )
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = Color(0xFF1E88E5),
+            selectedLabelColor = Color.White
+        )
+    )
+}
+
+private fun etiquetaFiltroTipo(opcion: FiltroTipoNotificacion): String = when (opcion) {
+    FiltroTipoNotificacion.TODOS -> "Todos"
+    FiltroTipoNotificacion.INDIVIDUALES -> "Individuales"
+    FiltroTipoNotificacion.GRUPALES -> "Grupales"
+    FiltroTipoNotificacion.AUTOMATICAS -> "Automáticas"
+}
+
+/** Formatea la fecha (UTC de la medianoche del DatePicker) como dd/MM/yyyy. */
+private fun formatearSoloFecha(utcMillis: Long): String =
+    Instant.ofEpochMilli(utcMillis)
+        .atZone(ZoneOffset.UTC)
+        .toLocalDate()
+        .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+
+/** Inicio del día local (milisegundos) del día elegido en el DatePicker. */
+private fun inicioDiaLocal(utcMillis: Long): Long =
+    Instant.ofEpochMilli(utcMillis)
+        .atZone(ZoneOffset.UTC)
+        .toLocalDate()
+        .atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+
+/** Fin del día local (23:59:59.999) del día elegido en el DatePicker. */
+private fun finDiaLocal(utcMillis: Long): Long =
+    Instant.ofEpochMilli(utcMillis)
+        .atZone(ZoneOffset.UTC)
+        .toLocalDate()
+        .plusDays(1)
+        .atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli() - 1

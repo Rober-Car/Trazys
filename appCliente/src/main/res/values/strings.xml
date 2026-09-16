@@ -224,8 +224,10 @@
     <string name="horario_dia_corto_sab">Sáb</string>
     <string name="horario_dia_corto_dom">Dom</string>
     <string name="home_estado_pago_vencido">Pago vencido</string>
+    <string name="home_activo_hasta_fecha">Activo hasta el %1$s</string>
     <string name="home_prefijo_hasta">Hasta el</string>
     <string name="home_prefijo_vencio">Venció el</string>
+    <string name="home_pago_vencido_fecha">Pago vencido el %1$s</string>
     <string name="home_prefijo_desde">Desde el</string>
     <string name="home_aviso_renovacion_contacto">Para renovar, contacta con tu centro.</string>
     <string name="home_aviso_solicitar_baja">Solicitar la baja aquí</string>
@@ -266,6 +268,7 @@
     <string name="config_idioma_es">Español</string>
     <string name="config_idioma_en">English</string>
     <string name="config_terminos_condiciones">Términos y condiciones</string>
+    <string name="config_denunciar">Denunciar contenido o usuario</string>
     <string name="config_eliminar_cuenta_descripcion">Borra permanentemente tu cuenta y tus datos</string>
 
     <!-- ===== Eliminar cuenta ===== -->

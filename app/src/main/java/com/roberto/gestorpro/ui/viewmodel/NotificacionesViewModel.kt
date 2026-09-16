@@ -426,6 +426,13 @@ class NotificacionesViewModel @Inject constructor(
                 val resultado =
                     notificacionRemotoRepository.retirarNotificacionManual(notificacionId)
                 if (resultado.exito) {
+                    // Refleja el borrado en la lista de inmediato: la tarjeta
+                    // desaparece en cuanto se confirma la eliminación, sin
+                    // esperar a la recarga (que depende del snackbar).
+                    _notificaciones.value =
+                        _notificaciones.value.filterNot { it.id == notificacionId }
+                    _lecturaPorNotificacion.value =
+                        _lecturaPorNotificacion.value - notificacionId
                     _mensajeExito.value = resultado.mensaje
                 } else {
                     _errorSincronizacion.value = resultado.mensaje

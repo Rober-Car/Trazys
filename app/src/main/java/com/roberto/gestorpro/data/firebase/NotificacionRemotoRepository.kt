@@ -540,20 +540,22 @@ class NotificacionRemotoRepository @Inject constructor(
     /**
      * retirarNotificacionManual
      * -------------------------
-     * Moderación UGC (FASE 2C-3): retira una notificación MANUAL ya publicada
-     * (o en entrega). Elimina el registro `notificaciones/{id}` y los buzones
-     * derivados `notificaciones_por_destinatario/{clienteId}_{notificacionId}`
-     * que se crearon para los clientes de `idsClientes`.
+     * Elimina una notificación ya publicada (o en entrega) de la gestión del
+     * ADMIN: borra ÚNICAMENTE el documento principal `notificaciones/{id}`.
      *
-     * Solo actúa sobre notificaciones manuales ya publicadas (origen MANUAL y
-     * estado PENDIENTE/ENVIADA, ver [RetiradaNotificacionReglas]). Las
-     * automáticas/preconfiguradas nunca se retiran con esta acción y las
-     * programadas aún no enviadas siguen gestionándose con la cancelación
-     * existente. Es idempotente: si el registro ya no existe devuelve éxito y
-     * si algún buzón ya no existe su borrado es un no-op.
+     * Los buzones `notificaciones_por_destinatario/{...}` son la copia del
+     * CLIENTE y NO se tocan: el cliente conserva la notificación en su bandeja
+     * hasta que él mismo decida eliminarla. Así el borrado de ADMIN no afecta a
+     * la bandeja de ningún cliente (ni provoca PERMISSION_DENIED).
+     *
+     * Aplica tanto a notificaciones MANUALES como AUTOMÁTICAS/PRECONFIGURADAS
+     * (BAJA_CONFIRMADA, MOROSIDAD...) ya publicadas (estado PENDIENTE/ENVIADA,
+     * ver [RetiradaNotificacionReglas]). Las programadas aún no enviadas siguen
+     * gestionándose con la cancelación existente. Es idempotente: si el
+     * registro ya no existe devuelve éxito.
      *
      * No borra las denuncias asociadas: una denuncia puede seguir existiendo
-     * aunque la notificación denunciada haya sido retirada (el ADMIN la
+     * aunque la notificación denunciada haya sido eliminada (el ADMIN la
      * revisa y la marca como revisada).
      */
     suspend fun retirarNotificacionManual(notificacionId: String): ResultadoAutenticacion {
@@ -566,50 +568,25 @@ class NotificacionRemotoRepository @Inject constructor(
                 // Idempotente: el registro ya no existe, no hay nada que retirar.
                 return ResultadoAutenticacion(true, "La notificación ya no existe")
             }
-            val origen = documento.getString("origen")
             val estado = documento.getString("estado")
-            if (!RetiradaNotificacionReglas.esRetirable(origen, estado)) {
+            if (!RetiradaNotificacionReglas.esRetirable(estado)) {
                 return ResultadoAutenticacion(
                     false,
-                    "Solo se pueden retirar notificaciones manuales ya enviadas"
+                    "Solo se pueden eliminar notificaciones enviadas o pendientes"
                 )
             }
-            val idsClientes = (documento.get("idsClientes") as? List<*>)
-                ?.mapNotNull { enteroDe(it) }
-                ?.distinct()
-                ?: emptyList()
+            // Se elimina ÚNICAMENTE el documento principal. Los buzones
+            // (notificaciones_por_destinatario) son la copia del CLIENTE y NO se
+            // tocan: el cliente conserva la notificación hasta que él mismo la
+            // elimine. No se borra ningún buzón (ni existente ni inexistente),
+            // por lo que tampoco puede producirse el PERMISSION_DENIED anterior.
+            db.collection(COLECCION_NOTIFICACIONES)
+                .document(notificacionId)
+                .delete()
+                .esperar()
 
-            // Elimina el registro principal junto con el primer lote de
-            // buzones (<= 499) y el resto en lotes siguientes, respetando el
-            // límite de 500 escrituras por WriteBatch. Borrar buzones
-            // inexistentes es un no-op (idempotente).
-            val lotes = idsClientes.chunked(MAX_ESCRITURAS_POR_BATCH - 1)
-            if (lotes.isEmpty()) {
-                db.collection(COLECCION_NOTIFICACIONES)
-                    .document(notificacionId)
-                    .delete()
-                    .esperar()
-            } else {
-                lotes.forEachIndexed { indice, lote ->
-                    val batch = db.batch()
-                    if (indice == 0) {
-                        batch.delete(
-                            db.collection(COLECCION_NOTIFICACIONES)
-                                .document(notificacionId)
-                        )
-                    }
-                    lote.forEach { clienteId ->
-                        batch.delete(
-                            db.collection(COLECCION_BUZON)
-                                .document(idDeBuzon(clienteId, notificacionId))
-                        )
-                    }
-                    batch.commit().esperar()
-                }
-            }
-
-            Log.i(TAG, "Notificación manual retirada: $notificacionId")
-            ResultadoAutenticacion(true, "Notificación retirada")
+            Log.i(TAG, "Notificación eliminada: $notificacionId")
+            ResultadoAutenticacion(true, "Notificación eliminada")
         } catch (e: FirebaseFirestoreException) {
             Log.e(TAG, "Error retirando notificación $notificacionId código=${e.code}", e)
             ResultadoAutenticacion(false, mensajeDe(e))
