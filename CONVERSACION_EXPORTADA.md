@@ -1,5 +1,89 @@
 # Conversación GestorPro - Análisis Firestore Rules Límite 1000 Expresiones
 
+> ## 📝 REGISTRO DE DECISIONES 2026-09-18 — CIERRE BETA 1.0 (FIRMA + AAB + FUNCIONES) — VIGENTE
+>
+> **Sesión de cierre de la Beta 1.0.** Este bloque es el **vigente** y resume las decisiones y el estado
+> al 2026-09-18. **SUPERSEDE** los bloques inferiores en lo relativo a commit, despliegues y AAB. El
+> detalle de estado está en `CONTEXTO_PROYECTO.md`; las reglas de trabajo, en `AGENTS.md`.
+>
+> ### 1. Repositorio — tanda commiteada y subida
+> - HEAD **`508a431 "beta antes de subida a paly store"` = `origin/master`** (al día), árbol **limpio**.
+> - La tanda `d683a13 → 7a32912 → 508a431` incluye toda la funcionalidad de esta conversación. **Ya no
+>   queda nada sin commitear** (los antiguos `untracked`: `FiltroNotificaciones.kt` +
+>   `FiltroNotificacionesTest.kt` + `plan_aperturas.js` + `plan_aperturas.test.js` + el log del emulador,
+>   todos commiteados).
+>
+> ### 2. Firma RELEASE — decisión y estado
+> - **Decisión:** firmar la beta con los keystores de subida facilitados por el propietario, por el
+>   mecanismo existente de **propiedades en la raíz** (sin tocar la lógica de firma de los `build.gradle.kts`).
+> - `keystore-admin.properties` (→ `:app`, alias `gestorpro-admin`) y `keystore-cliente.properties`
+>   (→ `:appCliente`, alias `gestorpro-cliente`), en la raíz y **gitignored**; `storeFile` con `../`
+>   porque se resuelve relativo al módulo.
+> - **`signingReport`: BUILD SUCCESSFUL** en ambas apps.
+> - **Hallazgo:** los ficheros `.jks` son **PKCS#12** (cabecera DER `30 82…`, no `FEEDFEED`). No se fija
+>   `storeType` → Gradle/AGP usa el tipo por defecto del JDK (PKCS12). Si algún entorno fallase, la
+>   solución mínima sería `storeType=pkcs12`.
+> - **Decisión:** **NO** se versionan keystores, contraseñas ni rutas; **NO** se modificó `.gitignore`
+>   (ya cubría `*.jks`, `*.keystore`, `*.p12`, `*.pepk` y las `.properties`).
+>
+> ### 3. AAB generados (NO publicados)
+> - `:app:bundleRelease` y `:appCliente:bundleRelease` → **BUILD SUCCESSFUL**; ambos **firmados**
+>   (`jarsigner -verify` → `jar verified.`).
+> - ADMIN: `app/build/outputs/bundle/release/app-release.aab`, 20.412.673 B, SHA-256
+>   `02E612BE6B4C8B3A8DDA4C0CB3C8F4A6AE72887FD7D98997B5E245FD1B575A17`, cert `CN=Trazys Admin`.
+> - CLIENTE: `appCliente/build/outputs/bundle/release/appCliente-release.aab`, 19.324.321 B, SHA-256
+>   `2CE39198897B44652EEC5A9AAA7ECA12E1DA8F24B972D378D10463570246CAA3`, cert
+>   `CN=Roberto Carlos Salvador Martin`.
+> - **Decisión:** **NO** publicar en Google Play, **NO** subir a Firebase, **NO** commitear los AAB
+>   (viven en `build/`, gitignored). No se tocó código ni configuración para generarlos.
+>
+> ### 4. Deploys de Functions de esta tanda (verificados)
+> - **`procesarProgramadas`** desplegada (2026-09-16T11:15:17Z): incluye el **barrido de aperturas de
+>   reservas**; log resumen confirmado en producción.
+> - **`entradaMorosidad`** y **`recordatorioMorosidad`** desplegadas (2026-09-16T15:14:38/39Z);
+>   scheduler jobs ENABLED; ninguna otra Function cambió.
+> - **Decisión:** **`bajaConfirmada` NO se despliega** (redundante por diseño; la app crea
+>   BAJA_CONFIRMADA y `notificacionInmediata` la envía). POST-BETA.
+>
+> ### 5. Decisiones funcionales de la tanda
+> - **Fecha de baja seleccionable:** el ADMIN elige la fecha efectiva de baja (perfil, edición, baja
+>   masiva con una fecha por lote; por defecto HOY; sin fechas futuras). Las reservas futuras se siguen
+>   cancelando con el momento actual; BAJA_CONFIRMADA usa la fecha elegida.
+> - **Orden de clientes A→Z / Z→A:** se implementa como **toggle** (patrón de Economía), NO como filtro
+>   por letra ni tira A-Z (decisión previa confirmada). Orden por apellidos y después nombre.
+> - **Notificaciones (semántica final, no reabrir):**
+>   - **CLIENTE:** puede **eliminar** su entrada del buzón
+>     (`notificaciones_por_destinatario/{clienteId}_{notificacionId}`); nunca toca las globales.
+>   - **ADMIN "Eliminar"** (antes "Retirar"): se permite en **cualquier** notificación (manual o
+>     automática) en estado PENDIENTE/ENVIADA. **Borra solo `notificaciones/{id}`; la copia del cliente
+>     (`notificaciones_por_destinatario`) PERMANECE.** No borra denuncias. La lista se refresca de
+>     inmediato.
+>   - **Diagnóstico previo:** el PERMISSION_DENIED al eliminar automáticas venía de que el `WriteBatch`
+>     intentaba borrar un buzón **inexistente** (toda la operación atómica se denegaba). Regla pura:
+>     `RetiradaNotificacionReglas.esRetirable(estado)` = estado ∈ {PENDIENTE, ENVIADA}, con independencia
+>     del origen.
+> - **Apertura automática de reservas:** cuando una sesión con `horaDesdeReserva` llega a su hora de
+>   apertura (mismo día), se avisa a los clientes con el servicio contratado. Implementado como
+>   `plan_aperturas.js` + `procesarAperturasReservas` dentro de `procesarProgramadas` (buckets de 5 min
+>   cerrados, lookback 3; notificación `APERTURA_RESERVAS`, origen `PRECONFIGURADA`, subtipo `APERTURA`;
+>   idempotencia `apertura_{clienteId}_{bucketStart}`). **No** depende de la app Admin abierta.
+> - **Filtros de la lista de notificaciones ADMIN:** por categoría (TODOS / INDIVIDUALES / GRUPALES /
+>   AUTOMATICAS, derivada de `origen`/`modoDestino`) y por rango de fechas
+>   (`fechaEnvio ?: fechaProgramada ?: fechaCreacion`).
+> - **Visual:** rediseño de **Home ADMIN** (6 cards con imagen + 2 compactas azules, cabecera azul) y
+>   **Home CLIENTE** (cards con imagen, cabecera azul, indicador de estado al final, sin datos mock);
+>   card RESERVADA del CLIENTE (azul corporativo + acciones). Solo presentación.
+> - **Movimiento nuevo (ADMIN):** "Pagado" por defecto al crear; la edición no cambia.
+> - **Motivo de morosidad** en el perfil ADMIN: "Pago vencido" / "Pago pendiente" (calculado, sin campos
+>   nuevos).
+>
+> ### 6. Datos de referencia (no reabrir sin incidencia)
+> - Tests: **Rules 229/229; Functions 112/112; `:app` 221; `:appCliente` 36.** Room ADMIN v21.
+> - Firestore/Storage Rules: **local == producción**.
+> - Pendientes beta: Google Play Console (verificación de cuenta, **App Access** con credenciales de
+>   revisión —dato externo—, Data Safety, subida de AAB), i18n ADMIN parcial, Node 20 deprecado
+>   (2026-10-31) y `firebase-functions` desactualizada.
+
 > ## 📝 REGISTRO DE DECISIONES 2026-09-12 (3) — HISTÓRICO ECONÓMICO AUTÓNOMO (SUSTITUYE "ANONIMIZAR MOVIMIENTOS")
 >
 > ### Decisión (cerrada)

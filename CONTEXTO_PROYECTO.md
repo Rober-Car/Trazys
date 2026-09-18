@@ -1,5 +1,109 @@
 # CONTEXTO_PROYECTO.md — Documento de traspaso a nueva IA
 
+> ## 🟢 ACTUALIZACIÓN 2026-09-18 — BETA 1.0: FIRMA RELEASE VALIDADA Y AAB GENERADOS (ESTADO VIGENTE)
+>
+> **Este bloque es el VIGENTE.** Resume el estado real al 2026-09-18 y **SUPERSEDE** los enunciados de
+> los bloques inferiores en lo relativo a: commit/subida, firma release, AAB generados, Functions
+> desplegadas, Rules desplegadas y tests. El detalle de decisiones está en `CONVERSACION_EXPORTADA.md`;
+> las reglas de trabajo, en `AGENTS.md`.
+>
+> ### Repositorio
+> - **HEAD `508a431 "beta antes de subida a paly store"` = `origin/master` (al día), árbol de trabajo LIMPIO.**
+>   El desarrollador commiteó y subió la tanda `d683a13 → 7a32912 → 508a431`, que incluye toda la
+>   funcionalidad de esta conversación (filtros de notificaciones, aperturas de reservas, rediseños de
+>   Home, etc.). **No queda nada sin commitear.**
+> - **NO** hay cambios propios del agente pendientes. (Si en el futuro se reabre trabajo, comprobar
+>   `git status` antes de tocar nada.)
+>
+> ### Firma RELEASE (validada)
+> - Configuración por **propiedades en la raíz**, leídas por cada `build.gradle.kts`
+>   (`keystore-admin.properties` para `:app`, `keystore-cliente.properties` para `:appCliente`); cada
+>   `signingConfig("release")` se crea **solo si el fichero existe** (si no, release sin firmar).
+>   `storeFile = file(...)` se resuelve **relativo al módulo** → se usa `../`.
+> - Ficheros (raíz, **gitignored**): `gestorpro-admin-upload.jks` (alias `gestorpro-admin`) y
+>   `gestorpro-cliente-upload.jks` (alias `gestorpro-cliente`); `keystore-admin.properties` y
+>   `keystore-cliente.properties` con `storeFile`, `storePassword`, `keyAlias`, `keyPassword`.
+> - **NOTA técnica:** los `.jks` son en realidad **PKCS#12** (cabecera DER `30 82…`, no magic JKS
+>   `FEEDFEED`). El build no fija `storeType`, por lo que Gradle/AGP usa el tipo por defecto del JDK
+>   (PKCS12) y carga correctamente. Si en algún entorno fallara, añadir `storeType=pkcs12`.
+> - **`signingReport`: BUILD SUCCESSFUL en ambas apps.** **NO** se versionan keystores, contraseñas ni
+>   rutas (todo en `.gitignore`: `*.jks`, `*.keystore`, `*.p12`, `*.pepk`, `keystore-admin.properties`,
+>   `keystore-cliente.properties`, `.env`).
+>
+> ### AAB de la Beta 1.0 (generados, NO publicados)
+> - `:app:bundleRelease` y `:appCliente:bundleRelease` → **BUILD SUCCESSFUL** (114 tareas, 2 min 40 s).
+> - Ambos salen **firmados** (verificado con `jarsigner -verify`: **`jar verified.`**).
+>
+> | App | Módulo | applicationId | versionName/Code | Ruta del AAB | Tamaño | SHA-256 | Firmante (certificado) |
+> |---|---|---|---|---|---|---|---|
+> | Trazys ADMIN | `:app` | `com.roberto.gestorpro` | 1.0 / 1 | `app/build/outputs/bundle/release/app-release.aab` | 20.412.673 B | `02E612BE6B4C8B3A8DDA4C0CB3C8F4A6AE72887FD7D98997B5E245FD1B575A17` | `CN=Trazys Admin, OU=Trazys, O=Trazys, L=Bonares, ST=Huelva, C=ES` |
+> | Trazys Cliente | `:appCliente` | `com.roberto.gestorpro.cliente` | 1.0 / 1 | `appCliente/build/outputs/bundle/release/appCliente-release.aab` | 19.324.321 B | `2CE39198897B44652EEC5A9AAA7ECA12E1DA8F24B972D378D10463570246CAA3` | `CN=Roberto Carlos Salvador Martin, OU=Trazys, O=Trazys, L=Bonares, ST=Huelva, C=ES` |
+>
+> - Firma: RSA 2048, `SHA384withRSA`, validez **2026-09-12 → 2054-01-28** en ambos.
+> - Los AAB viven en `build/` (**gitignored**); **NO** están versionados.
+> - **NO publicado en Google Play, NO subido a Firebase, sin commit/push de los AAB.**
+> - Warnings de build: solo avisos **preexistentes** (deprecaciones Kotlin/Compose, aviso
+>   annotation-target y el notice de AGP «Unable to strip … `libandroidx.graphics.path.so`,
+>   `libdatastore_shared_counter.so`»). **Sin errores.**
+>
+> ### Functions desplegadas (7) — todas v2, `europe-west1`, nodejs20
+> | Function | Disparador | updateTime (UTC) |
+> |---|---|---|
+> | `reservar` | callable | 2026-09-09T17:50:11Z |
+> | `cancelarReserva` | callable | 2026-09-09T19:06:02Z |
+> | `notificacionInmediata` | `onDocumentCreated("notificaciones/{id}")` | 2026-09-11T16:34:39Z |
+> | `eliminarMiCuenta` | callable | 2026-09-12T12:13:58Z |
+> | `procesarProgramadas` | scheduled | **2026-09-16T11:15:17Z** |
+> | `recordatorioMorosidad` | scheduled | **2026-09-16T15:14:38Z** |
+> | `entradaMorosidad` | scheduled | **2026-09-16T15:14:39Z** |
+>
+> - **`bajaConfirmada` NO desplegada** (redundante por diseño: la app crea BAJA_CONFIRMADA y
+>   `notificacionInmediata` la envía). No desplegar (POST-BETA).
+> - `procesarProgramadas` (= `procesarNotificacionesProgramadas` + `procesarAperturasReservas`) y
+>   `entradaMorosidad`/`recordatorioMorosidad` **desplegadas y verificadas** en la última tanda. Log
+>   "Barrido de aperturas de reservas" confirmado en producción.
+> - Local vs desplegado: `procesarProgramadas`, `cancelarReserva` y `eliminarMiCuenta` coinciden con el
+>   código local; el bundle de `reservar` es algo antiguo pero su lógica `reservar()` es idéntica.
+>
+> ### Rules / índices / tests
+> - **Firestore Rules y Storage Rules: local == producción** (SHA-256 coincidentes; updateTime
+>   2026-09-12T09:49:34Z y 2026-09-12T09:40:25Z). 6 índices declarados en `firestore.indexes.json`.
+> - **Tests: Rules 229/229; Functions 112/112; `:app` 221; `:appCliente` 36.** Ambos módulos compilan y
+>   `assembleDebug`/`bundleRelease` OK. Room ADMIN **v21** (migraciones 11→21, sin
+>   `fallbackToDestructiveMigration`).
+>
+> ### Funcionalidad cerrada en esta tanda (commit `508a431`)
+> - **Fecha de baja seleccionable** (perfil, edición y baja masiva) con `FechaBajaEfectiva`; reservas
+>   siguen cancelándose con el momento actual; BAJA_CONFIRMADA usa la fecha elegida.
+> - **Orden A→Z / Z→A** en ClientesScreen (toggle con flechas, patrón de Economía; **NO** chips A-Z).
+> - **Eliminar notificaciones en el CLIENTE** (buzón propio) + menú ⋮ (Denunciar/Eliminar).
+> - **Card RESERVADA** del CLIENTE mejorada visualmente (azul `#1E88E5`, badge, "Ver asistentes",
+>   "Cancelar reserva" en rojo).
+> - **Motivo de morosidad** en el perfil ADMIN ("Pago vencido" / "Pago pendiente", sin campos nuevos).
+> - **ADMIN puede eliminar notificaciones** (manuales y automáticas): acción "Eliminar"; borra solo
+>   `notificaciones/{id}` (la copia del cliente permanece) y refresca la lista de inmediato. Corregido el
+>   PERMISSION_DENIED que causaba borrar un buzón inexistente en el batch.
+> - **Apertura automática de reservas:** `functions/lib/plan_aperturas.js` +
+>   `procesarAperturasReservas` (dentro de `procesarProgramadas`); notificación tipo `APERTURA_RESERVAS`
+>   (origen `PRECONFIGURADA`, subtipo `APERTURA`) a los clientes con el servicio contratado cuando llega
+>   la hora de apertura (`horaDesdeReserva`) del día. Buckets de 5 min cerrados + lookback 3;
+>   idempotencia `apertura_{clienteId}_{bucketStart}`. Validada en producción.
+> - **Filtros de la lista de notificaciones ADMIN** (`util/FiltroNotificaciones.kt`:
+>   TODOS/INDIVIDUALES/GRUPALES/AUTOMATICAS + fechas Desde/Hasta).
+> - **Rediseño visual Home ADMIN** (6 cards con imagen + 2 compactas azules, cabecera azul) y **Home
+>   CLIENTE** (cards con imagen, cabecera azul, estado al final, sin mock).
+> - **"Pagado" por defecto** al crear un movimiento nuevo en ADMIN (la edición no cambia).
+>
+> ### Pendientes (BETA 1.0)
+> - **Google Play Console:** cuenta en verificación; **App Access** con credenciales de revisión
+>   (**requiere información externa** que solo puede aportar el propietario); declarar **Data Safety**
+>   (tabla preparada más abajo) y subir los AAB. **No** publicar sin decisión expresa.
+> - **`bajaConfirmada`:** no desplegar (POST-BETA).
+> - **i18n ADMIN** parcial (solo Home + Centro + Rutinas); no continuar sin instrucción.
+> - **Infra/deuda:** Node 20 deprecado (decommission 2026-10-31) y `firebase-functions` desactualizada;
+>   `functions:log` devuelve datos antiguos (usar Cloud Logging REST); `storage.rules` no está en
+>   `firebase.json` (redeploy de Storage requiere target/config temporal).
+
 > ## 🟢 ACTUALIZACIÓN 2026-09-12 (3) — DECISIÓN CERRADA: HISTÓRICO ECONÓMICO AUTÓNOMO (VIGENTE)
 >
 > **Esta decisión SUSTITUYE explícitamente la opción "anonimizar movimientos" (C2) planteada en el diseño
